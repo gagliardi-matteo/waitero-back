@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/waitero_db
+    username: your_username
+    password: your_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update # usa "validate" o "none" in produzione
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    serialization:
+      indent_output: true
+jwt:
+  secret: MySuperSecretKeyForJwt12345678901234567890123456789012
+  expiration-ms: 900000        # 15 minuti
+  refresh-expiration-ms: 604800000  # 7 giorni
