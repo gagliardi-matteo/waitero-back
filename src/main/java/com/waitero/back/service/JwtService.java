@@ -2,6 +2,7 @@ package com.waitero.back.service;
 
 import com.waitero.back.entity.Ristoratore;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
@@ -23,6 +25,12 @@ public class JwtService {
 
     @Value("${jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
+
+    @Value("${qr.token.secret}")
+    private String qrSecret;
+
+    @Value("${qr.token.expiration}")
+    private long qrTokenExpirationMs;
 
     private Key key;
 
@@ -65,4 +73,43 @@ public class JwtService {
                 .parseClaimsJws(token).getBody();
         return Long.valueOf(claims.getSubject());
     }
+
+    public boolean validateQrToken(String token, String restaurantId, int tableId) {
+        try {
+            Key qrKey = Keys.hmacShaKeyFor(qrSecret.getBytes(StandardCharsets.UTF_8));
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(qrKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            Object rIdRaw = claims.get("restaurantId");
+            Object tIdRaw = claims.get("tableId");
+            String type = claims.get("type", String.class);
+
+            int rId = (rIdRaw instanceof Integer) ? (Integer) rIdRaw : Integer.parseInt(rIdRaw.toString());
+            int tId = (tIdRaw instanceof Integer) ? (Integer) tIdRaw : Integer.parseInt(tIdRaw.toString());
+
+            return "qr".equals(type)
+                    && rId == Integer.parseInt(restaurantId)
+                    && tId == tableId;
+        } catch (ExpiredJwtException e) {
+            // ⚠️ Token scaduto ma continuiamo se vuoi ignorare exp
+            Claims claims = e.getClaims();
+            String rId = String.valueOf(claims.get("restaurantId", Integer.class));
+            Integer tId = claims.get("tableId", Integer.class);
+            String type = claims.get("type", String.class);
+
+            return "qr".equals(type)
+                    && rId.equals(restaurantId)
+                    && tId == tableId;
+        } catch (Exception e) {
+            System.out.println("❌ Errore validazione QR token:");
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+
 }

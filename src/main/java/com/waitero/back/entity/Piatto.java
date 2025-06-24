@@ -20,9 +20,9 @@ public class Piatto {
     private String descrizione;
     private BigDecimal prezzo;
     private Boolean disponibile;
-
-    @ManyToOne
-    private CategoriaPiatto categoria;
+    @Enumerated(EnumType.STRING)
+    private Categoria categoria;
+    private String imageUrl;
 
     @ManyToOne
     private Ristoratore ristoratore;

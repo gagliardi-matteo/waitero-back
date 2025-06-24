@@ -1,10 +1,9 @@
 package com.waitero.back.service;
 
 import com.waitero.back.dto.PiattoDTO;
-import com.waitero.back.entity.CategoriaPiatto;
+import com.waitero.back.entity.Categoria;
 import com.waitero.back.entity.Piatto;
 import com.waitero.back.entity.Ristoratore;
-import com.waitero.back.repository.CategoriaPiattoRepository;
 import com.waitero.back.repository.PiattoRepository;
 import com.waitero.back.repository.RistoratoreRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MenuService {
 
-    private final CategoriaPiattoRepository categoriaRepo;
     private final PiattoRepository piattoRepo;
     private final RistoratoreRepository ristoratoreRepo;
 
@@ -27,22 +25,13 @@ public class MenuService {
                 .orElseThrow(() -> new RuntimeException("Ristoratore non trovato"));
     }
 
-    public List<CategoriaPiatto> getCategorie() {
-        Ristoratore ristoratore = getRistoratoreAutenticato();
-        return categoriaRepo.findAllByRistoratoreId(ristoratore.getId());
-    }
-
-    public CategoriaPiatto creaCategoria(String nome) {
-        Ristoratore ristoratore = getRistoratoreAutenticato();
-        CategoriaPiatto c = new CategoriaPiatto();
-        c.setNome(nome);
-        c.setRistoratore(ristoratore);
-        return categoriaRepo.save(c);
-    }
-
     public List<Piatto> getPiatti() {
         Ristoratore ristoratore = getRistoratoreAutenticato();
         return piattoRepo.findAllByRistoratoreId(ristoratore.getId());
+    }
+
+    public Piatto getPiattoById(Long id){
+        return piattoRepo.findById(id).orElseThrow(() -> new RuntimeException("Ristoratore non trovato"));
     }
 
     public List<Piatto> getPiattiByRistoratore(Long id){
@@ -54,6 +43,15 @@ public class MenuService {
         piatto.setRistoratore(ristoratore);
         return piattoRepo.save(piatto);
     }
+
+    public void updateFromDTO(Piatto entity, PiattoDTO dto) {
+        entity.setNome(dto.getNome());
+        entity.setDescrizione(dto.getDescrizione());
+        entity.setPrezzo(dto.getPrezzo());
+        entity.setDisponibile(dto.getDisponibile());
+        entity.setCategoria(Categoria.valueOf(dto.getCategoria()));
+    }
+
 
     public Piatto aggiornaPiatto(Long id, Piatto nuovo) {
         Piatto esistente = piattoRepo.findById(id)
@@ -77,7 +75,8 @@ public class MenuService {
         dto.setDescrizione(piatto.getDescrizione());
         dto.setPrezzo(piatto.getPrezzo());
         dto.setDisponibile(piatto.getDisponibile());
-        dto.setCategoriaId(piatto.getCategoria().getId());
+        dto.setCategoria(String.valueOf(piatto.getCategoria()));
+        dto.setImageUrl(piatto.getImageUrl());
         return dto;
     }
 
@@ -88,9 +87,8 @@ public class MenuService {
         p.setDescrizione(dto.getDescrizione());
         p.setPrezzo(dto.getPrezzo());
         p.setDisponibile(dto.getDisponibile());
-        CategoriaPiatto categoria = categoriaRepo.findById(dto.getCategoriaId())
-                .orElseThrow(() -> new RuntimeException("Categoria non trovata"));
-        p.setCategoria(categoria);
+        p.setCategoria(Categoria.valueOf(dto.getCategoria()));
+        p.setImageUrl(dto.getImageUrl());
         return p;
     }
 
