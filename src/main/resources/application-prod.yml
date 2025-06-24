@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+  spring:
+    datasource:
+      url: ${SPRING_DATASOURCE_URL}
+      username: ${SPRING_DATASOURCE_USERNAME}
+      password: ${SPRING_DATASOURCE_PASSWORD}
+      driver-class-name: org.postgresql.Driver
+    jpa:
+      hibernate:
+        ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+      show-sql: true
+      properties:
+        hibernate:
+          format_sql: true
+    web:
+      resources:
+        static-locations: file:/app/uploads/
+
+  jwt:
+    secret: MySuperSecretKeyForJwt12345678901234567890123456789012
+    expiration-ms: 900000
+    refresh-expiration-ms: 604800000
+
+  qr:
+    token:
+      secret: E5zYwR1Xdpz8TqLnaU2cVsHxPvKqJGbf
+      expiration: 604800000
