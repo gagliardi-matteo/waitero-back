@@ -1,14 +1,23 @@
-# Usa un'immagine Java ufficiale
-FROM eclipse-temurin:21-jdk
+# Stage 1: compila con Maven
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 
-# Cartella di lavoro dentro il container
 WORKDIR /app
 
-# Copia il file JAR generato da Maven (assicurati di usare il nome corretto)
-COPY target/back-0.0.1-SNAPSHOT.jar app.jar
+COPY pom.xml ./
+COPY src ./src
 
-# Espone la porta 8080
+RUN mvn clean package -DskipTests
+
+# Stage 2: container finale con solo il jar
+FROM eclipse-temurin:21-jdk
+
+WORKDIR /app
+
+COPY --from=build /app/target/back-0.0.1-SNAPSHOT.jar app.jar
+
+# Assicurati che uploads/ esista nel container
+RUN mkdir -p /app/uploads
+
 EXPOSE 8080
 
-# Comando per avviare l'app Spring Boot
 ENTRYPOINT ["java", "-jar", "app.jar"]
