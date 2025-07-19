@@ -1,6 +1,7 @@
 package com.waitero.back.controller;
 
 import com.waitero.back.dto.PiattoDTO;
+import com.waitero.back.entity.Piatto;
 import com.waitero.back.service.JwtService;
 import com.waitero.back.service.MenuService;
 import com.waitero.back.service.RistoratoreService;
@@ -27,6 +28,12 @@ public class MenuPublicController {
                 .stream()
                 .map(menuService::toDTO)
                 .toList();
+    }
+
+    @GetMapping("/dettaglio-piatto/{id}")
+    public PiattoDTO getDettaglioPiatto(@PathVariable Long id){
+        Piatto piatto =  menuService.getPiattoById(id);
+        return menuService.toDTO(piatto);
     }
 
     @PostMapping("/validate-token")
