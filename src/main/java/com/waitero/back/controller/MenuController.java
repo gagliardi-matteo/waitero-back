@@ -75,8 +75,10 @@ public class MenuController {
     }
 
     @PutMapping("/piatti/{id}")
-    public Piatto aggiornaPiatto(@PathVariable Long id, @RequestBody Piatto piatto) {
-        return menuService.aggiornaPiatto(id, piatto);
+    public PiattoDTO aggiornaPiatto(@PathVariable Long id, @RequestBody PiattoDTO dto) {
+        Piatto piatto = menuService.getPiattoById(id);
+        menuService.updateFromDTO(piatto, dto);
+        return menuService.toDTO(menuService.aggiornaPiatto(id, piatto));
     }
 
     @PutMapping(value = "/piatti/{id}/con-immagine", consumes = MULTIPART_FORM_DATA_VALUE)

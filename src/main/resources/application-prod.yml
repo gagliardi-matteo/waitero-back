@@ -29,3 +29,7 @@ qr:
   token:
     secret: E5zYwR1Xdpz8TqLnaU2cVsHxPvKqJGbf
     expiration: 604800000
+
+google:
+  maps:
+    api-key: ${GOOGLE_MAPS_API_KEY:}

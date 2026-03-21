@@ -24,6 +24,12 @@ public class Piatto {
     private Categoria categoria;
     private String imageUrl;
 
+    @Column(length = 512)
+    private String ingredienti;
+
+    @Column(length = 512)
+    private String allergeni;
+
     @ManyToOne
     private Ristoratore ristoratore;
 }

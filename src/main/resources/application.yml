@@ -21,3 +21,7 @@ jwt:
   secret: MySuperSecretKeyForJwt12345678901234567890123456789012
   expiration-ms: 900000        # 15 minuti
   refresh-expiration-ms: 604800000  # 7 giorni
+
+google:
+  maps:
+    api-key: ${GOOGLE_MAPS_API_KEY:}

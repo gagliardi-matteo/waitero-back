@@ -28,8 +28,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // 🔥 ESCLUDI gli endpoint pubblici
-        if (path.startsWith("/api/auth/") || path.startsWith("/api/image/") || path.startsWith("/api/customer/")) {
+        if (path.startsWith("/api/auth/")
+                || path.startsWith("/api/image/")
+                || path.startsWith("/api/customer/")
+                || path.equals("/api/table/access")
+                || path.equals("/api/orders/stream")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -57,5 +60,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
-
 }

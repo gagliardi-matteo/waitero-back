@@ -4,8 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Ristoratore {
 
@@ -17,9 +19,25 @@ public class Ristoratore {
 
     private String nome;
 
-    private String password; // solo se usi login classico
+    private String password;
 
-    private String provider; // es: "GOOGLE", "FACEBOOK", "APPLE"
+    private String provider;
 
-    private String providerId; // es: sub dell'id_token
+    private String providerId;
+
+    @Column(length = 255)
+    private String address;
+
+    @Column(length = 255)
+    private String city;
+
+    @Column(length = 255)
+    private String formattedAddress;
+
+    private Double latitude;
+
+    private Double longitude;
+
+    @Column(name = "allowed_radius_meters")
+    private Integer allowedRadiusMeters;
 }

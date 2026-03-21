@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+
+  db:
+    image: postgres:15
+    container_name: waitero-db
+    restart: always
+    environment:
+      POSTGRES_DB: waitero
+      POSTGRES_USER: waitero
+      POSTGRES_PASSWORD: waitero
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - waitero-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U waitero"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: waitero-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/waitero
+      SPRING_DATASOURCE_USERNAME: waitero
+      SPRING_DATASOURCE_PASSWORD: waitero
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      FILE_UPLOAD_DIR: /app/uploads
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/app/uploads
+    networks:
+      - waitero-network
+
+volumes:
+  postgres_data:
+  uploads:
+
+networks:
+  waitero-network:
+    driver: bridge

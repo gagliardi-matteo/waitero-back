@@ -33,10 +33,12 @@ public class JwtService {
     private long qrTokenExpirationMs;
 
     private Key key;
+    private Key qrKey;
 
     @PostConstruct
     public void init() {
-        key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        qrKey = Keys.hmacShaKeyFor(qrSecret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateAccessToken(Ristoratore ristoratore) {
@@ -74,9 +76,19 @@ public class JwtService {
         return Long.valueOf(claims.getSubject());
     }
 
+    public String generateQrToken(Long restaurantId, Integer tableId) {
+        return Jwts.builder()
+                .claim("restaurantId", restaurantId)
+                .claim("tableId", tableId)
+                .claim("type", "qr")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + qrTokenExpirationMs))
+                .signWith(qrKey)
+                .compact();
+    }
+
     public boolean validateQrToken(String token, String restaurantId, int tableId) {
         try {
-            Key qrKey = Keys.hmacShaKeyFor(qrSecret.getBytes(StandardCharsets.UTF_8));
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(qrKey)
                     .build()
@@ -94,7 +106,6 @@ public class JwtService {
                     && rId == Integer.parseInt(restaurantId)
                     && tId == tableId;
         } catch (ExpiredJwtException e) {
-            // ⚠️ Token scaduto ma continuiamo se vuoi ignorare exp
             Claims claims = e.getClaims();
             String rId = String.valueOf(claims.get("restaurantId", Integer.class));
             Integer tId = claims.get("tableId", Integer.class);
@@ -104,12 +115,9 @@ public class JwtService {
                     && rId.equals(restaurantId)
                     && tId == tableId;
         } catch (Exception e) {
-            System.out.println("❌ Errore validazione QR token:");
+            System.out.println("Errore validazione QR token");
             e.printStackTrace();
             return false;
         }
     }
-
-
-
 }

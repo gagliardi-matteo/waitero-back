@@ -19,4 +19,6 @@ public class PiattoDTO {
     private Boolean disponibile;
     private String categoria;
     private String imageUrl;
+    private String ingredienti;
+    private String allergeni;
 }
