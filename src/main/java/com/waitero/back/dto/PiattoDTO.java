@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Getter
@@ -21,4 +23,5 @@ public class PiattoDTO {
     private String imageUrl;
     private String ingredienti;
     private String allergeni;
+    private List<IngredienteDTO> ingredientiStrutturati = new ArrayList<>();
 }

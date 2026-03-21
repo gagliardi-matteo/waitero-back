@@ -37,6 +37,8 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       FILE_UPLOAD_DIR: /app/uploads
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
     ports:
       - "8080:8080"
     volumes:

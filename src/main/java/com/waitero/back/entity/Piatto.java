@@ -20,8 +20,10 @@ public class Piatto {
     private String descrizione;
     private BigDecimal prezzo;
     private Boolean disponibile;
+
     @Enumerated(EnumType.STRING)
     private Categoria categoria;
+
     private String imageUrl;
 
     @Column(length = 512)
@@ -32,4 +34,8 @@ public class Piatto {
 
     @ManyToOne
     private Ristoratore ristoratore;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "piatto_canonico_id")
+    private PiattoCanonicale piattoCanonicale;
 }

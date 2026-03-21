@@ -1,22 +1,36 @@
 package com.waitero.back.service;
 
+import com.waitero.back.dto.IngredienteDTO;
 import com.waitero.back.dto.PiattoDTO;
 import com.waitero.back.entity.Categoria;
+import com.waitero.back.entity.Ingrediente;
 import com.waitero.back.entity.Piatto;
+import com.waitero.back.entity.PiattoCanonicale;
+import com.waitero.back.entity.PiattoIngrediente;
+import com.waitero.back.entity.PiattoIngredienteRistoratore;
 import com.waitero.back.entity.Ristoratore;
 import com.waitero.back.entity.ServiceHour;
+import com.waitero.back.repository.IngredienteRepository;
+import com.waitero.back.repository.PiattoIngredienteRepository;
+import com.waitero.back.repository.PiattoIngredienteRistoratoreRepository;
 import com.waitero.back.repository.PiattoRepository;
 import com.waitero.back.repository.RistoratoreRepository;
 import com.waitero.back.repository.ServiceHourRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +41,10 @@ public class MenuService {
     private final PiattoRepository piattoRepo;
     private final RistoratoreRepository ristoratoreRepo;
     private final ServiceHourRepository serviceHourRepository;
+    private final DishNormalizationService dishNormalizationService;
+    private final PiattoIngredienteRepository piattoIngredienteRepository;
+    private final PiattoIngredienteRistoratoreRepository piattoIngredienteRistoratoreRepository;
+    private final IngredienteRepository ingredienteRepository;
 
     private Ristoratore getRistoratoreAutenticato() {
         Long id = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -39,11 +57,11 @@ public class MenuService {
         return piattoRepo.findAllByRistoratoreId(ristoratore.getId());
     }
 
-    public Piatto getPiattoById(Long id){
+    public Piatto getPiattoById(Long id) {
         return piattoRepo.findById(id).orElseThrow(() -> new RuntimeException("Piatto non trovato"));
     }
 
-    public List<Piatto> getPiattiByRistoratore(Long id){
+    public List<Piatto> getPiattiByRistoratore(Long id) {
         return piattoRepo.findAllByRistoratoreId(id);
     }
 
@@ -58,10 +76,14 @@ public class MenuService {
         return piatto;
     }
 
+    @Transactional
     public Piatto creaPiatto(Piatto piatto) {
         Ristoratore ristoratore = getRistoratoreAutenticato();
         piatto.setRistoratore(ristoratore);
-        return piattoRepo.save(piatto);
+        piatto.setPiattoCanonicale(dishNormalizationService.normalizeDish(piatto.getNome()));
+        Piatto saved = piattoRepo.save(piatto);
+        syncDishIngredients(saved, normalizeText(piatto.getIngredienti()));
+        return piattoRepo.save(saved);
     }
 
     public void updateFromDTO(Piatto entity, PiattoDTO dto) {
@@ -74,6 +96,7 @@ public class MenuService {
         entity.setAllergeni(normalizeText(dto.getAllergeni()));
     }
 
+    @Transactional
     public Piatto aggiornaPiatto(Long id, Piatto nuovo) {
         Piatto esistente = piattoRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Piatto non trovato"));
@@ -84,11 +107,17 @@ public class MenuService {
         esistente.setCategoria(nuovo.getCategoria());
         esistente.setIngredienti(normalizeText(nuovo.getIngredienti()));
         esistente.setAllergeni(normalizeText(nuovo.getAllergeni()));
+        syncDishIngredients(esistente, esistente.getIngredienti());
         return piattoRepo.save(esistente);
     }
 
+    @Transactional
     public void eliminaPiatto(Long id) {
-        piattoRepo.deleteById(id);
+        Ristoratore ristoratore = getRistoratoreAutenticato();
+        Piatto piatto = piattoRepo.findByIdAndRistoratoreId(id, ristoratore.getId())
+                .orElseThrow(() -> new RuntimeException("Piatto non trovato o non associato al ristoratore autenticato"));
+        piattoIngredienteRistoratoreRepository.deleteAllByPiattoId(piatto.getId());
+        piattoRepo.delete(piatto);
     }
 
     public PiattoDTO toDTO(Piatto piatto) {
@@ -100,7 +129,9 @@ public class MenuService {
         dto.setDisponibile(piatto.getDisponibile());
         dto.setCategoria(String.valueOf(piatto.getCategoria()));
         dto.setImageUrl(piatto.getImageUrl());
-        dto.setIngredienti(piatto.getIngredienti());
+        List<IngredienteDTO> structuredIngredients = resolveStructuredIngredients(piatto);
+        dto.setIngredienti(buildIngredientDisplay(structuredIngredients, piatto.getIngredienti()));
+        dto.setIngredientiStrutturati(structuredIngredients);
         dto.setAllergeni(piatto.getAllergeni());
         return dto;
     }
@@ -133,11 +164,112 @@ public class MenuService {
         }
     }
 
+    private void syncDishIngredients(Piatto piatto, String ingredientiText) {
+        List<IngredienteDTO> requestedIngredients = hasText(ingredientiText)
+                ? parseIngredientText(ingredientiText)
+                : canonicalIngredientsForDish(piatto.getPiattoCanonicale());
+
+        piattoIngredienteRistoratoreRepository.deleteAllByPiattoId(piatto.getId());
+        if (requestedIngredients.isEmpty()) {
+            piatto.setIngredienti(null);
+            return;
+        }
+
+        List<PiattoIngredienteRistoratore> relations = new ArrayList<>();
+        for (IngredienteDTO requestedIngredient : requestedIngredients) {
+            String ingredientName = normalizeText(requestedIngredient.getNome());
+            if (ingredientName == null) {
+                continue;
+            }
+
+            Ingrediente ingrediente = ingredienteRepository.findByNomeIgnoreCase(ingredientName)
+                    .orElseGet(() -> ingredienteRepository.save(
+                            Ingrediente.builder()
+                                    .nome(ingredientName)
+                                    .categoria(normalizeText(requestedIngredient.getCategoria()))
+                                    .build()
+                    ));
+
+            relations.add(PiattoIngredienteRistoratore.builder()
+                    .piatto(piatto)
+                    .ingrediente(ingrediente)
+                    .grammi(requestedIngredient.getGrammi())
+                    .build());
+        }
+
+        piattoIngredienteRistoratoreRepository.saveAll(relations);
+        piatto.setIngredienti(buildIngredientDisplay(toIngredienteDTOs(relations), ingredientiText));
+    }
+
+    private List<IngredienteDTO> resolveStructuredIngredients(Piatto piatto) {
+        List<PiattoIngredienteRistoratore> restaurantRelations = piattoIngredienteRistoratoreRepository.findAllByPiattoIdOrderByIngredienteNomeAsc(piatto.getId());
+        if (!restaurantRelations.isEmpty()) {
+            return toIngredienteDTOs(restaurantRelations);
+        }
+        return canonicalIngredientsForDish(piatto.getPiattoCanonicale());
+    }
+
+    private List<IngredienteDTO> canonicalIngredientsForDish(PiattoCanonicale piattoCanonicale) {
+        if (piattoCanonicale == null || piattoCanonicale.getId() == null) {
+            return List.of();
+        }
+        return piattoIngredienteRepository.findAllByPiattoCanonicaleIdOrderByIngredienteNomeAsc(piattoCanonicale.getId())
+                .stream()
+                .map(this::toIngredienteDTO)
+                .collect(Collectors.toList());
+    }
+
+    private IngredienteDTO toIngredienteDTO(PiattoIngrediente relation) {
+        return IngredienteDTO.builder()
+                .nome(relation.getIngrediente().getNome())
+                .categoria(relation.getIngrediente().getCategoria())
+                .grammi(relation.getGrammi())
+                .build();
+    }
+
+    private List<IngredienteDTO> toIngredienteDTOs(List<PiattoIngredienteRistoratore> relations) {
+        return relations.stream()
+                .map(relation -> IngredienteDTO.builder()
+                        .nome(relation.getIngrediente().getNome())
+                        .categoria(relation.getIngrediente().getCategoria())
+                        .grammi(relation.getGrammi())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private List<IngredienteDTO> parseIngredientText(String ingredientiText) {
+        Map<String, IngredienteDTO> deduped = new LinkedHashMap<>();
+        for (String rawValue : ingredientiText.split(",")) {
+            String normalized = normalizeText(rawValue);
+            if (normalized == null) {
+                continue;
+            }
+            deduped.putIfAbsent(normalized.toLowerCase(), IngredienteDTO.builder()
+                    .nome(normalized)
+                    .build());
+        }
+        return new ArrayList<>(deduped.values());
+    }
+
+    private String buildIngredientDisplay(List<IngredienteDTO> ingredients, String fallbackValue) {
+        if (ingredients != null && !ingredients.isEmpty()) {
+            return ingredients.stream()
+                    .map(IngredienteDTO::getNome)
+                    .filter(this::hasText)
+                    .collect(Collectors.joining(", "));
+        }
+        return normalizeText(fallbackValue);
+    }
+
     private String normalizeText(String value) {
         if (value == null) {
             return null;
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }
