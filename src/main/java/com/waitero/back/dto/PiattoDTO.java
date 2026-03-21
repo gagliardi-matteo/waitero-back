@@ -23,5 +23,6 @@ public class PiattoDTO {
     private String imageUrl;
     private String ingredienti;
     private String allergeni;
+    private Boolean consigliato;
     private List<IngredienteDTO> ingredientiStrutturati = new ArrayList<>();
 }

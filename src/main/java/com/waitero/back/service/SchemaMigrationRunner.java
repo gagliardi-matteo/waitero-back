@@ -84,6 +84,11 @@ public class SchemaMigrationRunner implements ApplicationRunner {
             jdbcTemplate.execute("ALTER TABLE piatto ADD COLUMN allergeni varchar(512)");
             log.info("Added missing column piatto.allergeni");
         }
+
+        if (!columnExists("piatto", "consigliato")) {
+            jdbcTemplate.execute("ALTER TABLE piatto ADD COLUMN consigliato boolean NOT NULL DEFAULT false");
+            log.info("Added missing column piatto.consigliato");
+        }
     }
 
     private boolean tableExists(String tableName) {

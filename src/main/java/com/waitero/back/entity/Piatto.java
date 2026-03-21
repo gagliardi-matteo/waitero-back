@@ -32,6 +32,10 @@ public class Piatto {
     @Column(length = 512)
     private String allergeni;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean consigliato = false;
+
     @ManyToOne
     private Ristoratore ristoratore;
 

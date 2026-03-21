@@ -21,7 +21,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -81,6 +80,9 @@ public class MenuService {
         Ristoratore ristoratore = getRistoratoreAutenticato();
         piatto.setRistoratore(ristoratore);
         piatto.setPiattoCanonicale(dishNormalizationService.normalizeDish(piatto.getNome()));
+        if (piatto.getConsigliato() == null) {
+            piatto.setConsigliato(false);
+        }
         Piatto saved = piattoRepo.save(piatto);
         syncDishIngredients(saved, normalizeText(piatto.getIngredienti()));
         return piattoRepo.save(saved);
@@ -94,6 +96,7 @@ public class MenuService {
         entity.setCategoria(Categoria.valueOf(dto.getCategoria()));
         entity.setIngredienti(normalizeText(dto.getIngredienti()));
         entity.setAllergeni(normalizeText(dto.getAllergeni()));
+        entity.setConsigliato(Boolean.TRUE.equals(dto.getConsigliato()));
     }
 
     @Transactional
@@ -107,6 +110,7 @@ public class MenuService {
         esistente.setCategoria(nuovo.getCategoria());
         esistente.setIngredienti(normalizeText(nuovo.getIngredienti()));
         esistente.setAllergeni(normalizeText(nuovo.getAllergeni()));
+        esistente.setConsigliato(Boolean.TRUE.equals(nuovo.getConsigliato()));
         syncDishIngredients(esistente, esistente.getIngredienti());
         return piattoRepo.save(esistente);
     }
@@ -133,6 +137,7 @@ public class MenuService {
         dto.setIngredienti(buildIngredientDisplay(structuredIngredients, piatto.getIngredienti()));
         dto.setIngredientiStrutturati(structuredIngredients);
         dto.setAllergeni(piatto.getAllergeni());
+        dto.setConsigliato(Boolean.TRUE.equals(piatto.getConsigliato()));
         return dto;
     }
 
@@ -147,6 +152,7 @@ public class MenuService {
         p.setImageUrl(dto.getImageUrl());
         p.setIngredienti(normalizeText(dto.getIngredienti()));
         p.setAllergeni(normalizeText(dto.getAllergeni()));
+        p.setConsigliato(Boolean.TRUE.equals(dto.getConsigliato()));
         return p;
     }
 
