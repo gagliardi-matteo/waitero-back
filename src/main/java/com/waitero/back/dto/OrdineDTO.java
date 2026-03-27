@@ -15,6 +15,7 @@ public class OrdineDTO {
     private Integer tableId;
     private String status;
     private String paymentMode;
+    private String noteCucina;
     private LocalDateTime paidAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

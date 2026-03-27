@@ -25,6 +25,8 @@ public class SchemaMigrationRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         ensureTablePublicIdColumn();
         ensureDishColumns();
+        ensureCustomerOrderColumns();
+        ensureDishCooccurrenceTable();
     }
 
     private void ensureTablePublicIdColumn() {
@@ -89,6 +91,35 @@ public class SchemaMigrationRunner implements ApplicationRunner {
             jdbcTemplate.execute("ALTER TABLE piatto ADD COLUMN consigliato boolean NOT NULL DEFAULT false");
             log.info("Added missing column piatto.consigliato");
         }
+    }
+
+    private void ensureCustomerOrderColumns() {
+        if (!tableExists("customer_orders")) {
+            return;
+        }
+
+        if (!columnExists("customer_orders", "note_cucina")) {
+            jdbcTemplate.execute("ALTER TABLE customer_orders ADD COLUMN note_cucina varchar(1000)");
+            log.info("Added missing column customer_orders.note_cucina");
+        }
+    }
+
+    private void ensureDishCooccurrenceTable() {
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS dish_cooccurrence (
+                    base_dish_id bigint NOT NULL,
+                    suggested_dish_id bigint NOT NULL,
+                    count bigint NOT NULL,
+                    confidence double precision NOT NULL,
+                    PRIMARY KEY (base_dish_id, suggested_dish_id),
+                    CONSTRAINT fk_dish_cooccurrence_base FOREIGN KEY (base_dish_id) REFERENCES piatto(id) ON DELETE CASCADE,
+                    CONSTRAINT fk_dish_cooccurrence_suggested FOREIGN KEY (suggested_dish_id) REFERENCES piatto(id) ON DELETE CASCADE
+                )
+                """
+        );
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_dish_cooccurrence_base ON dish_cooccurrence(base_dish_id)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_dish_cooccurrence_suggested ON dish_cooccurrence(suggested_dish_id)");
     }
 
     private boolean tableExists(String tableName) {

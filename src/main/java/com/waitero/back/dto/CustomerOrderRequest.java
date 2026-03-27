@@ -11,5 +11,6 @@ public class CustomerOrderRequest {
     private Integer tableId;
     private String deviceId;
     private String fingerprint;
+    private String noteCucina;
     private List<CustomerOrderItemRequest> items;
 }

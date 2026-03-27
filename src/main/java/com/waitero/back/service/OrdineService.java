@@ -29,12 +29,13 @@ public class OrdineService {
     private final OrderStreamService orderStreamService;
     private final CustomerDraftService customerDraftService;
     private final TavoloService tavoloService;
+    private final UpsellService upsellService;
 
     @Transactional
     public OrdineDTO createOrAppend(CustomerOrderRequest request) {
         validateCustomerRequest(request);
         Long restaurantId = Long.parseLong(request.getRestaurantId());
-        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems());
+        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), request.getNoteCucina());
     }
 
     @Transactional
@@ -47,7 +48,7 @@ public class OrdineService {
             throw new RuntimeException("Ordine vuoto");
         }
         tavoloService.requireActiveTable(restaurantId, request.getTableId());
-        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems());
+        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), null);
     }
 
     @Transactional(readOnly = true)
@@ -164,6 +165,7 @@ public class OrdineService {
         }
 
         Ordine saved = ordineRepository.save(ordine);
+        upsellService.refreshAggregatesForRestaurant(saved.getRistoratore().getId());
         if (saved.getStatus() == OrderStatus.PAGATO) {
             tavoloService.clearRegisteredDevices(saved.getRistoratore().getId(), saved.getTableId());
         }
@@ -223,6 +225,7 @@ public class OrdineService {
                 .tableId(ordine.getTableId())
                 .status(ordine.getStatus().name())
                 .paymentMode(ordine.getPaymentMode())
+                .noteCucina(ordine.getNoteCucina())
                 .paidAt(ordine.getPaidAt())
                 .createdAt(ordine.getCreatedAt())
                 .updatedAt(ordine.getUpdatedAt())
@@ -248,7 +251,7 @@ public class OrdineService {
         }
     }
 
-    private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest) {
+    private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina) {
         tavoloService.requireActiveTable(restaurantId, tableId);
         Ristoratore ristoratore = ristoratoreRepository.findById(restaurantId)
                 .orElseThrow(() -> new RuntimeException("Ristorante non trovato"));
@@ -310,9 +313,11 @@ public class OrdineService {
             throw new RuntimeException("Nessun piatto valido da inviare");
         }
 
+        ordine.setNoteCucina(mergeKitchenNotes(ordine.getNoteCucina(), noteCucina));
         reconcileOrderStatusAfterMutation(ordine);
         ordine.setUpdatedAt(LocalDateTime.now());
         Ordine saved = ordineRepository.save(ordine);
+        upsellService.refreshAggregatesForRestaurant(saved.getRistoratore().getId());
         if (saved.getStatus() == OrderStatus.PAGATO) {
             tavoloService.clearRegisteredDevices(saved.getRistoratore().getId(), saved.getTableId());
         }
@@ -322,6 +327,36 @@ public class OrdineService {
         return toDTO(saved);
     }
 
+    private String mergeKitchenNotes(String existingNotes, String incomingNotes) {
+        String normalizedIncoming = normalizeKitchenNotes(incomingNotes);
+        if (normalizedIncoming == null) {
+            return existingNotes;
+        }
+
+        String normalizedExisting = normalizeKitchenNotes(existingNotes);
+        if (normalizedExisting == null) {
+            return normalizedIncoming;
+        }
+
+        if (normalizedExisting.equals(normalizedIncoming)) {
+            return normalizedExisting;
+        }
+
+        return normalizedExisting + "\n" + normalizedIncoming;
+    }
+
+    private String normalizeKitchenNotes(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        if (normalized.isEmpty()) {
+            return null;
+        }
+
+        return normalized.length() > 1000 ? normalized.substring(0, 1000) : normalized;
+    }
     private Long getAuthenticatedRestaurantId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
     }
@@ -441,5 +476,6 @@ public class OrdineService {
         ordine.setPaidAt(null);
     }
 }
+
 
 

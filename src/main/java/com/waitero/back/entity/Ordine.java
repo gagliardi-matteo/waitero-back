@@ -32,6 +32,9 @@ public class Ordine {
 
     private String paymentMode;
 
+    @Column(name = "note_cucina", length = 1000)
+    private String noteCucina;
+
     private LocalDateTime paidAt;
 
     @Column(nullable = false)
