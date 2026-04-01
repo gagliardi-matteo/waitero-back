@@ -3,6 +3,8 @@ package com.waitero.back.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -40,4 +42,7 @@ public class Ristoratore {
 
     @Column(name = "allowed_radius_meters")
     private Integer allowedRadiusMeters;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }

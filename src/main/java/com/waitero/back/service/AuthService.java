@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -44,6 +45,7 @@ public class AuthService {
                                 .nome(name)
                                 .provider("GOOGLE")
                                 .providerId(sub)
+                                .createdAt(LocalDateTime.now())
                                 .build()
                 ));
 
@@ -69,5 +71,3 @@ public class AuthService {
         return new AuthResponse(newAccessToken, newRefreshToken);
     }
 }
-
-

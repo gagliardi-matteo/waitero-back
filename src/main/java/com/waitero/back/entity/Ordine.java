@@ -3,6 +3,7 @@ package com.waitero.back.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,9 @@ public class Ordine {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal totale;
 
     @OneToMany(mappedBy = "ordine", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
