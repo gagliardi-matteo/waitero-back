@@ -24,5 +24,12 @@ public class PiattoDTO {
     private String ingredienti;
     private String allergeni;
     private Boolean consigliato;
+    private Integer numeroOrdini;
+    private Long views;
+    private Long clicks;
+    private Long addToCart;
+    private BigDecimal viewToCartRate;
+    private BigDecimal viewToOrderRate;
+    private String performanceLabel;
     private List<IngredienteDTO> ingredientiStrutturati = new ArrayList<>();
 }

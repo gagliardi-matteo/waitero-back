@@ -33,7 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/customer/**").permitAll()
                         .requestMatchers("/api/table/access").permitAll()
                         .requestMatchers("/api/orders/stream").permitAll()
-                        .requestMatchers("/api/menu/**", "/api/orders/**", "/api/tables/**", "/api/restaurant/**").authenticated()
+                        .requestMatchers("/api/menu/**", "/api/orders/**", "/api/tables/**", "/api/restaurant/**", "/api/analytics/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
@@ -63,3 +63,4 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(jwtService);
     }
 }
+

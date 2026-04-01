@@ -23,10 +23,26 @@ public class SchemaMigrationRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        ensureRestaurantColumns();
         ensureTablePublicIdColumn();
         ensureDishColumns();
         ensureCustomerOrderColumns();
         ensureDishCooccurrenceTable();
+        ensureEventLogTable();
+    }
+
+    private void ensureRestaurantColumns() {
+        if (!tableExists("ristoratore")) {
+            return;
+        }
+
+        if (!columnExists("ristoratore", "created_at")) {
+            jdbcTemplate.execute("ALTER TABLE ristoratore ADD COLUMN created_at timestamp(6) without time zone");
+            log.info("Added missing column ristoratore.created_at");
+        }
+
+        jdbcTemplate.execute("UPDATE ristoratore SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL");
+        jdbcTemplate.execute("ALTER TABLE ristoratore ALTER COLUMN created_at SET NOT NULL");
     }
 
     private void ensureTablePublicIdColumn() {
@@ -102,6 +118,28 @@ public class SchemaMigrationRunner implements ApplicationRunner {
             jdbcTemplate.execute("ALTER TABLE customer_orders ADD COLUMN note_cucina varchar(1000)");
             log.info("Added missing column customer_orders.note_cucina");
         }
+
+        if (!columnExists("customer_orders", "totale")) {
+            jdbcTemplate.execute("ALTER TABLE customer_orders ADD COLUMN totale numeric(10,2)");
+            log.info("Added missing column customer_orders.totale");
+        }
+
+        jdbcTemplate.execute(
+                """
+                UPDATE customer_orders o
+                SET totale = totals.total_amount
+                FROM (
+                    SELECT ordine_id,
+                           COALESCE(SUM(prezzo_unitario * quantity), 0)::numeric(10,2) AS total_amount
+                    FROM customer_order_items
+                    GROUP BY ordine_id
+                ) totals
+                WHERE o.id = totals.ordine_id
+                  AND (o.totale IS NULL OR o.totale <> totals.total_amount)
+                """
+        );
+        jdbcTemplate.execute("UPDATE customer_orders SET totale = 0 WHERE totale IS NULL");
+        jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN totale SET NOT NULL");
     }
 
     private void ensureDishCooccurrenceTable() {
@@ -120,6 +158,29 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         );
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_dish_cooccurrence_base ON dish_cooccurrence(base_dish_id)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_dish_cooccurrence_suggested ON dish_cooccurrence(suggested_dish_id)");
+    }
+
+
+    private void ensureEventLogTable() {
+        jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto");
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS event_log (
+                    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                    event_type varchar(64) NOT NULL,
+                    user_id varchar(128),
+                    session_id varchar(128),
+                    restaurant_id bigint,
+                    table_id integer,
+                    dish_id bigint,
+                    metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+                    created_at timestamp(6) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+        );
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_event_log_restaurant_created_at ON event_log(restaurant_id, created_at)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_event_log_type_created_at ON event_log(event_type, created_at)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_event_log_session_id ON event_log(session_id)");
     }
 
     private boolean tableExists(String tableName) {
@@ -166,3 +227,7 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         return builder.toString();
     }
 }
+
+
+
+

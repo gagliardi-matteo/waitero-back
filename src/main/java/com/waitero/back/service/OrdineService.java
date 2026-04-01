@@ -30,6 +30,7 @@ public class OrdineService {
     private final CustomerDraftService customerDraftService;
     private final TavoloService tavoloService;
     private final UpsellService upsellService;
+    private final EventTrackingService eventTrackingService;
 
     @Transactional
     public OrdineDTO createOrAppend(CustomerOrderRequest request) {
@@ -109,9 +110,8 @@ public class OrdineService {
             throw new RuntimeException("Ordine non accessibile");
         }
 
-        BigDecimal totale = calculateTotal(ordine);
-        BigDecimal giaPagato = calculatePaid(ordine);
-        BigDecimal residuo = totale.subtract(giaPagato);
+        OrderFinancialSnapshot initialFinancials = refreshFinancials(ordine);
+        BigDecimal residuo = initialFinancials.remainingAmount();
         if (residuo.compareTo(BigDecimal.ZERO) <= 0) {
             ordine.setStatus(OrderStatus.PAGATO);
             if (ordine.getPaidAt() == null) {
@@ -155,8 +155,8 @@ public class OrdineService {
         ordine.setPaymentMode(paymentMode);
         ordine.setUpdatedAt(LocalDateTime.now());
 
-        BigDecimal nuovoPagato = giaPagato.add(amount);
-        if (nuovoPagato.compareTo(totale) >= 0) {
+        OrderFinancialSnapshot updatedFinancials = refreshFinancials(ordine);
+        if (updatedFinancials.remainingAmount().compareTo(BigDecimal.ZERO) <= 0) {
             ordine.setStatus(OrderStatus.PAGATO);
             ordine.setPaidAt(LocalDateTime.now());
         } else {
@@ -195,9 +195,7 @@ public class OrdineService {
                 })
                 .toList();
 
-        BigDecimal totale = calculateTotal(ordine);
-        BigDecimal paidAmount = calculatePaid(ordine);
-        BigDecimal remainingAmount = totale.subtract(paidAmount).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+        OrderFinancialSnapshot financials = readFinancials(ordine);
 
         List<OrdinePaymentDTO> payments = ordine.getPayments().stream()
                 .map(payment -> OrdinePaymentDTO.builder()
@@ -229,9 +227,9 @@ public class OrdineService {
                 .paidAt(ordine.getPaidAt())
                 .createdAt(ordine.getCreatedAt())
                 .updatedAt(ordine.getUpdatedAt())
-                .totale(totale)
-                .paidAmount(paidAmount)
-                .remainingAmount(remainingAmount)
+                .totale(financials.total())
+                .paidAmount(financials.paidAmount())
+                .remainingAmount(financials.remainingAmount())
                 .items(items)
                 .payments(payments)
                 .build();
@@ -264,6 +262,7 @@ public class OrdineService {
                         .status(OrderStatus.APERTO)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
+                        .totale(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP))
                         .items(new ArrayList<>())
                         .payments(new ArrayList<>())
                         .build());
@@ -322,9 +321,22 @@ public class OrdineService {
             tavoloService.clearRegisteredDevices(saved.getRistoratore().getId(), saved.getTableId());
         }
         customerDraftService.clearDraft(saved.getRistoratore().getId(), saved.getTableId());
+        eventTrackingService.trackOrderSubmitted(
+                saved.getRistoratore().getId(),
+                saved.getTableId(),
+                buildOrderSessionId(saved.getRistoratore().getId(), saved.getTableId()),
+                saved.getRistoratore().getId(),
+                saved.getId(),
+                saved.getTotale(),
+                saved.getItems().stream().mapToInt(OrdineItem::getQuantity).sum()
+        );
         orderStreamService.publishOrderUpdate(saved.getRistoratore().getId(), "ORDER_UPDATED", saved.getId(), saved.getStatus().name());
         orderStreamService.publishCustomerTableUpdate(saved.getRistoratore().getId(), saved.getTableId(), "ORDER_UPDATED");
         return toDTO(saved);
+    }
+
+    private String buildOrderSessionId(Long restaurantId, Integer tableId) {
+        return restaurantId + ":" + tableId;
     }
 
     private String mergeKitchenNotes(String existingNotes, String incomingNotes) {
@@ -357,6 +369,7 @@ public class OrdineService {
 
         return normalized.length() > 1000 ? normalized.substring(0, 1000) : normalized;
     }
+
     private Long getAuthenticatedRestaurantId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
     }
@@ -388,10 +401,10 @@ public class OrdineService {
             throw new RuntimeException("Importo superiore al residuo");
         }
 
-        return request.getAmount().setScale(2, RoundingMode.HALF_UP);
+        return normalizeCurrency(request.getAmount());
     }
 
-    private BigDecimal calculateTotal(Ordine ordine) {
+    private BigDecimal calculateTotalFromItems(Ordine ordine) {
         return ordine.getItems().stream()
                 .map(item -> item.getPrezzoUnitario().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
@@ -403,6 +416,25 @@ public class OrdineService {
                 .map(OrdinePagamento::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private OrderFinancialSnapshot refreshFinancials(Ordine ordine) {
+        BigDecimal total = calculateTotalFromItems(ordine);
+        ordine.setTotale(total);
+        BigDecimal paidAmount = calculatePaid(ordine);
+        BigDecimal remainingAmount = total.subtract(paidAmount).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+        return new OrderFinancialSnapshot(total, paidAmount, remainingAmount);
+    }
+
+    private OrderFinancialSnapshot readFinancials(Ordine ordine) {
+        BigDecimal total = ordine.getTotale() != null ? normalizeCurrency(ordine.getTotale()) : calculateTotalFromItems(ordine);
+        BigDecimal paidAmount = calculatePaid(ordine);
+        BigDecimal remainingAmount = total.subtract(paidAmount).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+        return new OrderFinancialSnapshot(total, paidAmount, remainingAmount);
+    }
+
+    private BigDecimal normalizeCurrency(BigDecimal amount) {
+        return amount.setScale(2, RoundingMode.HALF_UP);
     }
 
     private Map<Long, Integer> calculatePaidQuantitiesByItem(Ordine ordine) {
@@ -455,8 +487,9 @@ public class OrdineService {
     }
 
     private void reconcileOrderStatusAfterMutation(Ordine ordine) {
-        BigDecimal totale = calculateTotal(ordine);
-        BigDecimal pagato = calculatePaid(ordine);
+        OrderFinancialSnapshot financials = refreshFinancials(ordine);
+        BigDecimal totale = financials.total();
+        BigDecimal pagato = financials.paidAmount();
 
         if (pagato.compareTo(BigDecimal.ZERO) <= 0) {
             ordine.setStatus(OrderStatus.APERTO);
@@ -474,6 +507,9 @@ public class OrdineService {
 
         ordine.setStatus(OrderStatus.PARZIALMENTE_PAGATO);
         ordine.setPaidAt(null);
+    }
+
+    private record OrderFinancialSnapshot(BigDecimal total, BigDecimal paidAmount, BigDecimal remainingAmount) {
     }
 }
 
