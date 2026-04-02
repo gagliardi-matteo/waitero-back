@@ -5,10 +5,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 @Component
@@ -184,22 +188,23 @@ public class SchemaMigrationRunner implements ApplicationRunner {
     }
 
     private boolean tableExists(String tableName) {
-        Integer count = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.tables where table_schema = 'public' and table_name = ?",
-                Integer.class,
-                tableName
-        );
-        return count != null && count > 0;
+        return jdbcTemplate.execute((ConnectionCallback<Boolean>) connection -> {
+            DatabaseMetaData metaData = connection.getMetaData();
+            return objectExists(metaData.getTables(null, "public", tableName, new String[]{"TABLE"}));
+        });
     }
 
     private boolean columnExists(String tableName, String columnName) {
-        Integer count = jdbcTemplate.queryForObject(
-                "select count(*) from information_schema.columns where table_schema = 'public' and table_name = ? and column_name = ?",
-                Integer.class,
-                tableName,
-                columnName
-        );
-        return count != null && count > 0;
+        return jdbcTemplate.execute((ConnectionCallback<Boolean>) connection -> {
+            DatabaseMetaData metaData = connection.getMetaData();
+            return objectExists(metaData.getColumns(null, "public", tableName, columnName));
+        });
+    }
+
+    private boolean objectExists(ResultSet resultSet) throws SQLException {
+        try (resultSet) {
+            return resultSet.next();
+        }
     }
 
     private String generateUniqueTablePublicId() {
@@ -227,7 +232,4 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         return builder.toString();
     }
 }
-
-
-
 
