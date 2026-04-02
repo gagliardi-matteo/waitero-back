@@ -30,3 +30,7 @@ openai:
   api:
     key: ${OPENAI_API_KEY:}
   model: ${OPENAI_MODEL:gpt-4.1-mini}
+
+app:
+  cors:
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:https://waitero-front.vercel.app,http://localhost:4200,http://localhost:5173,http://localhost:3000}

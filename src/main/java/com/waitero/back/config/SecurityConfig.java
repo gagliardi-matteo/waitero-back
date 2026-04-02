@@ -2,6 +2,7 @@ package com.waitero.back.config;
 
 import com.waitero.back.service.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,8 +13,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -21,6 +22,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtService jwtService;
+
+    @Value("${app.cors.allowed-origin-patterns}")
+    private String allowedOriginPatterns;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -44,18 +48,21 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
-                "https://waitero-front.vercel.app",
-                "http://localhost:4200",
-                "http://localhost:5173",
-                "http://localhost:3000"
-        ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setAllowedOriginPatterns(parseAllowedOriginPatterns());
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private List<String> parseAllowedOriginPatterns() {
+        return List.of(allowedOriginPatterns.split(","))
+                .stream()
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .collect(Collectors.toList());
     }
 
     @Bean
@@ -63,4 +70,3 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(jwtService);
     }
 }
-
