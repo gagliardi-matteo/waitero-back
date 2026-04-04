@@ -10,7 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:create}
     show-sql: true
     properties:
       hibernate:
@@ -22,7 +22,7 @@ spring:
 
 jwt:
   secret: MySuperSecretKeyForJwt12345678901234567890123456789012
-  expiration-ms: 900000
+  expiration-ms: 21600000
   refresh-expiration-ms: 604800000
 
 qr:
