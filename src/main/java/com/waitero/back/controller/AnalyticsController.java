@@ -1,5 +1,6 @@
 package com.waitero.back.controller;
 
+import com.waitero.back.dto.AnalyticsDashboardDTO;
 import com.waitero.back.dto.AnalyticsOverviewDTO;
 import com.waitero.back.dto.BenchmarkInsightDTO;
 import com.waitero.back.dto.DishPerformanceDTO;
@@ -24,6 +25,12 @@ public class AnalyticsController {
     public AnalyticsOverviewDTO getOverview() {
         Long restaurantId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
         return analyticsService.getOverview(restaurantId);
+    }
+
+    @GetMapping("/dashboard")
+    public AnalyticsDashboardDTO getDashboard() {
+        Long restaurantId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        return analyticsService.getDashboard(restaurantId);
     }
 
     @GetMapping("/dish-performance")

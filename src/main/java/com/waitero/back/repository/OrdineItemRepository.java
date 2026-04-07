@@ -9,6 +9,15 @@ import java.util.List;
 
 public interface OrdineItemRepository extends JpaRepository<OrdineItem, Long> {
 
+    @Query("""
+            select i
+            from OrdineItem i
+            join fetch i.piatto
+            where i.ordine.id in :orderIds
+            order by i.ordine.id asc, i.createdAt asc, i.id asc
+            """)
+    List<OrdineItem> findAllByOrderIdsOrdered(@Param("orderIds") List<Long> orderIds);
+
     @Query(value = """
             select oi.piatto_id as dishId,
                    count(distinct oi.ordine_id) as orderCount

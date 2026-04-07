@@ -1,5 +1,6 @@
 package com.waitero.back.service;
 
+import com.waitero.back.dto.AnalyticsDashboardDTO;
 import com.waitero.back.dto.AnalyticsOverviewDTO;
 import com.waitero.back.dto.BenchmarkInsightDTO;
 import com.waitero.back.dto.DishPerformanceDTO;
@@ -20,6 +21,18 @@ import java.util.stream.Collectors;
 public class AnalyticsService {
 
     private final JdbcTemplate jdbcTemplate;
+
+    public AnalyticsDashboardDTO getDashboard(Long restaurantId) {
+        AnalyticsOverviewDTO overview = getOverview(restaurantId);
+        List<DishPerformanceDTO> dishPerformance = getDishPerformance(restaurantId);
+
+        return AnalyticsDashboardDTO.builder()
+                .overview(overview)
+                .dishPerformance(dishPerformance)
+                .revenueOpportunities(buildRevenueOpportunities(dishPerformance))
+                .benchmarkInsights(buildBenchmarkInsights(dishPerformance))
+                .build();
+    }
 
     public AnalyticsOverviewDTO getOverview(Long restaurantId) {
         long views = readCount(
@@ -117,7 +130,14 @@ public class AnalyticsService {
     }
 
     public List<RevenueOpportunityDTO> getRevenueOpportunities(Long restaurantId) {
-        List<DishPerformanceDTO> dishes = getDishPerformance(restaurantId);
+        return buildRevenueOpportunities(getDishPerformance(restaurantId));
+    }
+
+    public List<BenchmarkInsightDTO> getBenchmarkInsights(Long restaurantId) {
+        return buildBenchmarkInsights(getDishPerformance(restaurantId));
+    }
+
+    private List<RevenueOpportunityDTO> buildRevenueOpportunities(List<DishPerformanceDTO> dishes) {
         BigDecimal totalPrice = dishes.stream()
                 .map(DishPerformanceDTO::price)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -133,8 +153,7 @@ public class AnalyticsService {
                 .toList();
     }
 
-    public List<BenchmarkInsightDTO> getBenchmarkInsights(Long restaurantId) {
-        List<DishPerformanceDTO> dishes = getDishPerformance(restaurantId);
+    private List<BenchmarkInsightDTO> buildBenchmarkInsights(List<DishPerformanceDTO> dishes) {
         if (dishes.isEmpty()) {
             return List.of();
         }

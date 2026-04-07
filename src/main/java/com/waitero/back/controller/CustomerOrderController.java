@@ -2,6 +2,7 @@ package com.waitero.back.controller;
 
 import com.waitero.back.dto.CustomerDraftDTO;
 import com.waitero.back.dto.CustomerDraftMutationRequest;
+import com.waitero.back.dto.CustomerOrderStateDTO;
 import com.waitero.back.dto.CustomerOrderRequest;
 import com.waitero.back.dto.OrdineDTO;
 import com.waitero.back.service.CustomerDraftService;
@@ -57,6 +58,20 @@ public class CustomerOrderController {
     @PostMapping("/draft/items")
     public ResponseEntity<CustomerDraftDTO> mutateDraft(@RequestBody CustomerDraftMutationRequest request) {
         return ResponseEntity.ok(customerDraftService.mutate(request));
+    }
+
+    @GetMapping("/state")
+    public ResponseEntity<CustomerOrderStateDTO> getState(
+            @RequestParam String token,
+            @RequestParam String restaurantId,
+            @RequestParam Integer tableId,
+            @RequestParam String deviceId,
+            @RequestParam(required = false) String fingerprint
+    ) {
+        return ResponseEntity.ok(CustomerOrderStateDTO.builder()
+                .currentOrder(ordineService.getCurrentCustomerOrder(token, restaurantId, tableId, deviceId, fingerprint).orElse(null))
+                .draft(customerDraftService.getDraft(token, restaurantId, tableId, deviceId, fingerprint))
+                .build());
     }
 
     @GetMapping("/stream")

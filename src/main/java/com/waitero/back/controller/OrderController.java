@@ -1,5 +1,7 @@
 package com.waitero.back.controller;
 
+import com.waitero.back.dto.OrderSummaryDTO;
+import com.waitero.back.dto.OrderSummaryPageDTO;
 import com.waitero.back.dto.OrdineDTO;
 import com.waitero.back.dto.PaymentRequest;
 import com.waitero.back.dto.RestaurantOrderRequest;
@@ -27,12 +29,32 @@ public class OrderController {
         return ResponseEntity.ok(ordineService.getActiveOrdersForAuthenticatedRestaurant());
     }
 
+    @GetMapping("/active-summary")
+    public ResponseEntity<List<OrderSummaryDTO>> getActiveOrderSummaries() {
+        return ResponseEntity.ok(ordineService.getActiveOrderSummariesForAuthenticatedRestaurant());
+    }
+
     @GetMapping("/history")
     public ResponseEntity<List<OrdineDTO>> getHistoryOrders() {
         return ResponseEntity.ok(ordineService.getHistoryOrdersForAuthenticatedRestaurant());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/all-summary")
+    public ResponseEntity<List<OrderSummaryDTO>> getAllOrderSummaries() {
+        return ResponseEntity.ok(ordineService.getAllOrderSummariesForAuthenticatedRestaurant());
+    }
+
+    @GetMapping({"/summary/page", "/all-summary-page"})
+    public ResponseEntity<OrderSummaryPageDTO> getPagedOrderSummaries(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String status
+    ) {
+        return ResponseEntity.ok(ordineService.getPagedOrderSummariesForAuthenticatedRestaurant(status, q, page, size));
+    }
+
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<OrdineDTO> getOrderById(@PathVariable Long id) {
         return ResponseEntity.ok(ordineService.getOrderForAuthenticatedRestaurant(id));
     }

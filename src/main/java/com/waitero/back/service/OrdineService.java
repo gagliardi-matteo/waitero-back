@@ -2,10 +2,15 @@ package com.waitero.back.service;
 
 import com.waitero.back.dto.*;
 import com.waitero.back.entity.*;
+import com.waitero.back.repository.OrdineItemRepository;
+import com.waitero.back.repository.OrdinePagamentoAllocazioneRepository;
+import com.waitero.back.repository.OrdinePagamentoRepository;
 import com.waitero.back.repository.OrdineRepository;
 import com.waitero.back.repository.PiattoRepository;
 import com.waitero.back.repository.RistoratoreRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +28,9 @@ public class OrdineService {
     private static final List<OrderStatus> HISTORY_STATUSES = List.of(OrderStatus.PAGATO, OrderStatus.ANNULLATO);
 
     private final OrdineRepository ordineRepository;
+    private final OrdineItemRepository ordineItemRepository;
+    private final OrdinePagamentoRepository ordinePagamentoRepository;
+    private final OrdinePagamentoAllocazioneRepository ordinePagamentoAllocazioneRepository;
     private final RistoratoreRepository ristoratoreRepository;
     private final PiattoRepository piattoRepository;
     private final JwtService jwtService;
@@ -66,25 +74,64 @@ public class OrdineService {
         tavoloService.requireActiveTable(rid, tableId);
         return ordineRepository
                 .findFirstByRistoratoreIdAndTableIdAndStatusInOrderByCreatedAtDesc(rid, tableId, ACTIVE_STATUSES)
-                .map(this::toDTO);
+                .map(this::toOptimizedDTO);
     }
 
     @Transactional(readOnly = true)
     public List<OrdineDTO> getActiveOrdersForAuthenticatedRestaurant() {
         Long ristoratoreId = getAuthenticatedRestaurantId();
-        return ordineRepository.findAllByRistoratoreIdAndStatusInOrderByCreatedAtDesc(ristoratoreId, ACTIVE_STATUSES)
-                .stream()
-                .map(this::toDTO)
+        return mapOrdersToDTOs(ordineRepository.findAllByRistoratoreIdAndStatusInOrderByCreatedAtDesc(ristoratoreId, ACTIVE_STATUSES));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderSummaryDTO> getActiveOrderSummariesForAuthenticatedRestaurant() {
+        Long ristoratoreId = getAuthenticatedRestaurantId();
+        return ordineRepository.findOrderSummariesByRestaurantAndStatuses(
+                        ristoratoreId,
+                        ACTIVE_STATUSES.stream().map(Enum::name).toList()
+                ).stream()
+                .map(this::toSummaryDTO)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<OrdineDTO> getHistoryOrdersForAuthenticatedRestaurant() {
         Long ristoratoreId = getAuthenticatedRestaurantId();
-        return ordineRepository.findAllByRistoratoreIdAndStatusInOrderByCreatedAtDesc(ristoratoreId, HISTORY_STATUSES)
-                .stream()
-                .map(this::toDTO)
+        return mapOrdersToDTOs(ordineRepository.findAllByRistoratoreIdAndStatusInOrderByCreatedAtDesc(ristoratoreId, HISTORY_STATUSES));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderSummaryDTO> getAllOrderSummariesForAuthenticatedRestaurant() {
+        Long ristoratoreId = getAuthenticatedRestaurantId();
+        return ordineRepository.findAllOrderSummariesByRestaurant(ristoratoreId).stream()
+                .map(this::toSummaryDTO)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public OrderSummaryPageDTO getPagedOrderSummariesForAuthenticatedRestaurant(String status, String search, int page, int size) {
+        Long ristoratoreId = getAuthenticatedRestaurantId();
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = Math.max(10, Math.min(size, 100));
+        String normalizedStatus = normalizeSummaryStatus(status);
+        String normalizedSearch = normalizeSummarySearch(search);
+
+        Page<com.waitero.back.repository.OrderSummaryProjection> result = ordineRepository.findPagedOrderSummariesByRestaurant(
+                ristoratoreId,
+                normalizedStatus,
+                normalizedSearch,
+                PageRequest.of(normalizedPage, normalizedSize)
+        );
+
+        return OrderSummaryPageDTO.builder()
+                .items(result.getContent().stream().map(this::toSummaryDTO).toList())
+                .page(result.getNumber())
+                .size(result.getSize())
+                .totalItems(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .hasNext(result.hasNext())
+                .hasPrevious(result.hasPrevious())
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -97,7 +144,7 @@ public class OrdineService {
             throw new RuntimeException("Ordine non accessibile");
         }
 
-        return toDTO(ordine);
+        return toOptimizedDTO(ordine);
     }
 
     @Transactional
@@ -233,6 +280,170 @@ public class OrdineService {
                 .items(items)
                 .payments(payments)
                 .build();
+    }
+
+    private OrdineDTO toOptimizedDTO(Ordine ordine) {
+        return mapOrdersToDTOs(List.of(ordine)).stream()
+                .findFirst()
+                .orElseGet(() -> toDTO(ordine));
+    }
+
+    private List<OrdineDTO> mapOrdersToDTOs(List<Ordine> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> orderIds = orders.stream()
+                .map(Ordine::getId)
+                .toList();
+
+        List<OrdineItem> items = ordineItemRepository.findAllByOrderIdsOrdered(orderIds);
+        Map<Long, List<OrdineItem>> itemsByOrderId = new LinkedHashMap<>();
+        Map<Long, OrdineItem> itemById = new HashMap<>();
+        for (OrdineItem item : items) {
+            itemsByOrderId.computeIfAbsent(item.getOrdine().getId(), ignored -> new ArrayList<>()).add(item);
+            itemById.put(item.getId(), item);
+        }
+
+        List<OrdinePagamento> payments = ordinePagamentoRepository.findAllByOrderIdsOrdered(orderIds);
+        Map<Long, List<OrdinePagamento>> paymentsByOrderId = new LinkedHashMap<>();
+        List<Long> paymentIds = new ArrayList<>();
+        for (OrdinePagamento payment : payments) {
+            paymentsByOrderId.computeIfAbsent(payment.getOrdine().getId(), ignored -> new ArrayList<>()).add(payment);
+            paymentIds.add(payment.getId());
+        }
+
+        Map<Long, List<OrdinePagamentoAllocazione>> allocationsByPaymentId = new LinkedHashMap<>();
+        if (!paymentIds.isEmpty()) {
+            for (OrdinePagamentoAllocazione allocation : ordinePagamentoAllocazioneRepository.findAllByPaymentIdsOrdered(paymentIds)) {
+                allocationsByPaymentId.computeIfAbsent(allocation.getPayment().getId(), ignored -> new ArrayList<>()).add(allocation);
+            }
+        }
+
+        List<OrdineDTO> result = new ArrayList<>(orders.size());
+        for (Ordine order : orders) {
+            List<OrdineItem> orderItems = itemsByOrderId.getOrDefault(order.getId(), List.of());
+            List<OrdinePagamento> orderPayments = paymentsByOrderId.getOrDefault(order.getId(), List.of());
+            result.add(buildOptimizedDTO(order, orderItems, orderPayments, allocationsByPaymentId, itemById));
+        }
+        return result;
+    }
+
+    private OrdineDTO buildOptimizedDTO(
+            Ordine ordine,
+            List<OrdineItem> items,
+            List<OrdinePagamento> payments,
+            Map<Long, List<OrdinePagamentoAllocazione>> allocationsByPaymentId,
+            Map<Long, OrdineItem> itemById
+    ) {
+        Map<Long, Integer> paidQuantityByItem = new HashMap<>();
+        for (OrdinePagamento payment : payments) {
+            for (OrdinePagamentoAllocazione allocation : allocationsByPaymentId.getOrDefault(payment.getId(), List.of())) {
+                Long orderItemId = allocation.getOrderItem().getId();
+                paidQuantityByItem.put(orderItemId, paidQuantityByItem.getOrDefault(orderItemId, 0) + allocation.getQuantity());
+            }
+        }
+
+        List<OrdineItemDTO> itemDtos = items.stream()
+                .map(item -> {
+                    int paidQuantity = paidQuantityByItem.getOrDefault(item.getId(), 0);
+                    int remainingQuantity = Math.max(item.getQuantity() - paidQuantity, 0);
+                    return OrdineItemDTO.builder()
+                            .id(item.getId())
+                            .dishId(item.getPiatto().getId())
+                            .nome(item.getNome())
+                            .prezzoUnitario(item.getPrezzoUnitario())
+                            .quantita(item.getQuantity())
+                            .paidQuantity(paidQuantity)
+                            .remainingQuantity(remainingQuantity)
+                            .subtotale(item.getPrezzoUnitario().multiply(BigDecimal.valueOf(item.getQuantity())))
+                            .imageUrl(item.getImageUrl())
+                            .build();
+                })
+                .toList();
+
+        BigDecimal paidAmount = payments.stream()
+                .map(OrdinePagamento::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal total = ordine.getTotale() != null ? normalizeCurrency(ordine.getTotale()) : items.stream()
+                .map(item -> item.getPrezzoUnitario().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal remainingAmount = total.subtract(paidAmount).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+
+        List<OrdinePaymentDTO> paymentDtos = payments.stream()
+                .map(payment -> OrdinePaymentDTO.builder()
+                        .id(payment.getId())
+                        .amount(payment.getAmount())
+                        .paymentMode(payment.getPaymentMode())
+                        .participantName(payment.getParticipantName())
+                        .createdAt(payment.getCreatedAt())
+                        .allocations(allocationsByPaymentId.getOrDefault(payment.getId(), List.of()).stream()
+                                .map(allocation -> {
+                                    OrdineItem orderItem = itemById.get(allocation.getOrderItem().getId());
+                                    String itemName = orderItem != null ? orderItem.getNome() : allocation.getOrderItem().getNome();
+                                    return OrdinePaymentAllocationDTO.builder()
+                                            .id(allocation.getId())
+                                            .orderItemId(allocation.getOrderItem().getId())
+                                            .itemName(itemName)
+                                            .quantity(allocation.getQuantity())
+                                            .unitPrice(allocation.getUnitPrice())
+                                            .subtotal(allocation.getUnitPrice().multiply(BigDecimal.valueOf(allocation.getQuantity())))
+                                            .build();
+                                })
+                                .toList())
+                        .build())
+                .toList();
+
+        return OrdineDTO.builder()
+                .id(ordine.getId())
+                .restaurantId(ordine.getRistoratore().getId())
+                .tableId(ordine.getTableId())
+                .status(ordine.getStatus().name())
+                .paymentMode(ordine.getPaymentMode())
+                .noteCucina(ordine.getNoteCucina())
+                .paidAt(ordine.getPaidAt())
+                .createdAt(ordine.getCreatedAt())
+                .updatedAt(ordine.getUpdatedAt())
+                .totale(total)
+                .paidAmount(paidAmount)
+                .remainingAmount(remainingAmount)
+                .items(itemDtos)
+                .payments(paymentDtos)
+                .build();
+    }
+
+    private OrderSummaryDTO toSummaryDTO(com.waitero.back.repository.OrderSummaryProjection projection) {
+        return OrderSummaryDTO.builder()
+                .id(projection.getId())
+                .tableId(projection.getTableId())
+                .status(projection.getStatus())
+                .paidAt(projection.getPaidAt())
+                .createdAt(projection.getCreatedAt())
+                .updatedAt(projection.getUpdatedAt())
+                .totale(projection.getTotale() != null ? normalizeCurrency(projection.getTotale()) : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP))
+                .itemCount(projection.getItemCount() != null ? projection.getItemCount() : 0)
+                .build();
+    }
+
+    private String normalizeSummaryStatus(String status) {
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
+            return "";
+        }
+        try {
+            return OrderStatus.valueOf(status.trim().toUpperCase()).name();
+        } catch (IllegalArgumentException ex) {
+            throw new RuntimeException("Stato ordine non valido");
+        }
+    }
+
+    private String normalizeSummarySearch(String search) {
+        if (search == null) {
+            return "";
+        }
+        String normalized = search.trim();
+        return normalized.isEmpty() ? "" : normalized;
     }
 
     private void validateCustomerRequest(CustomerOrderRequest request) {

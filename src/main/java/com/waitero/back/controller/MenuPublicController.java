@@ -31,9 +31,8 @@ public class MenuPublicController {
     @GetMapping("/menu/piatti/{id}")
     public List<PiattoDTO> getPiatti(@PathVariable Long id) {
         Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(id);
-        return menuService.getPublicPiattiByRistoratore(id)
+        return menuService.toDTOList(menuService.getPublicPiattiByRistoratore(id))
                 .stream()
-                .map(menuService::toDTO)
                 .map(dto -> enrichWithSignal(dto, signals.get(dto.getId())))
                 .toList();
     }
@@ -49,9 +48,8 @@ public class MenuPublicController {
     @GetMapping("/upsell/{dishId}")
     public List<PiattoDTO> getUpsellSuggestions(@PathVariable Long dishId, @RequestParam Long restaurantId) {
         Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(restaurantId);
-        return upsellService.getUpsellSuggestions(dishId, restaurantId)
+        return menuService.toDTOList(upsellService.getUpsellSuggestions(dishId, restaurantId))
                 .stream()
-                .map(menuService::toDTO)
                 .map(dto -> enrichWithSignal(dto, signals.get(dto.getId())))
                 .toList();
     }
@@ -59,9 +57,8 @@ public class MenuPublicController {
     @GetMapping("/upsell/cart-suggestions")
     public List<PiattoDTO> getCartUpsellSuggestions(@RequestParam Long restaurantId, @RequestParam List<Long> dishIds) {
         Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(restaurantId);
-        return upsellService.getCartUpsellSuggestions(dishIds, restaurantId)
+        return menuService.toDTOList(upsellService.getCartUpsellSuggestions(dishIds, restaurantId))
                 .stream()
-                .map(menuService::toDTO)
                 .map(dto -> enrichWithSignal(dto, signals.get(dto.getId())))
                 .toList();
     }

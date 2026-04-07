@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface PiattoIngredienteRistoratoreRepository extends JpaRepository<PiattoIngredienteRistoratore, Long> {
     List<PiattoIngredienteRistoratore> findAllByPiattoIdOrderByIngredienteNomeAsc(Long piattoId);
+    List<PiattoIngredienteRistoratore> findAllByPiattoIdInOrderByPiattoIdAscIngredienteNomeAsc(List<Long> piattoIds);
     void deleteAllByPiattoId(Long piattoId);
 }

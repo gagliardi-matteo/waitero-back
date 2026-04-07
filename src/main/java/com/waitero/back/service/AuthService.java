@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -39,15 +38,15 @@ public class AuthService {
         String name = (String) payload.get("name");
 
         Ristoratore user = ristoratoreRepository.findByProviderId(sub)
-                .orElseGet(() -> ristoratoreRepository.save(
-                        Ristoratore.builder()
-                                .email(email)
-                                .nome(name)
-                                .provider("GOOGLE")
-                                .providerId(sub)
-                                .createdAt(LocalDateTime.now())
-                                .build()
-                ));
+                .or(() -> ristoratoreRepository.findByEmail(email).map(existing -> {
+                    existing.setProvider("GOOGLE");
+                    existing.setProviderId(sub);
+                    if (name != null && !name.isBlank()) {
+                        existing.setNome(name);
+                    }
+                    return ristoratoreRepository.save(existing);
+                }))
+                .orElseThrow(() -> new RuntimeException("Account Google non autorizzato per il backoffice"));
 
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);

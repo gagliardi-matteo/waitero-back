@@ -33,10 +33,7 @@ public class MenuController {
 
     @GetMapping("/piatti")
     public List<PiattoDTO> getPiatti() {
-        return menuService.getPiatti()
-                .stream()
-                .map(menuService::toDTO)
-                .toList();
+        return menuService.toDTOList(menuService.getPiatti());
     }
 
     @GetMapping("/piatto/{id}")
@@ -112,10 +109,7 @@ public class MenuController {
 
     @GetMapping("/piattiRistoratore/{id}")
     public List<PiattoDTO> getPiattiByRistoratore(@PathVariable Long id) {
-        return menuService.getPiattiByRistoratore(id)
-                .stream()
-                .map(menuService::toDTO)
-                .toList();
+        return menuService.toDTOList(menuService.getPiattiByRistoratore(id));
     }
 }
 

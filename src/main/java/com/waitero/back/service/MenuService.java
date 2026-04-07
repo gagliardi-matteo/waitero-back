@@ -26,9 +26,11 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,15 +55,15 @@ public class MenuService {
 
     public List<Piatto> getPiatti() {
         Ristoratore ristoratore = getRistoratoreAutenticato();
-        return piattoRepo.findAllByRistoratoreId(ristoratore.getId());
+        return piattoRepo.findAllByRistoratoreIdWithCanonical(ristoratore.getId());
     }
 
     public Piatto getPiattoById(Long id) {
-        return piattoRepo.findById(id).orElseThrow(() -> new RuntimeException("Piatto non trovato"));
+        return piattoRepo.findByIdWithCanonical(id).orElseThrow(() -> new RuntimeException("Piatto non trovato"));
     }
 
     public List<Piatto> getPiattiByRistoratore(Long id) {
-        return piattoRepo.findAllByRistoratoreId(id);
+        return piattoRepo.findAllByRistoratoreIdWithCanonical(id);
     }
 
     public List<Piatto> getPublicPiattiByRistoratore(Long id) {
@@ -125,6 +127,27 @@ public class MenuService {
     }
 
     public PiattoDTO toDTO(Piatto piatto) {
+        return toDTO(piatto, Map.of(), Collections.emptyMap());
+    }
+
+    public List<PiattoDTO> toDTOList(List<Piatto> piatti) {
+        if (piatti == null || piatti.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, List<IngredienteDTO>> structuredIngredientsByDishId = loadStructuredIngredientsByDishId(piatti);
+        Map<Long, List<IngredienteDTO>> canonicalIngredientsByCanonicalDishId = loadCanonicalIngredientsByCanonicalDishId(piatti);
+
+        return piatti.stream()
+                .map(piatto -> toDTO(piatto, structuredIngredientsByDishId, canonicalIngredientsByCanonicalDishId))
+                .toList();
+    }
+
+    private PiattoDTO toDTO(
+            Piatto piatto,
+            Map<Long, List<IngredienteDTO>> structuredIngredientsByDishId,
+            Map<Long, List<IngredienteDTO>> canonicalIngredientsByCanonicalDishId
+    ) {
         PiattoDTO dto = new PiattoDTO();
         dto.setId(piatto.getId());
         dto.setNome(piatto.getNome());
@@ -133,7 +156,11 @@ public class MenuService {
         dto.setDisponibile(piatto.getDisponibile());
         dto.setCategoria(String.valueOf(piatto.getCategoria()));
         dto.setImageUrl(piatto.getImageUrl());
-        List<IngredienteDTO> structuredIngredients = resolveStructuredIngredients(piatto);
+        List<IngredienteDTO> structuredIngredients = resolveStructuredIngredients(
+                piatto,
+                structuredIngredientsByDishId,
+                canonicalIngredientsByCanonicalDishId
+        );
         dto.setIngredienti(buildIngredientDisplay(structuredIngredients, piatto.getIngredienti()));
         dto.setIngredientiStrutturati(structuredIngredients);
         dto.setAllergeni(piatto.getAllergeni());
@@ -205,6 +232,74 @@ public class MenuService {
 
         piattoIngredienteRistoratoreRepository.saveAll(relations);
         piatto.setIngredienti(buildIngredientDisplay(toIngredienteDTOs(relations), ingredientiText));
+    }
+
+    private List<IngredienteDTO> resolveStructuredIngredients(
+            Piatto piatto,
+            Map<Long, List<IngredienteDTO>> structuredIngredientsByDishId,
+            Map<Long, List<IngredienteDTO>> canonicalIngredientsByCanonicalDishId
+    ) {
+        List<IngredienteDTO> preloadedRestaurantIngredients = structuredIngredientsByDishId.get(piatto.getId());
+        if (preloadedRestaurantIngredients != null && !preloadedRestaurantIngredients.isEmpty()) {
+            return preloadedRestaurantIngredients;
+        }
+
+        if (structuredIngredientsByDishId.isEmpty() && canonicalIngredientsByCanonicalDishId.isEmpty()) {
+            List<PiattoIngredienteRistoratore> restaurantRelations = piattoIngredienteRistoratoreRepository.findAllByPiattoIdOrderByIngredienteNomeAsc(piatto.getId());
+            if (!restaurantRelations.isEmpty()) {
+                return toIngredienteDTOs(restaurantRelations);
+            }
+            return canonicalIngredientsForDish(piatto.getPiattoCanonicale());
+        }
+
+        Long canonicalDishId = piatto.getPiattoCanonicale() != null ? piatto.getPiattoCanonicale().getId() : null;
+        if (canonicalDishId == null) {
+            return List.of();
+        }
+        return canonicalIngredientsByCanonicalDishId.getOrDefault(canonicalDishId, List.of());
+    }
+
+    private Map<Long, List<IngredienteDTO>> loadStructuredIngredientsByDishId(List<Piatto> piatti) {
+        List<Long> dishIds = piatti.stream()
+                .map(Piatto::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (dishIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return piattoIngredienteRistoratoreRepository.findAllByPiattoIdInOrderByPiattoIdAscIngredienteNomeAsc(dishIds)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        relation -> relation.getPiatto().getId(),
+                        LinkedHashMap::new,
+                        Collectors.mapping(relation -> IngredienteDTO.builder()
+                                .nome(relation.getIngrediente().getNome())
+                                .categoria(relation.getIngrediente().getCategoria())
+                                .grammi(relation.getGrammi())
+                                .build(), Collectors.toList())
+                ));
+    }
+
+    private Map<Long, List<IngredienteDTO>> loadCanonicalIngredientsByCanonicalDishId(List<Piatto> piatti) {
+        List<Long> canonicalDishIds = piatti.stream()
+                .map(Piatto::getPiattoCanonicale)
+                .filter(Objects::nonNull)
+                .map(PiattoCanonicale::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (canonicalDishIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return piattoIngredienteRepository.findAllByPiattoCanonicaleIdInOrderByPiattoCanonicaleIdAscIngredienteNomeAsc(canonicalDishIds)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        relation -> relation.getPiattoCanonicale().getId(),
+                        LinkedHashMap::new,
+                        Collectors.mapping(this::toIngredienteDTO, Collectors.toList())
+                ));
     }
 
     private List<IngredienteDTO> resolveStructuredIngredients(Piatto piatto) {
