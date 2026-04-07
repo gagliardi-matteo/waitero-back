@@ -81,8 +81,6 @@ public class UpsellService {
             return List.of();
         }
 
-        ensureAggregatesUpToDate(restaurantId);
-
         Map<Long, Piatto> availableDishById = loadAvailableDishMap(restaurantId);
         Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(restaurantId);
         Set<Long> excludedDishIds = baseDishes.stream()

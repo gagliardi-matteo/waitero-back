@@ -1,6 +1,7 @@
 package com.waitero.back.service;
 
 import com.waitero.back.dto.OrderEventDTO;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -109,6 +110,12 @@ public class OrderStreamService {
         broadcastRestaurantEvent(restaurantId, "orders-updated", payload);
     }
 
+    @Scheduled(fixedDelay = 20000)
+    public void publishHeartbeats() {
+        broadcastHeartbeats(emittersByRestaurant);
+        broadcastHeartbeats(emittersByCustomerTable);
+    }
+
     private void broadcastRestaurantEvent(Long restaurantId, String eventName, OrderEventDTO payload) {
         List<SseEmitter> emitters = emittersByRestaurant.get(restaurantId);
         if (emitters == null) {
@@ -148,6 +155,24 @@ public class OrderStreamService {
         emitters.remove(emitter);
         if (emitters.isEmpty()) {
             emittersByCustomerTable.remove(key);
+        }
+    }
+
+    private <K> void broadcastHeartbeats(Map<K, CopyOnWriteArrayList<SseEmitter>> emittersByKey) {
+        for (Map.Entry<K, CopyOnWriteArrayList<SseEmitter>> entry : emittersByKey.entrySet()) {
+            K key = entry.getKey();
+            for (SseEmitter emitter : entry.getValue()) {
+                try {
+                    emitter.send(SseEmitter.event().name("heartbeat").data("keepalive"));
+                } catch (IOException e) {
+                    emitter.complete();
+                    if (key instanceof Long restaurantId) {
+                        removeRestaurantEmitter(restaurantId, emitter);
+                    } else if (key instanceof String customerKey) {
+                        removeCustomerEmitter(customerKey, emitter);
+                    }
+                }
+            }
         }
     }
 }
