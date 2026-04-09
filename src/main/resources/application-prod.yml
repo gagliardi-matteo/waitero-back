@@ -37,3 +37,7 @@ google:
 app:
   cors:
     allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:https://waitero-front.vercel.app}
+  master:
+    bootstrap-emails: ${MASTER_BOOTSTRAP_EMAILS:}
+  local-login:
+    restaurant-bootstrap-password: ${LOCAL_RESTAURATEUR_BOOTSTRAP_PASSWORD:}

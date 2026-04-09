@@ -14,7 +14,7 @@ import com.waitero.back.repository.TavoloRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.waitero.back.security.AccessContextService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +42,7 @@ public class TavoloService {
     private final TableDeviceRepository tableDeviceRepository;
     private final ServiceHourRepository serviceHourRepository;
     private final JwtService jwtService;
+    private final AccessContextService accessContextService;
 
     @Transactional
     public List<TavoloDTO> getAuthenticatedRestaurantTables() {
@@ -299,6 +300,10 @@ public class TavoloService {
     }
 
     private Long getAuthenticatedRestaurantId() {
-        return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        return accessContextService.getActingRestaurantIdOrThrow();
     }
 }
+
+
+
+

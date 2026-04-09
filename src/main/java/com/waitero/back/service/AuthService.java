@@ -1,15 +1,18 @@
 package com.waitero.back.service;
 
-
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
-import com.waitero.back.dto.AuthResponse;
-import com.waitero.back.entity.Ristoratore;
-import com.waitero.back.repository.RistoratoreRepository;
-import lombok.RequiredArgsConstructor;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.waitero.back.dto.AuthResponse;
+import com.waitero.back.dto.LocalLoginRequest;
+import com.waitero.back.entity.BackofficeRole;
+import com.waitero.back.entity.BackofficeUser;
+import com.waitero.back.repository.BackofficeUserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -19,9 +22,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final RistoratoreRepository ristoratoreRepository;
-    private final JwtService jwtService;
+    private static final String GOOGLE_PROVIDER = "GOOGLE";
+    private static final String LOCAL_PROVIDER = "LOCAL";
 
+    private final BackofficeUserRepository backofficeUserRepository;
+    private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
+
+    @Transactional
     public AuthResponse loginWithGoogle(String idTokenString) throws GeneralSecurityException, IOException {
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(), JacksonFactory.getDefaultInstance()
@@ -30,28 +38,42 @@ public class AuthService {
                 .build();
 
         GoogleIdToken idToken = verifier.verify(idTokenString);
-        if (idToken == null) throw new RuntimeException("ID Token non valido");
+        if (idToken == null) {
+            throw new RuntimeException("ID Token non valido");
+        }
 
         GoogleIdToken.Payload payload = idToken.getPayload();
         String email = payload.getEmail();
         String sub = payload.getSubject();
         String name = (String) payload.get("name");
 
-        Ristoratore user = ristoratoreRepository.findByProviderId(sub)
-                .or(() -> ristoratoreRepository.findByEmail(email).map(existing -> {
-                    existing.setProvider("GOOGLE");
-                    existing.setProviderId(sub);
-                    if (name != null && !name.isBlank()) {
-                        existing.setNome(name);
-                    }
-                    return ristoratoreRepository.save(existing);
-                }))
-                .orElseThrow(() -> new RuntimeException("Account Google non autorizzato per il backoffice"));
+        BackofficeUser user = backofficeUserRepository.findByProviderId(sub)
+                .or(() -> backofficeUserRepository.findFirstByEmailIgnoreCaseAndRole(email, BackofficeRole.MASTER))
+                .or(() -> backofficeUserRepository.findFirstByEmailIgnoreCaseAndRole(email, BackofficeRole.RISTORATORE))
+                .orElseThrow(() -> new RuntimeException("Account Google non autorizzato"));
 
-        String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
+        linkGoogleAccountIfNeeded(user, sub, name);
+        return buildResponse(user);
+    }
 
-        return new AuthResponse(accessToken, refreshToken);
+    public AuthResponse loginWithLocalCredentials(LocalLoginRequest request) {
+        if (request == null || request.getEmail() == null || request.getPassword() == null) {
+            throw new RuntimeException("Email e password obbligatorie");
+        }
+
+        String email = request.getEmail().trim();
+        BackofficeUser user = backofficeUserRepository.findFirstByEmailIgnoreCaseAndProviderIgnoreCase(email, LOCAL_PROVIDER)
+                .orElseThrow(() -> new RuntimeException("Credenziali non valide"));
+
+        if (user.getPasswordHash() == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Credenziali non valide");
+        }
+
+        if (user.getRole() != BackofficeRole.RISTORATORE || user.getRestaurantId() == null) {
+            throw new RuntimeException("Account locale non associato a un ristorante");
+        }
+
+        return buildResponse(user);
     }
 
     public AuthResponse refreshAccessToken(String refreshToken) {
@@ -60,13 +82,30 @@ public class AuthService {
         }
 
         Long userId = jwtService.extractUserId(refreshToken);
-
-        Ristoratore user = ristoratoreRepository.findById(userId)
+        BackofficeUser user = backofficeUserRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utente non trovato"));
 
-        String newAccessToken = jwtService.generateAccessToken(user);
-        String newRefreshToken = jwtService.generateRefreshToken(user); // opzionale
+        return buildResponse(user);
+    }
 
-        return new AuthResponse(newAccessToken, newRefreshToken);
+    private void linkGoogleAccountIfNeeded(BackofficeUser user, String providerId, String name) {
+        if (user.getProviderId() != null && !user.getProviderId().equals(providerId)) {
+            throw new RuntimeException("Account Google non autorizzato");
+        }
+
+        user.setProviderId(providerId);
+        if (user.getRole() == BackofficeRole.MASTER) {
+            user.setProvider(GOOGLE_PROVIDER);
+        }
+        if (name != null && !name.isBlank()) {
+            user.setNome(name);
+        }
+        backofficeUserRepository.save(user);
+    }
+
+    private AuthResponse buildResponse(BackofficeUser user) {
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+        return new AuthResponse(accessToken, refreshToken);
     }
 }

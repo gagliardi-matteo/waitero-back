@@ -11,7 +11,7 @@ import com.waitero.back.entity.ServiceHour;
 import com.waitero.back.repository.RistoratoreRepository;
 import com.waitero.back.repository.ServiceHourRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.waitero.back.security.AccessContextService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +28,7 @@ public class RistoratoreService {
     private final RistoratoreRepository ristoratoreRepository;
     private final ServiceHourRepository serviceHourRepository;
     private final GeocodingService geocodingService;
+    private final AccessContextService accessContextService;
 
     public Optional<Ristoratore> findRistoratoreById(Long id) {
         return ristoratoreRepository.findById(id);
@@ -158,8 +159,12 @@ public class RistoratoreService {
     }
 
     private Ristoratore getAuthenticatedRestaurant() {
-        Long restaurantId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        Long restaurantId = accessContextService.getActingRestaurantIdOrThrow();
         return ristoratoreRepository.findById(restaurantId)
                 .orElseThrow(() -> new RuntimeException("Ristorante non trovato"));
     }
 }
+
+
+
+

@@ -1,13 +1,14 @@
 package com.waitero.back.service;
 
-import com.waitero.back.entity.Ristoratore;
+import com.waitero.back.entity.BackofficeRole;
+import com.waitero.back.entity.BackofficeUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.oauth2.jwt.JwtException;
+import io.jsonwebtoken.JwtException;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -41,24 +42,35 @@ public class JwtService {
         qrKey = Keys.hmacShaKeyFor(qrSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAccessToken(Ristoratore ristoratore) {
-        return Jwts.builder()
-                .setSubject(ristoratore.getId().toString())
-                .claim("email", ristoratore.getEmail())
-                .claim("provider", ristoratore.getProvider())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(key)
-                .compact();
+    public String generateAccessToken(BackofficeUser user) {
+        return buildBackofficeToken(user, null, jwtExpirationMs);
     }
 
-    public String generateRefreshToken(Ristoratore ristoratore) {
-        return Jwts.builder()
-                .setSubject(ristoratore.getId().toString())
+    public String generateRefreshToken(BackofficeUser user) {
+        return buildBackofficeToken(user, null, refreshExpirationMs);
+    }
+
+    public String generateImpersonationAccessToken(BackofficeUser user, Long actingRestaurantId) {
+        return buildBackofficeToken(user, actingRestaurantId, jwtExpirationMs);
+    }
+
+    private String buildBackofficeToken(BackofficeUser user, Long actingRestaurantId, long expirationMs) {
+        var builder = Jwts.builder()
+                .setSubject(user.getId().toString())
+                .claim("email", user.getEmail())
+                .claim("provider", user.getProvider())
+                .claim("role", user.getRole().name())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + refreshExpirationMs))
-                .signWith(key)
-                .compact();
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs));
+
+        if (user.getRestaurantId() != null) {
+            builder.claim("restaurantId", user.getRestaurantId());
+        }
+        if (actingRestaurantId != null) {
+            builder.claim("actingRestaurantId", actingRestaurantId);
+        }
+
+        return builder.signWith(key).compact();
     }
 
     public boolean validateToken(String token) {
@@ -71,9 +83,39 @@ public class JwtService {
     }
 
     public Long extractUserId(String token) {
-        Claims claims = Jwts.parserBuilder().setSigningKey(key).build()
+        return Long.valueOf(parseClaims(token).getSubject());
+    }
+
+    public BackofficeRole extractRole(String token) {
+        String role = parseClaims(token).get("role", String.class);
+        return BackofficeRole.valueOf(role);
+    }
+
+    public Long extractRestaurantId(String token) {
+        return extractLongClaim(parseClaims(token), "restaurantId");
+    }
+
+    public Long extractActingRestaurantId(String token) {
+        return extractLongClaim(parseClaims(token), "actingRestaurantId");
+    }
+
+    private Long extractLongClaim(Claims claims, String claimName) {
+        Object value = claims.get(claimName);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Integer integerValue) {
+            return integerValue.longValue();
+        }
+        if (value instanceof Long longValue) {
+            return longValue;
+        }
+        return Long.parseLong(value.toString());
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build()
                 .parseClaimsJws(token).getBody();
-        return Long.valueOf(claims.getSubject());
     }
 
     public String generateQrToken(Long restaurantId, Integer tableId) {
@@ -121,3 +163,4 @@ public class JwtService {
         }
     }
 }
+

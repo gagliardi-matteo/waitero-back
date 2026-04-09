@@ -16,8 +16,8 @@ import com.waitero.back.repository.PiattoIngredienteRistoratoreRepository;
 import com.waitero.back.repository.PiattoRepository;
 import com.waitero.back.repository.RistoratoreRepository;
 import com.waitero.back.repository.ServiceHourRepository;
+import com.waitero.back.security.AccessContextService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,9 +46,10 @@ public class MenuService {
     private final PiattoIngredienteRepository piattoIngredienteRepository;
     private final PiattoIngredienteRistoratoreRepository piattoIngredienteRistoratoreRepository;
     private final IngredienteRepository ingredienteRepository;
+    private final AccessContextService accessContextService;
 
     private Ristoratore getRistoratoreAutenticato() {
-        Long id = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        Long id = accessContextService.getActingRestaurantIdOrThrow();
         return ristoratoreRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ristoratore non trovato"));
     }
@@ -59,7 +60,10 @@ public class MenuService {
     }
 
     public Piatto getPiattoById(Long id) {
-        return piattoRepo.findByIdWithCanonical(id).orElseThrow(() -> new RuntimeException("Piatto non trovato"));
+        Long restaurantId = accessContextService.getActingRestaurantIdOrThrow();
+        return piattoRepo.findByIdAndRistoratoreId(id, restaurantId)
+                .flatMap(ignored -> piattoRepo.findByIdWithCanonical(id))
+                .orElseThrow(() -> new RuntimeException("Piatto non trovato"));
     }
 
     public List<Piatto> getPiattiByRistoratore(Long id) {
@@ -72,7 +76,8 @@ public class MenuService {
     }
 
     public Piatto getPublicPiattoById(Long id) {
-        Piatto piatto = getPiattoById(id);
+        Piatto piatto = piattoRepo.findByIdWithCanonical(id)
+                .orElseThrow(() -> new RuntimeException("Piatto non trovato"));
         ensureRestaurantServiceOpen(piatto.getRistoratore().getId());
         return piatto;
     }
@@ -103,7 +108,8 @@ public class MenuService {
 
     @Transactional
     public Piatto aggiornaPiatto(Long id, Piatto nuovo) {
-        Piatto esistente = piattoRepo.findById(id)
+        Long restaurantId = accessContextService.getActingRestaurantIdOrThrow();
+        Piatto esistente = piattoRepo.findByIdAndRistoratoreId(id, restaurantId)
                 .orElseThrow(() -> new RuntimeException("Piatto non trovato"));
         esistente.setNome(nuovo.getNome());
         esistente.setDescrizione(nuovo.getDescrizione());
@@ -374,3 +380,7 @@ public class MenuService {
         return value != null && !value.trim().isEmpty();
     }
 }
+
+
+
+

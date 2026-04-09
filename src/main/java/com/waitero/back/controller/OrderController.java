@@ -10,7 +10,13 @@ import com.waitero.back.service.OrderStreamService;
 import com.waitero.back.service.OrdineService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
@@ -75,7 +81,13 @@ public class OrderController {
             throw new RuntimeException("Token non valido");
         }
 
-        Long restaurantId = jwtService.extractUserId(token);
+        Long restaurantId = jwtService.extractActingRestaurantId(token);
+        if (restaurantId == null) {
+            restaurantId = jwtService.extractRestaurantId(token);
+        }
+        if (restaurantId == null) {
+            throw new RuntimeException("Nessun ristorante operativo disponibile nel token");
+        }
         return orderStreamService.subscribe(restaurantId);
     }
 }

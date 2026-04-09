@@ -1,5 +1,7 @@
 package com.waitero.back.config;
 
+import com.waitero.back.entity.BackofficeRole;
+import com.waitero.back.security.BackofficePrincipal;
 import com.waitero.back.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -7,13 +9,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -28,11 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        if (path.startsWith("/api/auth/")
-                || path.startsWith("/api/image/")
-                || path.startsWith("/api/customer/")
-                || path.equals("/api/table/access")
-                || path.equals("/api/orders/stream")) {
+        if (isPublicPath(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -50,14 +48,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         Long userId = jwtService.extractUserId(token);
-        User user = new User(userId.toString(), "", Collections.emptyList());
+        BackofficeRole role = jwtService.extractRole(token);
+        Long restaurantId = jwtService.extractRestaurantId(token);
+        Long actingRestaurantId = jwtService.extractActingRestaurantId(token);
 
+        BackofficePrincipal principal = new BackofficePrincipal(userId, role, restaurantId, actingRestaurantId);
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                user, null, user.getAuthorities());
+                principal,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
+        );
 
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isPublicPath(String path) {
+        return path.equals("/api/auth/login")
+                || path.equals("/api/auth/local-login")
+                || path.equals("/api/auth/refresh-token")
+                || path.startsWith("/api/image/")
+                || path.startsWith("/api/customer/")
+                || path.equals("/api/table/access")
+                || path.equals("/api/orders/stream");
     }
 }

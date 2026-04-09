@@ -11,7 +11,7 @@ import com.waitero.back.repository.RistoratoreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.waitero.back.security.AccessContextService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +39,7 @@ public class OrdineService {
     private final TavoloService tavoloService;
     private final UpsellService upsellService;
     private final EventTrackingService eventTrackingService;
+    private final AccessContextService accessContextService;
 
     @Transactional
     public OrdineDTO createOrAppend(CustomerOrderRequest request) {
@@ -582,7 +583,7 @@ public class OrdineService {
     }
 
     private Long getAuthenticatedRestaurantId() {
-        return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        return accessContextService.getActingRestaurantIdOrThrow();
     }
 
     private String normalizePaymentMode(PaymentRequest request) {
@@ -723,6 +724,10 @@ public class OrdineService {
     private record OrderFinancialSnapshot(BigDecimal total, BigDecimal paidAmount, BigDecimal remainingAmount) {
     }
 }
+
+
+
+
 
 
 

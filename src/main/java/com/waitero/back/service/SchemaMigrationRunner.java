@@ -3,16 +3,19 @@ package com.waitero.back.service;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -24,15 +27,24 @@ public class SchemaMigrationRunner implements ApplicationRunner {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final JdbcTemplate jdbcTemplate;
+    private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.master.bootstrap-emails:}")
+    private String masterBootstrapEmails;
+
+    @Value("${app.local-login.restaurant-bootstrap-password:}")
+    private String restaurantBootstrapPassword;
 
     @Override
     public void run(ApplicationArguments args) {
         ensureRestaurantColumns();
+        ensureBackofficeUserTable();
         ensureTablePublicIdColumn();
         ensureDishColumns();
         ensureCustomerOrderColumns();
         ensureDishCooccurrenceTable();
         ensureEventLogTable();
+        ensureAdminAuditLogTable();
     }
 
     private void ensureRestaurantColumns() {
@@ -47,6 +59,128 @@ public class SchemaMigrationRunner implements ApplicationRunner {
 
         jdbcTemplate.execute("UPDATE ristoratore SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL");
         jdbcTemplate.execute("ALTER TABLE ristoratore ALTER COLUMN created_at SET NOT NULL");
+    }
+
+    private void ensureBackofficeUserTable() {
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS backoffice_user (
+                    id BIGSERIAL PRIMARY KEY,
+                    email varchar(255) NOT NULL,
+                    nome varchar(255) NOT NULL,
+                    provider varchar(255),
+                    provider_id varchar(255),
+                    password_hash varchar(255),
+                    role varchar(32) NOT NULL,
+                    restaurant_id bigint,
+                    created_at timestamp(6) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+        );
+
+        if (!columnExists("backoffice_user", "password_hash")) {
+            jdbcTemplate.execute("ALTER TABLE backoffice_user ADD COLUMN password_hash varchar(255)");
+            log.info("Added missing column backoffice_user.password_hash");
+        }
+
+        jdbcTemplate.execute("ALTER TABLE backoffice_user DROP CONSTRAINT IF EXISTS ukkognhgnn51dkma6qdtpb9gv2d");
+        jdbcTemplate.execute("ALTER TABLE backoffice_user DROP CONSTRAINT IF EXISTS backoffice_user_email_key");
+        jdbcTemplate.execute("DROP INDEX IF EXISTS idx_backoffice_user_email_unique");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_backoffice_user_email ON backoffice_user(lower(email))");
+        jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_backoffice_user_provider_id_unique ON backoffice_user(provider_id) WHERE provider_id IS NOT NULL");
+        jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_backoffice_user_local_email_unique ON backoffice_user(lower(email)) WHERE upper(provider) = 'LOCAL'");
+        jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_backoffice_user_master_email_unique ON backoffice_user(lower(email)) WHERE role = 'MASTER'");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_backoffice_user_role ON backoffice_user(role)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_backoffice_user_restaurant_id ON backoffice_user(restaurant_id)");
+
+        if (tableExists("ristoratore")) {
+            jdbcTemplate.execute(
+                    """
+                    INSERT INTO backoffice_user (email, nome, provider, role, restaurant_id, created_at)
+                    SELECT r.email,
+                           COALESCE(NULLIF(btrim(r.nome), ''), r.email),
+                           'LOCAL',
+                           'RISTORATORE',
+                           r.id,
+                           COALESCE(r.created_at, CURRENT_TIMESTAMP)
+                    FROM ristoratore r
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM backoffice_user bu
+                        WHERE lower(bu.email) = lower(r.email)
+                          AND upper(COALESCE(bu.provider, '')) = 'LOCAL'
+                    )
+                    """
+            );
+
+            jdbcTemplate.execute(
+                    """
+                    DELETE FROM backoffice_user bu
+                    WHERE bu.role = 'RISTORATORE'
+                      AND upper(COALESCE(bu.provider, '')) <> 'LOCAL'
+                      AND EXISTS (
+                          SELECT 1
+                          FROM backoffice_user local_bu
+                          WHERE lower(local_bu.email) = lower(bu.email)
+                            AND local_bu.role = 'RISTORATORE'
+                            AND upper(COALESCE(local_bu.provider, '')) = 'LOCAL'
+                      )
+                    """
+            );
+
+            jdbcTemplate.execute(
+                    """
+                    UPDATE backoffice_user bu
+                    SET restaurant_id = r.id,
+                        role = 'RISTORATORE',
+                        provider = 'LOCAL',
+                        provider_id = NULL,
+                        nome = COALESCE(NULLIF(btrim(r.nome), ''), bu.nome)
+                    FROM ristoratore r
+                    WHERE lower(bu.email) = lower(r.email)
+                      AND bu.role = 'RISTORATORE'
+                      AND upper(COALESCE(bu.provider, '')) = 'LOCAL'
+                    """
+            );
+
+            seedRestaurantLocalPasswords();
+        }
+
+        for (String email : parseBootstrapEmails()) {
+            jdbcTemplate.update(
+                    """
+                    INSERT INTO backoffice_user (email, nome, provider, role, created_at)
+                    SELECT ?, ?, 'GOOGLE', 'MASTER', CURRENT_TIMESTAMP
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM backoffice_user WHERE lower(email) = lower(?) AND role = 'MASTER'
+                    )
+                    """,
+                    email,
+                    email,
+                    email
+            );
+        }
+    }
+
+    private void seedRestaurantLocalPasswords() {
+        if (restaurantBootstrapPassword == null || restaurantBootstrapPassword.isBlank()) {
+            return;
+        }
+
+        String passwordHash = passwordEncoder.encode(restaurantBootstrapPassword);
+        int updated = jdbcTemplate.update(
+                """
+                UPDATE backoffice_user
+                SET password_hash = ?
+                WHERE role = 'RISTORATORE'
+                  AND upper(COALESCE(provider, '')) = 'LOCAL'
+                  AND password_hash IS NULL
+                """,
+                passwordHash
+        );
+        if (updated > 0) {
+            log.info("Seeded local password for {} restaurant users", updated);
+        }
     }
 
     private void ensureTablePublicIdColumn() {
@@ -164,7 +298,6 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_dish_cooccurrence_suggested ON dish_cooccurrence(suggested_dish_id)");
     }
 
-
     private void ensureEventLogTable() {
         jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto");
         jdbcTemplate.execute(
@@ -185,6 +318,38 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_event_log_restaurant_created_at ON event_log(restaurant_id, created_at)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_event_log_type_created_at ON event_log(event_type, created_at)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_event_log_session_id ON event_log(session_id)");
+    }
+
+
+    private void ensureAdminAuditLogTable() {
+        jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto");
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS admin_audit_log (
+                    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                    master_user_id bigint NOT NULL,
+                    restaurant_id bigint,
+                    action varchar(96) NOT NULL,
+                    entity_type varchar(64),
+                    entity_id varchar(128),
+                    metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+                    created_at timestamp(6) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+        );
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_admin_audit_log_restaurant_created_at ON admin_audit_log(restaurant_id, created_at DESC)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_admin_audit_log_master_created_at ON admin_audit_log(master_user_id, created_at DESC)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_admin_audit_log_action_created_at ON admin_audit_log(action, created_at DESC)");
+    }
+    private List<String> parseBootstrapEmails() {
+        if (masterBootstrapEmails == null || masterBootstrapEmails.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(masterBootstrapEmails.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .distinct()
+                .toList();
     }
 
     private boolean tableExists(String tableName) {
@@ -232,4 +397,7 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         return builder.toString();
     }
 }
+
+
+
 
