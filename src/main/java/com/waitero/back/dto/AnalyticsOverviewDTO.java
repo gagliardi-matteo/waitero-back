@@ -9,8 +9,13 @@ public record AnalyticsOverviewDTO(
         long views,
         long orders,
         long sessions,
+        @Deprecated
         BigDecimal conversionRate,
+        @Deprecated
         BigDecimal dropoffRate,
-        BigDecimal averageOrderValue
+        BigDecimal averageOrderValue,
+        long impressions,
+        BigDecimal ctr,
+        BigDecimal revenuePerImpression
 ) {
 }

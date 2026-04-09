@@ -1,0 +1,5 @@
+variant,sessions,orders,revenue,aov,items_per_order,upsell_orders,upsell_rate,conversion_rate,views_per_session,clicks_per_session,errors
+A,150,57,1349.4,23.67,2.3509,11,0.193,0.38,10.12,4.1867,0
+B,187,83,1921.3,23.15,2.2892,15,0.1807,0.4439,9.8877,4.2727,0
+HOLDOUT,45,20,381.0,19.05,1.65,3,0.15,0.4444,9.7333,3.8889,0
+UNKNOWN,168,0,0,0.0,0.0,0,0.0,0.0,0.0,0.0,168

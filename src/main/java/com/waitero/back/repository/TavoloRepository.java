@@ -11,4 +11,5 @@ public interface TavoloRepository extends JpaRepository<Tavolo, Long> {
     Optional<Tavolo> findByRistoratoreIdAndNumero(Long ristoratoreId, Integer numero);
     Optional<Tavolo> findByRistoratoreIdAndNumeroAndAttivoTrue(Long ristoratoreId, Integer numero);
     Optional<Tavolo> findByTablePublicId(String tablePublicId);
+    boolean existsByRistoratoreIdAndNumero(Long ristoratoreId, Integer numero);
 }

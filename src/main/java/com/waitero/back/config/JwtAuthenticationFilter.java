@@ -71,7 +71,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.equals("/api/auth/refresh-token")
                 || path.startsWith("/api/image/")
                 || path.startsWith("/api/customer/")
+                || path.equals("/api/events")
                 || path.equals("/api/table/access")
                 || path.equals("/api/orders/stream");
     }
 }
+

@@ -1,0 +1,91 @@
+day,restaurant_id,restaurant_name,sessions,orders,revenue,aov,items_per_order,upsell_orders,upsell_rate,error_sessions
+2026-04-01,1,Spaghetti In Corso - dinner profile,3,2,77.5,38.75,3.5,0,0.0,0
+2026-04-01,1,Spaghetti In Corso - lunch profile,6,1,14.0,14.0,1.0,0,0.0,3
+2026-04-01,1,Spaghetti In Corso - weekend heavy profile,3,1,1.5,1.5,1.0,0,0.0,0
+2026-04-02,1,Spaghetti In Corso - dinner profile,5,1,26.0,26.0,2.0,1,1.0,3
+2026-04-02,1,Spaghetti In Corso - lunch profile,2,0,0,0.0,0.0,0,0.0,1
+2026-04-02,1,Spaghetti In Corso - weekend heavy profile,5,3,85.0,28.33,3.0,1,0.3333,0
+2026-04-03,1,Spaghetti In Corso - dinner profile,4,1,9.0,9.0,3.0,0,0.0,2
+2026-04-03,1,Spaghetti In Corso - lunch profile,3,0,0,0.0,0.0,0,0.0,0
+2026-04-03,1,Spaghetti In Corso - weekend heavy profile,4,0,0,0.0,0.0,0,0.0,2
+2026-04-04,1,Spaghetti In Corso - dinner profile,16,5,90.0,18.0,2.2,0,0.0,3
+2026-04-04,1,Spaghetti In Corso - lunch profile,8,3,56.5,18.83,2.0,0,0.0,2
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,14,5,139.0,27.8,2.6,1,0.2,3
+2026-04-05,1,Spaghetti In Corso - dinner profile,13,2,15.0,7.5,1.0,0,0.0,0
+2026-04-05,1,Spaghetti In Corso - lunch profile,9,2,43.5,21.75,2.0,0,0.0,4
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,13,4,96.5,24.12,2.0,1,0.25,3
+2026-04-06,1,Spaghetti In Corso - dinner profile,4,1,14.5,14.5,3.0,1,1.0,3
+2026-04-06,1,Spaghetti In Corso - lunch profile,2,0,0,0.0,0.0,0,0.0,1
+2026-04-06,1,Spaghetti In Corso - weekend heavy profile,4,2,67.5,33.75,2.5,0,0.0,1
+2026-04-07,1,Spaghetti In Corso - dinner profile,3,1,26.0,26.0,2.0,1,1.0,0
+2026-04-07,1,Spaghetti In Corso - lunch profile,3,0,0,0.0,0.0,0,0.0,1
+2026-04-07,1,Spaghetti In Corso - weekend heavy profile,3,1,4.5,4.5,1.0,0,0.0,1
+2026-04-08,1,Spaghetti In Corso - dinner profile,4,0,0,0.0,0.0,0,0.0,3
+2026-04-08,1,Spaghetti In Corso - lunch profile,3,1,32.0,32.0,2.0,0,0.0,1
+2026-04-08,1,Spaghetti In Corso - weekend heavy profile,4,0,0,0.0,0.0,0,0.0,2
+2026-04-09,1,Spaghetti In Corso - dinner profile,5,1,6.5,6.5,1.0,0,0.0,1
+2026-04-09,1,Spaghetti In Corso - lunch profile,5,0,0,0.0,0.0,0,0.0,1
+2026-04-09,1,Spaghetti In Corso - weekend heavy profile,3,0,0,0.0,0.0,0,0.0,1
+2026-04-10,1,Spaghetti In Corso - dinner profile,6,3,45.0,15.0,2.0,0,0.0,2
+2026-04-10,1,Spaghetti In Corso - lunch profile,7,2,44.5,22.25,2.0,0,0.0,2
+2026-04-10,1,Spaghetti In Corso - weekend heavy profile,2,0,0,0.0,0.0,0,0.0,1
+2026-04-11,1,Spaghetti In Corso - dinner profile,10,3,68.0,22.67,2.0,2,0.6667,3
+2026-04-11,1,Spaghetti In Corso - lunch profile,11,3,84.5,28.17,2.6667,1,0.3333,1
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,16,8,137.5,17.19,1.375,1,0.125,4
+2026-04-12,1,Spaghetti In Corso - dinner profile,17,4,73.5,18.38,2.0,1,0.25,10
+2026-04-12,1,Spaghetti In Corso - lunch profile,14,1,5.0,5.0,1.0,0,0.0,4
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,13,6,190.0,31.67,3.0,3,0.5,5
+2026-04-13,1,Spaghetti In Corso - dinner profile,4,2,26.0,13.0,1.0,0,0.0,1
+2026-04-13,1,Spaghetti In Corso - lunch profile,4,1,37.0,37.0,3.0,0,0.0,0
+2026-04-13,1,Spaghetti In Corso - weekend heavy profile,3,3,62.0,20.67,2.0,0,0.0,0
+2026-04-14,1,Spaghetti In Corso - dinner profile,6,3,84.0,28.0,2.6667,0,0.0,2
+2026-04-14,1,Spaghetti In Corso - lunch profile,4,0,0,0.0,0.0,0,0.0,2
+2026-04-14,1,Spaghetti In Corso - weekend heavy profile,2,0,0,0.0,0.0,0,0.0,1
+2026-04-15,1,Spaghetti In Corso - dinner profile,7,2,38.0,19.0,2.0,1,0.5,0
+2026-04-15,1,Spaghetti In Corso - lunch profile,2,1,22.5,22.5,2.0,0,0.0,0
+2026-04-15,1,Spaghetti In Corso - weekend heavy profile,5,1,63.0,63.0,5.0,1,1.0,1
+2026-04-16,1,Spaghetti In Corso - dinner profile,6,2,48.0,24.0,1.5,0,0.0,1
+2026-04-16,1,Spaghetti In Corso - lunch profile,3,0,0,0.0,0.0,0,0.0,1
+2026-04-16,1,Spaghetti In Corso - weekend heavy profile,4,2,33.4,16.7,2.5,0,0.0,0
+2026-04-17,1,Spaghetti In Corso - dinner profile,3,1,16.0,16.0,1.0,0,0.0,1
+2026-04-17,1,Spaghetti In Corso - lunch profile,2,1,13.5,13.5,3.0,0,0.0,1
+2026-04-17,1,Spaghetti In Corso - weekend heavy profile,3,0,0,0.0,0.0,0,0.0,3
+2026-04-18,1,Spaghetti In Corso - dinner profile,11,2,80.0,40.0,4.0,0,0.0,4
+2026-04-18,1,Spaghetti In Corso - lunch profile,10,3,57.5,19.17,1.6667,0,0.0,3
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,14,6,126.0,21.0,2.1667,3,0.5,3
+2026-04-19,1,Spaghetti In Corso - dinner profile,11,2,88.0,44.0,3.5,1,0.5,3
+2026-04-19,1,Spaghetti In Corso - lunch profile,14,6,137.0,22.83,2.3333,1,0.1667,2
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,15,2,48.0,24.0,2.5,0,0.0,8
+2026-04-20,1,Spaghetti In Corso - dinner profile,8,3,59.9,19.97,2.3333,1,0.3333,1
+2026-04-20,1,Spaghetti In Corso - lunch profile,2,0,0,0.0,0.0,0,0.0,2
+2026-04-20,1,Spaghetti In Corso - weekend heavy profile,2,0,0,0.0,0.0,0,0.0,1
+2026-04-21,1,Spaghetti In Corso - dinner profile,4,0,0,0.0,0.0,0,0.0,0
+2026-04-21,1,Spaghetti In Corso - lunch profile,4,1,58.0,58.0,8.0,0,0.0,1
+2026-04-21,1,Spaghetti In Corso - weekend heavy profile,2,1,1.5,1.5,1.0,0,0.0,1
+2026-04-22,1,Spaghetti In Corso - dinner profile,4,1,27.0,27.0,2.0,0,0.0,2
+2026-04-22,1,Spaghetti In Corso - lunch profile,4,3,59.0,19.67,2.0,0,0.0,1
+2026-04-22,1,Spaghetti In Corso - weekend heavy profile,2,0,0,0.0,0.0,0,0.0,2
+2026-04-23,1,Spaghetti In Corso - dinner profile,5,0,0,0.0,0.0,0,0.0,2
+2026-04-23,1,Spaghetti In Corso - lunch profile,4,3,53.0,17.67,2.0,1,0.3333,0
+2026-04-23,1,Spaghetti In Corso - weekend heavy profile,3,1,15.5,15.5,3.0,0,0.0,2
+2026-04-24,1,Spaghetti In Corso - dinner profile,9,2,32.5,16.25,1.5,1,0.5,4
+2026-04-24,1,Spaghetti In Corso - lunch profile,5,2,68.0,34.0,2.5,1,0.5,2
+2026-04-24,1,Spaghetti In Corso - weekend heavy profile,6,3,41.5,13.83,1.3333,0,0.0,1
+2026-04-25,1,Spaghetti In Corso - dinner profile,9,2,30.2,15.1,1.5,0,0.0,4
+2026-04-25,1,Spaghetti In Corso - lunch profile,6,1,77.0,77.0,6.0,0,0.0,1
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,14,6,152.0,25.33,2.0,1,0.1667,4
+2026-04-26,1,Spaghetti In Corso - dinner profile,15,4,57.0,14.25,1.25,0,0.0,3
+2026-04-26,1,Spaghetti In Corso - lunch profile,11,3,121.0,40.33,4.0,1,0.3333,5
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,11,4,103.5,25.88,2.25,0,0.0,4
+2026-04-27,1,Spaghetti In Corso - dinner profile,3,1,19.5,19.5,2.0,0,0.0,1
+2026-04-27,1,Spaghetti In Corso - lunch profile,3,1,13.5,13.5,1.0,0,0.0,0
+2026-04-27,1,Spaghetti In Corso - weekend heavy profile,5,2,29.0,14.5,2.0,1,0.5,2
+2026-04-28,1,Spaghetti In Corso - dinner profile,4,1,37.5,37.5,4.0,0,0.0,0
+2026-04-28,1,Spaghetti In Corso - lunch profile,2,0,0,0.0,0.0,0,0.0,0
+2026-04-28,1,Spaghetti In Corso - weekend heavy profile,2,0,0,0.0,0.0,0,0.0,2
+2026-04-29,1,Spaghetti In Corso - dinner profile,3,2,42.5,21.25,2.0,1,0.5,0
+2026-04-29,1,Spaghetti In Corso - lunch profile,3,0,0,0.0,0.0,0,0.0,1
+2026-04-29,1,Spaghetti In Corso - weekend heavy profile,1,1,40.5,40.5,3.0,0,0.0,0
+2026-04-30,1,Spaghetti In Corso - dinner profile,7,2,33.7,16.85,2.0,0,0.0,4
+2026-04-30,1,Spaghetti In Corso - lunch profile,2,2,33.0,16.5,2.5,0,0.0,0
+2026-04-30,1,Spaghetti In Corso - weekend heavy profile,5,1,13.5,13.5,1.0,0,0.0,4

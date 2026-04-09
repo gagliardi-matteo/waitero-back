@@ -42,7 +42,12 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         ensureTablePublicIdColumn();
         ensureDishColumns();
         ensureCustomerOrderColumns();
+        ensureCustomerOrderItemColumns();
         ensureDishCooccurrenceTable();
+        ensureExperimentAssignmentTable();
+        ensureExperimentConfigTable();
+        ensureExperimentModeTable();
+        ensureExperimentDecisionLogTable();
         ensureEventLogTable();
         ensureAdminAuditLogTable();
     }
@@ -278,8 +283,35 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         );
         jdbcTemplate.execute("UPDATE customer_orders SET totale = 0 WHERE totale IS NULL");
         jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN totale SET NOT NULL");
+
+        if (!columnExists("customer_orders", "variant")) {
+            jdbcTemplate.execute("ALTER TABLE customer_orders ADD COLUMN variant varchar(1)");
+            log.info("Added missing column customer_orders.variant");
+        }
+        jdbcTemplate.execute("UPDATE customer_orders SET variant = 'A' WHERE variant IS NULL OR btrim(variant) = ''");
+        jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN variant SET NOT NULL");
+        jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN variant TYPE varchar(20)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_orders_variant ON customer_orders(ristoratore_id, variant)");
     }
 
+    private void ensureCustomerOrderItemColumns() {
+        if (!tableExists("customer_order_items")) {
+            return;
+        }
+
+        if (!columnExists("customer_order_items", "source")) {
+            jdbcTemplate.execute("ALTER TABLE customer_order_items ADD COLUMN source varchar(50)");
+            log.info("Added missing column customer_order_items.source");
+        }
+
+        if (!columnExists("customer_order_items", "source_dish_id")) {
+            jdbcTemplate.execute("ALTER TABLE customer_order_items ADD COLUMN source_dish_id bigint");
+            log.info("Added missing column customer_order_items.source_dish_id");
+        }
+
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_order_items_source ON customer_order_items(source)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_order_items_source_dish_id ON customer_order_items(source_dish_id)");
+    }
     private void ensureDishCooccurrenceTable() {
         jdbcTemplate.execute(
                 """
@@ -297,7 +329,76 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_dish_cooccurrence_base ON dish_cooccurrence(base_dish_id)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_dish_cooccurrence_suggested ON dish_cooccurrence(suggested_dish_id)");
     }
+    private void ensureExperimentAssignmentTable() {
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS experiment_assignment (
+                    session_id VARCHAR(100),
+                    restaurant_id BIGINT,
+                    variant VARCHAR(1),
+                    created_at TIMESTAMP,
+                    PRIMARY KEY (session_id, restaurant_id)
+                )
+                """
+        );
+        jdbcTemplate.execute("UPDATE experiment_assignment SET variant = 'A' WHERE variant IS NULL OR btrim(variant) = ''");
+        jdbcTemplate.execute("UPDATE experiment_assignment SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL");
+        jdbcTemplate.execute("ALTER TABLE experiment_assignment ALTER COLUMN variant TYPE varchar(20)");
+        jdbcTemplate.execute("ALTER TABLE experiment_assignment ALTER COLUMN variant SET NOT NULL");
+        jdbcTemplate.execute("ALTER TABLE experiment_assignment ALTER COLUMN created_at SET NOT NULL");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_experiment_assignment_restaurant_variant ON experiment_assignment(restaurant_id, variant)");
+    }
+    private void ensureExperimentConfigTable() {
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS experiment_config (
+                    restaurant_id BIGINT PRIMARY KEY,
+                    autopilot_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+                    min_sample_size INT NOT NULL DEFAULT 50,
+                    min_uplift_percent DOUBLE PRECISION NOT NULL DEFAULT 5.0,
+                    min_confidence DOUBLE PRECISION NOT NULL DEFAULT 0.95,
+                    holdout_percent INT NOT NULL DEFAULT 10,
+                    updated_at TIMESTAMP NOT NULL
+                )
+                """
+        );
+        jdbcTemplate.execute("ALTER TABLE experiment_config ALTER COLUMN autopilot_enabled SET DEFAULT FALSE");
+        jdbcTemplate.execute("ALTER TABLE experiment_config ALTER COLUMN min_sample_size SET DEFAULT 50");
+        jdbcTemplate.execute("ALTER TABLE experiment_config ALTER COLUMN min_uplift_percent SET DEFAULT 5.0");
+        jdbcTemplate.execute("ALTER TABLE experiment_config ALTER COLUMN min_confidence SET DEFAULT 0.95");
+        jdbcTemplate.execute("ALTER TABLE experiment_config ALTER COLUMN holdout_percent SET DEFAULT 10");
+        jdbcTemplate.execute("UPDATE experiment_config SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL");
+    }
 
+    private void ensureExperimentModeTable() {
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS experiment_mode (
+                    restaurant_id BIGINT PRIMARY KEY,
+                    mode VARCHAR(20)
+                )
+                """
+        );
+        jdbcTemplate.execute("UPDATE experiment_mode SET mode = 'AB' WHERE mode IS NULL OR btrim(mode) = ''");
+        jdbcTemplate.execute("ALTER TABLE experiment_mode ALTER COLUMN mode SET NOT NULL");
+    }
+
+    private void ensureExperimentDecisionLogTable() {
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS experiment_decision_log (
+                    id BIGSERIAL PRIMARY KEY,
+                    restaurant_id BIGINT,
+                    decision VARCHAR(20),
+                    uplift DOUBLE PRECISION,
+                    confidence DOUBLE PRECISION,
+                    created_at TIMESTAMP
+                )
+                """
+        );
+        jdbcTemplate.execute("UPDATE experiment_decision_log SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_experiment_decision_log_restaurant_created_at ON experiment_decision_log(restaurant_id, created_at DESC)");
+    }
     private void ensureEventLogTable() {
         jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto");
         jdbcTemplate.execute(
@@ -397,6 +498,7 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         return builder.toString();
     }
 }
+
 
 
 

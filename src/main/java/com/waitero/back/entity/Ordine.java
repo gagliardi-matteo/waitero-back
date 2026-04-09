@@ -47,6 +47,9 @@ public class Ordine {
     @Column(precision = 10, scale = 2)
     private BigDecimal totale;
 
+    @Column(length = 20)
+    private String variant;
+
     @OneToMany(mappedBy = "ordine", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrdineItem> items = new ArrayList<>();

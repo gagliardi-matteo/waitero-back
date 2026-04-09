@@ -39,13 +39,14 @@ public class OrdineService {
     private final TavoloService tavoloService;
     private final UpsellService upsellService;
     private final EventTrackingService eventTrackingService;
+    private final ExperimentService experimentService;
     private final AccessContextService accessContextService;
 
     @Transactional
     public OrdineDTO createOrAppend(CustomerOrderRequest request) {
         validateCustomerRequest(request);
         Long restaurantId = Long.parseLong(request.getRestaurantId());
-        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), request.getNoteCucina());
+        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), request.getNoteCucina(), request.getSessionId());
     }
 
     @Transactional
@@ -58,7 +59,7 @@ public class OrdineService {
             throw new RuntimeException("Ordine vuoto");
         }
         tavoloService.requireActiveTable(restaurantId, request.getTableId());
-        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), null);
+        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), null, null);
     }
 
     @Transactional(readOnly = true)
@@ -461,10 +462,11 @@ public class OrdineService {
         }
     }
 
-    private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina) {
+    private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina, String sessionId) {
         tavoloService.requireActiveTable(restaurantId, tableId);
         Ristoratore ristoratore = ristoratoreRepository.findById(restaurantId)
                 .orElseThrow(() -> new RuntimeException("Ristorante non trovato"));
+        String variant = experimentService.getVariant(resolveExperimentSessionId(sessionId, restaurantId, tableId), restaurantId);
 
         Ordine ordine = ordineRepository
                 .findFirstByRistoratoreIdAndTableIdAndStatusInOrderByCreatedAtDesc(restaurantId, tableId, ACTIVE_STATUSES)
@@ -478,6 +480,10 @@ public class OrdineService {
                         .items(new ArrayList<>())
                         .payments(new ArrayList<>())
                         .build());
+
+        if (ordine.getVariant() == null || ordine.getVariant().isBlank()) {
+            ordine.setVariant(variant);
+        }
 
         Map<Long, OrdineItem> existingItemsByDishId = new LinkedHashMap<>();
         for (OrdineItem item : ordine.getItems()) {
@@ -503,6 +509,7 @@ public class OrdineService {
             OrdineItem existing = existingItemsByDishId.get(piatto.getId());
             if (existing != null) {
                 existing.setQuantity(existing.getQuantity() + itemRequest.getQuantity());
+                applyAttribution(existing, itemRequest);
                 continue;
             }
 
@@ -513,6 +520,8 @@ public class OrdineService {
                     .prezzoUnitario(piatto.getPrezzo())
                     .quantity(itemRequest.getQuantity())
                     .imageUrl(piatto.getImageUrl())
+                    .source(normalizeSource(itemRequest.getSource()))
+                    .sourceDishId(itemRequest.getSourceDishId())
                     .createdAt(LocalDateTime.now())
                     .build();
 
@@ -536,7 +545,7 @@ public class OrdineService {
         eventTrackingService.trackOrderSubmitted(
                 saved.getRistoratore().getId(),
                 saved.getTableId(),
-                buildOrderSessionId(saved.getRistoratore().getId(), saved.getTableId()),
+                normalizeSessionId(sessionId),
                 saved.getRistoratore().getId(),
                 saved.getId(),
                 saved.getTotale(),
@@ -547,10 +556,42 @@ public class OrdineService {
         return toDTO(saved);
     }
 
-    private String buildOrderSessionId(Long restaurantId, Integer tableId) {
-        return restaurantId + ":" + tableId;
+
+    private void applyAttribution(OrdineItem item, CustomerOrderItemRequest request) {
+        String source = normalizeSource(request.getSource());
+        if (source != null) {
+            item.setSource(source);
+            item.setSourceDishId(request.getSourceDishId());
+        }
     }
 
+    private String normalizeSource(String source) {
+        if (source == null) {
+            return null;
+        }
+        String normalized = source.trim();
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        if (normalized.toLowerCase(Locale.ROOT).contains("upsell")) {
+            return "upsell";
+        }
+        return normalized.length() > 50 ? normalized.substring(0, 50) : normalized;
+    }
+    private String resolveExperimentSessionId(String sessionId, Long restaurantId, Integer tableId) {
+        String normalized = normalizeSessionId(sessionId);
+        if (normalized != null) {
+            return normalized;
+        }
+        return "order-" + restaurantId + "-" + tableId;
+    }
+    private String normalizeSessionId(String sessionId) {
+        if (sessionId == null) {
+            return null;
+        }
+        String normalized = sessionId.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
     private String mergeKitchenNotes(String existingNotes, String incomingNotes) {
         String normalizedIncoming = normalizeKitchenNotes(incomingNotes);
         if (normalizedIncoming == null) {

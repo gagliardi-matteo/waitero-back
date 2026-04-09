@@ -1,0 +1,1391 @@
+simulated_day,restaurant_id,restaurant_name,session_id,persona,table_id,ordered,revenue,item_count,upsell_accepted,viewed_count,clicked_count,error
+2026-04-01,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:09.471+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-01,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-01-1-181d02757a,STANDARD,3,True,14.0,1,False,10,5,
+2026-04-01,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:11.651+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-01,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:13.048+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-01,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-01-4-23fee470d5,STANDARD,2,False,0.0,0,False,7,1,
+2026-04-01,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-01-5-aa17c5a7c0,STANDARD,2,False,0.0,0,False,7,2,
+2026-04-01,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-01-0-df0ceb8869,STANDARD,3,True,25.5,2,False,11,5,
+2026-04-01,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-01-1-3e476a50cc,HIGH_SPENDER,2,True,52.0,5,False,15,9,
+2026-04-01,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-01-2-421c0982ff,LOW_SPENDER,2,False,0.0,0,False,5,3,
+2026-04-01,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-01-0-7b3f83e0e6,LOW_SPENDER,2,False,0.0,0,False,11,1,
+2026-04-01,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-01-1-b354831a5b,STANDARD,3,True,1.5,1,False,16,3,
+2026-04-01,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-01-2-50766b48e6,LOW_SPENDER,3,False,0.0,0,False,8,4,
+2026-04-02,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-02-0-9d62e6aab9,STANDARD,3,False,0.0,0,False,5,1,
+2026-04-02,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:17.853+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-02,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-02-0-5e57568b71,STANDARD,3,True,26.0,2,True,10,5,
+2026-04-02,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:19.547+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-02,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:21.192+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-02,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-02-3-b66bab67ee,HIGH_SPENDER,3,False,0.0,0,False,4,3,
+2026-04-02,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:22.853+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-02,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-02-0-a10c9a3080,LOW_SPENDER,3,True,17.5,3,False,12,4,
+2026-04-02,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-02-1-f497ccc54e,HIGH_SPENDER,3,False,0.0,0,False,4,1,
+2026-04-02,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-02-2-21247ebabe,STANDARD,2,False,0.0,0,False,9,6,
+2026-04-02,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-02-3-c6cec367b1,STANDARD,2,True,17.5,2,False,18,7,
+2026-04-02,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-02-4-16df46fdda,HIGH_SPENDER,3,True,50.0,4,True,10,4,
+2026-04-03,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-03-0-b39761e688,STANDARD,3,False,0.0,0,False,5,1,
+2026-04-03,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-03-1-89684e129e,STANDARD,2,False,0.0,0,False,5,2,
+2026-04-03,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-03-2-ae317d366f,HIGH_SPENDER,2,False,0.0,0,False,15,8,
+2026-04-03,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-03-0-5d21879da1,STANDARD,3,True,9.0,3,False,4,4,
+2026-04-03,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-03-1-43e3d523b9,CHAOTIC,3,False,0.0,0,False,10,6,
+2026-04-03,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:28.407+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-03,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:29.867+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-03,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:31.603+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-03,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:33.079+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-03,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-03-2-bd82ba6e4f,LOW_SPENDER,2,False,0.0,0,False,10,3,
+2026-04-03,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-03-3-5c4f2aae78,STANDARD,2,False,0.0,0,False,18,8,
+2026-04-04,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:35.447+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-04,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-04-1-14ea2b9770,LOW_SPENDER,2,False,0.0,0,False,6,1,
+2026-04-04,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-04-2-a058535206,LOW_SPENDER,2,False,0.0,0,False,4,1,
+2026-04-04,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:37.315+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-04,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-04-4-87579a74b1,STANDARD,2,True,12.0,1,False,4,3,
+2026-04-04,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-04-5-e52025758e,STANDARD,3,True,18.0,1,False,8,4,
+2026-04-04,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-04-6-f87d713d19,STANDARD,2,False,0.0,0,False,5,3,
+2026-04-04,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-04-7-aa2f93d79a,HIGH_SPENDER,3,True,26.5,4,False,16,6,
+2026-04-04,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:40.414+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-1-2b64512aec,CHAOTIC,3,False,0.0,0,False,13,11,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-2-5f69e2392c,STANDARD,2,True,11.0,1,False,5,2,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-3-cdea7e9a34,STANDARD,3,True,26.0,2,False,5,3,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-4-a19f4fb452,LOW_SPENDER,2,False,0.0,0,False,11,5,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-5-8f38a7e12f,LOW_SPENDER,2,False,0.0,0,False,9,1,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-6-3cc467c5b3,STANDARD,3,False,0.0,0,False,17,7,
+2026-04-04,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:44.391+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-8-9c8598efb2,STANDARD,2,False,0.0,0,False,4,2,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-9-458dd6fa7e,STANDARD,2,True,31.0,5,False,14,4,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-10-719218906f,LOW_SPENDER,3,False,0.0,0,False,7,2,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-11-f19d19497a,LOW_SPENDER,3,False,0.0,0,False,5,1,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-12-138a6a9993,HIGH_SPENDER,2,True,11.0,1,False,4,2,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-13-548c1fb5c3,LOW_SPENDER,2,False,0.0,0,False,8,1,
+2026-04-04,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-04-14-263bde29ac,STANDARD,2,True,11.0,2,False,14,5,
+2026-04-04,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:48.061+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-0-12a3d22049,HIGH_SPENDER,2,True,58.0,6,True,17,11,
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-1-164c7e5f15,STANDARD,3,True,7.0,1,False,4,1,
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:50.595+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-3-371b3afc07,STANDARD,2,True,13.0,1,False,6,3,
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-4-b86c36e30f,STANDARD,2,False,0.0,0,False,14,7,
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-5-3001fbaaa3,LOW_SPENDER,2,False,0.0,0,False,4,1,
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-6-df5beab77b,STANDARD,3,True,18.0,2,False,17,7,
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-7-cc29c59945,LOW_SPENDER,2,False,0.0,0,False,5,1,
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:53.960+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:55.595+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-10-ec7cb6cce1,STANDARD,3,False,0.0,0,False,9,4,
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-11-8db41fdb54,HIGH_SPENDER,2,True,43.0,3,False,7,3,
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-12-0fa09153a4,CHAOTIC,2,False,0.0,0,False,5,2,
+2026-04-04,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-04-13-e6d911842b,LOW_SPENDER,3,False,0.0,0,False,8,5,
+2026-04-05,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:58.414+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-05,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:40:59.772+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-05,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-05-2-2098658083,STANDARD,2,True,12.0,2,False,18,3,
+2026-04-05,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:01.948+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-05,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-05-4-4bdc1de89c,STANDARD,2,True,31.5,2,False,17,9,
+2026-04-05,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-05-5-7c57115dad,LOW_SPENDER,2,False,0.0,0,False,8,1,
+2026-04-05,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-05-6-22b71b7347,STANDARD,3,False,0.0,0,False,12,6,
+2026-04-05,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-05-7-660f9d7b6c,STANDARD,2,False,0.0,0,False,6,1,
+2026-04-05,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:05.129+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-0-5f6e2a158c,STANDARD,3,False,0.0,0,False,7,2,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-1-6c986feb18,LOW_SPENDER,3,False,0.0,0,False,6,2,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-2-1a4e8f5d45,CHAOTIC,3,False,0.0,0,False,15,7,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-3-111f82cfb3,CHAOTIC,3,False,0.0,0,False,15,4,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-4-78550c410e,STANDARD,2,False,0.0,0,False,12,5,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-5-e16c2b1913,STANDARD,2,True,13.5,1,False,15,5,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-6-9c0140d8c8,CHAOTIC,3,False,0.0,0,False,9,2,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-7-2aedc2dab0,CHAOTIC,3,False,0.0,0,False,17,8,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-8-4c779e6d6a,HIGH_SPENDER,2,False,0.0,0,False,5,3,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-9-553757127d,STANDARD,2,False,0.0,0,False,14,5,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-10-ec32b5bfe9,STANDARD,3,False,0.0,0,False,7,2,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-11-a79c6a97ca,STANDARD,3,False,0.0,0,False,6,3,
+2026-04-05,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-05-12-6b8f6d1745,LOW_SPENDER,2,True,1.5,1,False,6,2,
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:11.747+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-05-1-2af9762e4e,STANDARD,3,False,0.0,0,False,11,4,
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-05-2-02f77d309a,STANDARD,3,False,0.0,0,False,12,4,
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-05-3-15532a515c,STANDARD,3,False,0.0,0,False,5,2,
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-05-4-6683d8591f,LOW_SPENDER,2,False,0.0,0,False,6,1,
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-05-5-7ff693d0dd,STANDARD,3,True,18.0,1,False,9,4,
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-05-6-8d8759588c,CHAOTIC,2,False,0.0,0,False,15,9,
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-05-7-9b6eb0204c,LOW_SPENDER,3,True,12.5,1,False,5,1,
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:15.801+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:17.443+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-05-10-46787d6066,HIGH_SPENDER,2,True,48.0,5,True,5,3,
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-05-11-a9fea2bf29,CHAOTIC,2,False,0.0,0,False,6,5,
+2026-04-05,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-05-12-d3f22b7ec4,HIGH_SPENDER,2,True,18.0,1,False,4,1,
+2026-04-06,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-06-0-32c3b6e4ca,STANDARD,2,False,0.0,0,False,13,8,
+2026-04-06,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:20.448+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-06,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-06-0-1e795ce143,CHAOTIC,3,True,14.5,3,True,16,11,
+2026-04-06,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:22.768+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-06,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:24.203+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-06,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:25.521+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-06,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:26.954+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-06,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-06-1-e61ffbc461,STANDARD,2,True,13.5,1,False,15,7,
+2026-04-06,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-06-2-35bdd83484,STANDARD,2,False,0.0,0,False,5,1,
+2026-04-06,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-06-3-c38216e75e,HIGH_SPENDER,3,True,54.0,4,False,13,5,
+2026-04-07,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:29.688+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-07,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-07-1-6ef7fc840e,LOW_SPENDER,3,False,0.0,0,False,4,3,
+2026-04-07,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-07-2-7867232229,STANDARD,2,False,0.0,0,False,8,3,
+2026-04-07,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-07-0-34561b8f61,STANDARD,2,True,26.0,2,True,8,5,
+2026-04-07,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-07-1-1c439de7a4,STANDARD,2,False,0.0,0,False,7,2,
+2026-04-07,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-07-2-7bf0507e77,LOW_SPENDER,3,False,0.0,0,False,6,1,
+2026-04-07,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-07-0-b5b5797438,HIGH_SPENDER,2,True,4.5,1,False,11,5,
+2026-04-07,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-07-1-ca45a24fb7,LOW_SPENDER,3,False,0.0,0,False,7,1,
+2026-04-07,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:33.412+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-08,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-08-0-4241057839,STANDARD,2,False,0.0,0,False,10,2,
+2026-04-08,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:35.366+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-08,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-08-2-a933c0f100,STANDARD,3,True,32.0,2,False,13,4,
+2026-04-08,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:37.295+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-08,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-08-1-996fb9e5ec,STANDARD,3,False,0.0,0,False,10,6,
+2026-04-08,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:39.099+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-08,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:40.364+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-08,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:41.873+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-08,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-08-1-112b41616c,STANDARD,3,False,0.0,0,False,14,8,
+2026-04-08,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-08-2-b30bd77fe6,LOW_SPENDER,3,False,0.0,0,False,6,2,
+2026-04-08,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:43.928+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-09,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-09-0-1fda5b092a,HIGH_SPENDER,3,False,0.0,0,False,8,4,
+2026-04-09,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-09-1-6f6cc1986a,LOW_SPENDER,2,False,0.0,0,False,12,6,
+2026-04-09,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-09-2-7d123ec1a2,STANDARD,3,False,0.0,0,False,14,7,
+2026-04-09,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:46.808+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-09,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-09-4-517a2ef950,STANDARD,3,False,0.0,0,False,10,2,
+2026-04-09,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-09-0-ed64ae7b58,STANDARD,3,False,0.0,0,False,7,1,
+2026-04-09,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-09-1-9dadfbff0b,STANDARD,2,True,6.5,1,False,7,4,
+2026-04-09,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:49.530+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-09,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-09-3-65655ba580,LOW_SPENDER,3,False,0.0,0,False,10,2,
+2026-04-09,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-09-4-f336552594,STANDARD,2,False,0.0,0,False,13,4,
+2026-04-09,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-09-0-864482438c,LOW_SPENDER,2,False,0.0,0,False,9,1,
+2026-04-09,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:52.243+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-09,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-09-2-d66cfd05eb,CHAOTIC,2,False,0.0,0,False,16,7,
+2026-04-10,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-10-0-bf3326bd92,LOW_SPENDER,3,False,0.0,0,False,4,3,
+2026-04-10,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-10-1-d739911121,STANDARD,3,False,0.0,0,False,13,4,
+2026-04-10,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:54.801+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-10,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:41:56.543+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-10,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-10-4-6797265fde,CHAOTIC,2,True,12.5,2,False,17,9,
+2026-04-10,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-10-5-118c336937,STANDARD,3,True,32.0,2,False,7,3,
+2026-04-10,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-10-6-e5e85df968,STANDARD,3,False,0.0,0,False,13,3,
+2026-04-10,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-10-0-2e535d76bd,STANDARD,2,True,13.0,3,False,15,6,
+2026-04-10,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-10-1-fed8865970,STANDARD,2,False,0.0,0,False,11,6,
+2026-04-10,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-10-2-5be0e1b24f,LOW_SPENDER,2,True,10.5,1,False,6,4,
+2026-04-10,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:01.023+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-10,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-10-4-0136779a61,HIGH_SPENDER,2,True,21.5,2,False,7,3,
+2026-04-10,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:03.191+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-10,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-10-0-c91a7bb713,LOW_SPENDER,2,False,0.0,0,False,11,1,
+2026-04-10,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:05.069+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-11,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-11-0-b0f2177a0e,STANDARD,2,True,18.0,1,False,17,5,
+2026-04-11,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-11-1-581aa5f23b,STANDARD,3,False,0.0,0,False,17,8,
+2026-04-11,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-11-2-056fd27eec,LOW_SPENDER,2,False,0.0,0,False,7,2,
+2026-04-11,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:07.795+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-11,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-11-4-587786bdd2,CHAOTIC,2,True,42.0,3,False,18,12,
+2026-04-11,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-11-5-a193935e36,STANDARD,2,False,0.0,0,False,10,7,
+2026-04-11,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-11-6-3a9e5f66de,CHAOTIC,2,True,24.5,4,True,13,6,
+2026-04-11,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-11-7-2a18b95685,STANDARD,2,False,0.0,0,False,13,6,
+2026-04-11,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-11-8-86f69bc6c5,STANDARD,2,False,0.0,0,False,6,3,
+2026-04-11,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-11-9-d2047f8604,CHAOTIC,2,False,0.0,0,False,17,11,
+2026-04-11,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-11-10-e0530d4034,STANDARD,3,False,0.0,0,False,16,8,
+2026-04-11,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-11-0-30b3b347c9,LOW_SPENDER,3,False,0.0,0,False,9,2,
+2026-04-11,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:13.097+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-11,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-11-2-1739533c91,STANDARD,2,False,0.0,0,False,4,3,
+2026-04-11,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:15.029+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-11,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-11-4-e10fe15905,STANDARD,3,True,13.5,1,False,16,10,
+2026-04-11,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-11-5-a013820c37,STANDARD,3,False,0.0,0,False,9,7,
+2026-04-11,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-11-6-023bbaef10,HIGH_SPENDER,2,True,35.5,3,True,7,4,
+2026-04-11,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-11-7-18a28e203a,HIGH_SPENDER,3,False,0.0,0,False,7,6,
+2026-04-11,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:18.575+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-11,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-11-9-7964917abb,LOW_SPENDER,2,True,19.0,2,True,11,4,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-0-723dc499f0,STANDARD,3,False,0.0,0,False,14,3,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-1-a110765a70,CHAOTIC,2,True,3.0,1,False,4,3,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:21.659+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-3-944d715163,LOW_SPENDER,3,True,13.0,1,False,7,2,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-4-4c6502ac98,LOW_SPENDER,3,False,0.0,0,False,10,4,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-5-bb4de7784f,HIGH_SPENDER,2,True,24.0,2,False,9,5,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-6-b29adcf5ff,LOW_SPENDER,3,False,0.0,0,False,8,3,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:24.528+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-8-9bf984777b,STANDARD,3,True,16.0,1,False,13,3,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:26.361+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-10-969d8e6c66,LOW_SPENDER,3,True,10.5,1,False,4,2,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-11-ded5b605ca,STANDARD,2,True,13.0,1,False,15,5,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-12-62d67e3655,STANDARD,2,True,31.0,2,True,8,5,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:29.117+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-14-d31ac2cb14,STANDARD,3,False,0.0,0,False,8,5,
+2026-04-11,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-11-15-0aa9000ed7,STANDARD,3,True,27.0,2,False,13,4,
+2026-04-12,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-12-0-83df0e8a47,LOW_SPENDER,2,False,0.0,0,False,4,1,
+2026-04-12,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-12-1-1f8e3ea8ee,CHAOTIC,2,False,0.0,0,False,16,11,
+2026-04-12,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:32.581+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-12-3-70316cab60,LOW_SPENDER,2,False,0.0,0,False,11,2,
+2026-04-12,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-12-4-db0cd377fb,STANDARD,3,False,0.0,0,False,9,3,
+2026-04-12,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-12-5-69a542cc62,HIGH_SPENDER,3,False,0.0,0,False,9,7,
+2026-04-12,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-12-6-66ade063ce,LOW_SPENDER,3,False,0.0,0,False,8,1,
+2026-04-12,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:35.690+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-12-8-8def33fdab,STANDARD,3,False,0.0,0,False,6,4,
+2026-04-12,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-12-9-9db6e0339d,LOW_SPENDER,3,False,0.0,0,False,8,1,
+2026-04-12,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-12-10-9b2a05f910,LOW_SPENDER,2,True,5.0,1,False,9,2,
+2026-04-12,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:38.012+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-12-12-fe7149ec42,LOW_SPENDER,2,False,0.0,0,False,4,1,
+2026-04-12,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:39.644+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-12-0-dbeea5af52,LOW_SPENDER,2,False,0.0,0,False,6,3,
+2026-04-12,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-12-1-b35c602705,STANDARD,2,True,3.0,1,False,10,2,
+2026-04-12,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-12-2-526c52e406,HIGH_SPENDER,2,False,0.0,0,False,12,2,
+2026-04-12,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:41.955+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:43.308+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:44.939+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-12-6-31962e023c,STANDARD,3,True,39.0,4,True,9,5,
+2026-04-12,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-12-7-32f14aab52,STANDARD,3,True,16.0,1,False,5,2,
+2026-04-12,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:47.044+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:48.529+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:50.113+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-12-11-3f89af6bd5,LOW_SPENDER,3,False,0.0,0,False,10,3,
+2026-04-12,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:51.989+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:53.464+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:54.885+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-12-15-f18120c5d5,CHAOTIC,2,True,15.5,2,False,11,9,
+2026-04-12,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:56.948+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-12-0-30b7d758fb,LOW_SPENDER,3,True,6.5,1,False,7,3,
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:42:58.635+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-12-2-b6f5f91f6f,CHAOTIC,3,True,39.0,4,True,13,6,
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-12-3-5ab29fa777,CHAOTIC,2,True,13.0,1,False,7,4,
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-12-4-547b500143,STANDARD,2,True,40.0,3,False,13,7,
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-12-5-b80b42f05b,STANDARD,2,False,0.0,0,False,18,7,
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-12-6-356eafd116,STANDARD,2,True,41.5,5,True,17,7,
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-12-7-cf57429a82,STANDARD,3,True,50.0,4,True,12,5,
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:04.097+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:05.485+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-12-10-96984a2272,STANDARD,2,False,0.0,0,False,10,5,
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:07.278+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-12,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:08.789+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-13,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-13-0-e59899e668,STANDARD,3,False,0.0,0,False,13,6,
+2026-04-13,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-13-1-197022dbce,STANDARD,3,False,0.0,0,False,8,1,
+2026-04-13,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-13-2-757d698dbd,STANDARD,3,False,0.0,0,False,11,5,
+2026-04-13,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-13-3-6ec7335dc1,CHAOTIC,3,True,37.0,3,False,16,11,
+2026-04-13,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-13-0-443624c7c7,STANDARD,3,False,0.0,0,False,8,2,
+2026-04-13,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:12.286+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-13,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-13-2-5c227bfcc9,LOW_SPENDER,3,True,13.5,1,False,11,2,
+2026-04-13,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-13-3-0feb9bc833,STANDARD,3,True,12.5,1,False,15,11,
+2026-04-13,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-13-0-5bb96d8684,HIGH_SPENDER,2,True,12.0,1,False,6,2,
+2026-04-13,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-13-1-1d79eb9a6d,CHAOTIC,3,True,25.0,3,False,18,12,
+2026-04-13,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-13-2-08db15b4b2,STANDARD,3,True,25.0,2,False,12,5,
+2026-04-14,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-14-0-c72ae1be31,STANDARD,3,False,0.0,0,False,5,4,
+2026-04-14,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:16.531+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-14,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:18.105+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-14,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-14-3-db73f2d68b,STANDARD,3,False,0.0,0,False,10,5,
+2026-04-14,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:20.111+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-14,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:21.460+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-14,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-14-2-0293fd1f27,LOW_SPENDER,2,True,1.5,1,False,7,2,
+2026-04-14,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-14-3-c5e1c1fff0,CHAOTIC,2,True,36.0,2,False,14,10,
+2026-04-14,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-14-4-a6e75117d4,STANDARD,2,False,0.0,0,False,9,4,
+2026-04-14,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-14-5-40b26a2fba,HIGH_SPENDER,2,True,46.5,5,False,12,6,
+2026-04-14,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:25.104+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-14,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-14-1-5bd5d82378,CHAOTIC,2,False,0.0,0,False,18,10,
+2026-04-15,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-15-0-db5914c83b,HIGH_SPENDER,3,True,22.5,2,False,10,6,
+2026-04-15,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-15-1-01e04f5ce8,LOW_SPENDER,2,False,0.0,0,False,5,3,
+2026-04-15,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-15-0-e38da64745,LOW_SPENDER,2,False,0.0,0,False,8,1,
+2026-04-15,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-15-1-f3ddbcdd5f,STANDARD,2,False,0.0,0,False,4,1,
+2026-04-15,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-15-2-c3fc6f862f,STANDARD,3,False,0.0,0,False,9,4,
+2026-04-15,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-15-3-ced7c26a67,CHAOTIC,2,True,11.0,2,False,12,4,
+2026-04-15,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-15-4-4e869c34dc,STANDARD,2,False,0.0,0,False,15,7,
+2026-04-15,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-15-5-344a48882f,STANDARD,3,False,0.0,0,False,7,3,
+2026-04-15,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-15-6-68e155d763,HIGH_SPENDER,3,True,27.0,2,True,5,4,
+2026-04-15,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-15-0-c2f0996cab,STANDARD,3,False,0.0,0,False,5,3,
+2026-04-15,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-15-1-8a5c1f7060,LOW_SPENDER,2,False,0.0,0,False,6,2,
+2026-04-15,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:31.226+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-15,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-15-3-c1e36af7e8,STANDARD,3,False,0.0,0,False,17,7,
+2026-04-15,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-15-4-b3713f21c1,HIGH_SPENDER,3,True,63.0,5,True,9,6,
+2026-04-16,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:33.920+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-16,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-16-1-91dd6601db,CHAOTIC,2,False,0.0,0,False,11,2,
+2026-04-16,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-16-2-933de869d5,STANDARD,2,False,0.0,0,False,6,4,
+2026-04-16,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-16-0-5f7114977e,LOW_SPENDER,2,False,0.0,0,False,10,3,
+2026-04-16,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-16-1-5625b3bf99,STANDARD,2,True,16.0,1,False,12,5,
+2026-04-16,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-16-2-5bcd6d4964,STANDARD,3,True,32.0,2,False,18,9,
+2026-04-16,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-16-3-c823fb10a7,LOW_SPENDER,2,False,0.0,0,False,8,3,
+2026-04-16,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-16-4-827c957590,CHAOTIC,2,False,0.0,0,False,4,2,
+2026-04-16,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:38.005+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-16,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-16-0-20cb69d653,STANDARD,3,True,26.4,4,False,15,6,
+2026-04-16,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-16-1-b5e4f77275,LOW_SPENDER,3,False,0.0,0,False,5,2,
+2026-04-16,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-16-2-36f5eb4928,LOW_SPENDER,2,False,0.0,0,False,9,2,
+2026-04-16,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-16-3-851138bd8a,LOW_SPENDER,3,True,7.0,1,False,11,2,
+2026-04-17,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-17-0-f3da57ac36,STANDARD,3,True,13.5,3,False,15,3,
+2026-04-17,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:41.902+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-17,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:43.346+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-17,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-17-1-ac0e2fd2bf,CHAOTIC,3,False,0.0,0,False,7,4,
+2026-04-17,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-17-2-d60d2a6910,STANDARD,2,True,16.0,1,False,5,3,
+2026-04-17,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:45.590+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-17,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:47.001+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-17,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:48.380+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-18-0-337dcadd50,LOW_SPENDER,2,True,12.0,1,False,12,3,
+2026-04-18,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:50.083+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-18-2-80e0221acd,STANDARD,2,False,0.0,0,False,5,3,
+2026-04-18,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-18-3-11bb7ff0b0,STANDARD,3,False,0.0,0,False,5,1,
+2026-04-18,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-18-4-48361dcbe4,STANDARD,2,False,0.0,0,False,12,4,
+2026-04-18,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:52.568+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-18-6-d93bb2c633,STANDARD,2,True,13.0,1,False,5,2,
+2026-04-18,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-18-7-1781a579f1,CHAOTIC,2,False,0.0,0,False,15,10,
+2026-04-18,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:55.053+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-18-9-d4d9866930,CHAOTIC,3,True,32.5,3,False,17,7,
+2026-04-18,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-18-0-d59f626ceb,STANDARD,3,False,0.0,0,False,6,1,
+2026-04-18,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:57.477+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-18-2-5f4346317e,STANDARD,2,True,36.0,2,False,4,2,
+2026-04-18,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-18-3-5501881499,HIGH_SPENDER,3,True,44.0,6,False,17,6,
+2026-04-18,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:43:59.974+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-18-5-52b0dc3900,LOW_SPENDER,3,False,0.0,0,False,10,3,
+2026-04-18,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-18-6-c24d06d3c2,LOW_SPENDER,2,False,0.0,0,False,4,2,
+2026-04-18,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:01.962+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:03.344+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-18-9-d912f0200d,CHAOTIC,2,False,0.0,0,False,5,1,
+2026-04-18,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-18-10-75595ea9b5,STANDARD,2,False,0.0,0,False,10,1,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-0-e6b26f5915,STANDARD,3,True,14.0,2,False,14,3,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-1-c0f021be4b,STANDARD,2,True,16.0,2,True,13,9,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-2-4fea157dc2,STANDARD,2,True,23.5,3,True,5,2,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-3-88bd3f9ce1,STANDARD,2,True,23.0,2,False,13,8,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-4-7be4b08906,LOW_SPENDER,3,False,0.0,0,False,9,5,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-5-f60a23b78e,STANDARD,3,False,0.0,0,False,8,2,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-6-89841a1da2,STANDARD,2,False,0.0,0,False,10,2,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:08.331+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-8-e48c9baab7,STANDARD,3,True,1.5,1,False,13,6,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:10.303+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:12.000+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-11-18eca0c416,CHAOTIC,2,False,0.0,0,False,9,5,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-12-07889ddb85,LOW_SPENDER,2,False,0.0,0,False,12,2,
+2026-04-18,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-18-13-5ddb05a9ae,HIGH_SPENDER,2,True,48.0,3,True,9,6,
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-0-b0cf352f7b,LOW_SPENDER,3,False,0.0,0,False,11,2,
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-1-48cd13ac0a,STANDARD,2,True,22.0,3,False,4,3,
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-2-1cfa1ff061,LOW_SPENDER,2,False,0.0,0,False,11,2,
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-3-7f7869d122,STANDARD,2,False,0.0,0,False,8,2,
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-4-8505a36642,LOW_SPENDER,2,True,25.0,2,False,4,0,
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-5-7479dfd2e9,CHAOTIC,3,False,0.0,0,False,17,8,
+2026-04-19,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:16.593+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-7-18a24e7864,HIGH_SPENDER,3,True,32.5,3,False,4,3,
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-8-215c732c6f,STANDARD,3,True,4.5,1,False,16,9,
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-9-5bcd1cd460,CHAOTIC,2,True,16.0,2,False,11,4,
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-10-62843d062f,HIGH_SPENDER,2,True,37.0,3,True,4,2,
+2026-04-19,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:19.972+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-12-b2703de949,LOW_SPENDER,2,False,0.0,0,False,11,5,
+2026-04-19,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-19-13-2aaef819ae,CHAOTIC,2,False,0.0,0,False,13,7,
+2026-04-19,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-19-0-e30cb151ba,STANDARD,2,True,16.0,1,False,6,2,
+2026-04-19,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-19-1-4c6fa8e1a2,HIGH_SPENDER,3,False,0.0,0,False,12,5,
+2026-04-19,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:22.817+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-19-3-1b85048cca,LOW_SPENDER,2,False,0.0,0,False,8,3,
+2026-04-19,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-19-4-b4b5e713dc,STANDARD,3,False,0.0,0,False,5,2,
+2026-04-19,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-19-5-703e4289dc,CHAOTIC,3,False,0.0,0,False,4,2,
+2026-04-19,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-19-6-0fb27fa6eb,STANDARD,3,False,0.0,0,False,16,7,
+2026-04-19,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-19-7-f2f72b7434,HIGH_SPENDER,3,True,72.0,6,True,14,9,
+2026-04-19,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:26.460+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-19-9-31167317a4,CHAOTIC,3,False,0.0,0,False,7,2,
+2026-04-19,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:27.979+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:29.309+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-19-1-3eb731f392,CHAOTIC,3,True,30.5,3,False,15,8,
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:31.346+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:32.739+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-19-4-69e3bc6aea,STANDARD,2,False,0.0,0,False,5,2,
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-19-5-a6dc3b4b7a,STANDARD,3,False,0.0,0,False,16,8,
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-19-6-960f1ccb1a,STANDARD,2,False,0.0,0,False,15,9,
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:35.639+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:37.194+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-19-9-4b26327fc8,STANDARD,2,True,17.5,2,False,8,5,
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:39.209+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:40.631+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:42.239+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-19-13-a79ac161bb,LOW_SPENDER,3,False,0.0,0,False,8,4,
+2026-04-19,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-19-14-e3618c491f,STANDARD,2,False,0.0,0,False,15,7,
+2026-04-20,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:44.419+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-20,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:45.947+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-20,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-20-0-d1b38abc5c,STANDARD,3,False,0.0,0,False,14,11,
+2026-04-20,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-20-1-c5fd983848,STANDARD,2,False,0.0,0,False,14,3,
+2026-04-20,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-20-2-a6edd6891a,CHAOTIC,2,True,32.5,3,False,16,7,
+2026-04-20,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:49.006+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-20,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-20-4-f1f7a15a42,HIGH_SPENDER,3,True,12.0,1,False,17,7,
+2026-04-20,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-20-5-4926e80bb9,LOW_SPENDER,2,False,0.0,0,False,10,2,
+2026-04-20,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-20-6-f2de4af74c,STANDARD,2,False,0.0,0,False,8,4,
+2026-04-20,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-20-7-7062dcf69a,STANDARD,2,True,15.4,3,True,16,8,
+2026-04-20,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:52.406+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-20,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-20-1-8e4387ceeb,STANDARD,3,False,0.0,0,False,13,3,
+2026-04-21,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-21-0-6121cd557a,LOW_SPENDER,2,False,0.0,0,False,4,1,
+2026-04-21,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:54.555+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-21,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-21-2-6b50c7688c,STANDARD,2,False,0.0,0,False,8,5,
+2026-04-21,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-21-3-c42d1a09da,HIGH_SPENDER,3,True,58.0,8,False,18,8,
+2026-04-21,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-21-0-f6f51b3bbc,LOW_SPENDER,2,False,0.0,0,False,9,6,
+2026-04-21,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-21-1-4166e23773,LOW_SPENDER,3,False,0.0,0,False,4,1,
+2026-04-21,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-21-2-78ccda5b8e,LOW_SPENDER,3,False,0.0,0,False,4,1,
+2026-04-21,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-21-3-23c61fdb80,LOW_SPENDER,2,False,0.0,0,False,11,4,
+2026-04-21,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:44:58.514+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-21,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-21-1-8f99a83a9c,STANDARD,2,True,1.5,1,False,11,7,
+2026-04-22,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:00.559+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-22,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-22-1-f1c2f5f3dc,STANDARD,3,True,18.0,1,False,14,2,
+2026-04-22,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-22-2-3561a74420,LOW_SPENDER,3,True,6.0,1,False,10,4,
+2026-04-22,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-22-3-fcbab364d3,HIGH_SPENDER,2,True,35.0,4,False,17,10,
+2026-04-22,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:03.609+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-22,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-22-1-f16ab58116,STANDARD,3,False,0.0,0,False,18,11,
+2026-04-22,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-22-2-56650e8564,CHAOTIC,2,True,27.0,2,False,18,10,
+2026-04-22,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:06.334+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-22,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:07.780+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-22,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:09.355+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-23,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-23-0-fe9b3763cb,LOW_SPENDER,3,True,28.0,3,True,10,3,
+2026-04-23,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-23-1-2d19fff33b,LOW_SPENDER,3,False,0.0,0,False,7,2,
+2026-04-23,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-23-2-03ef92058a,LOW_SPENDER,2,True,11.0,1,False,7,1,
+2026-04-23,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-23-3-59e35d6569,HIGH_SPENDER,3,True,14.0,2,False,4,3,
+2026-04-23,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-23-0-c71994deb2,LOW_SPENDER,3,False,0.0,0,False,9,5,
+2026-04-23,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-23-1-b097760cfb,STANDARD,3,False,0.0,0,False,11,6,
+2026-04-23,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:13.262+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-23,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-23-3-570b0784e9,STANDARD,2,False,0.0,0,False,16,10,
+2026-04-23,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:15.311+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-23,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:16.838+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-23,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:18.453+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-23,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-23-2-4bede6e88e,STANDARD,3,True,15.5,3,False,15,3,
+2026-04-24,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-24-0-417f5c08b8,STANDARD,3,True,16.0,1,False,17,3,
+2026-04-24,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-24-1-6c922bdfcb,HIGH_SPENDER,2,True,52.0,4,True,16,8,
+2026-04-24,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:21.536+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-24,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:22.859+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-24,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-24-4-c215c03697,LOW_SPENDER,3,False,0.0,0,False,8,1,
+2026-04-24,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:24.717+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-24,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-24-1-08bc20c290,STANDARD,2,False,0.0,0,False,13,7,
+2026-04-24,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-24-2-2c21607a6d,STANDARD,2,True,16.0,1,False,7,4,
+2026-04-24,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:27.055+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-24,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-24-4-4de4ad5cdd,LOW_SPENDER,3,False,0.0,0,False,6,2,
+2026-04-24,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:28.978+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-24,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:30.292+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-24,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-24-7-fb0d889cf8,HIGH_SPENDER,3,True,16.5,2,True,8,3,
+2026-04-24,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-24-8-419557dde6,STANDARD,2,False,0.0,0,False,6,2,
+2026-04-24,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-24-0-50dce3f390,STANDARD,2,False,0.0,0,False,4,1,
+2026-04-24,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-24-1-6a9f20c98c,LOW_SPENDER,2,True,5.5,1,False,11,5,
+2026-04-24,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-24-2-7c2f9def99,HIGH_SPENDER,3,True,22.0,2,False,15,10,
+2026-04-24,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-24-3-a67b5fa910,LOW_SPENDER,2,False,0.0,0,False,9,1,
+2026-04-24,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:33.948+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-24,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-24-5-a659dbd027,CHAOTIC,3,True,14.0,1,False,4,4,
+2026-04-25,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-25-0-4e424f1e34,LOW_SPENDER,2,False,0.0,0,False,7,2,
+2026-04-25,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-25-1-669d602086,CHAOTIC,2,False,0.0,0,False,4,1,
+2026-04-25,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-25-2-141f32a349,CHAOTIC,3,False,0.0,0,False,14,6,
+2026-04-25,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-25-3-c65c3f795a,HIGH_SPENDER,2,True,77.0,6,False,8,4,
+2026-04-25,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-25-4-445ecf969e,HIGH_SPENDER,2,False,0.0,0,False,5,1,
+2026-04-25,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:37.376+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-25,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:38.729+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-25,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-25-1-eb3e0fbf3c,STANDARD,3,True,18.0,1,False,17,10,
+2026-04-25,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:40.780+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-25,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-25-3-6a84c61977,STANDARD,3,True,12.2,2,False,5,2,
+2026-04-25,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:42.527+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-25,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-25-5-dc21b56a35,STANDARD,2,False,0.0,0,False,18,4,
+2026-04-25,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-25-6-2f736b14c3,STANDARD,3,False,0.0,0,False,4,3,
+2026-04-25,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:44.700+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-25,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-25-8-23243993f4,LOW_SPENDER,2,False,0.0,0,False,12,4,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-25-0-3c472b4390,LOW_SPENDER,3,True,11.5,1,False,12,4,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:46.827+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-25-2-635fac03f0,HIGH_SPENDER,3,True,47.5,3,True,15,9,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-25-3-9c77f8fc37,HIGH_SPENDER,2,True,42.0,4,False,17,6,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-25-4-5de05b5076,LOW_SPENDER,2,False,0.0,0,False,8,1,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-25-5-16a890f96e,HIGH_SPENDER,3,False,0.0,0,False,7,5,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-25-6-5c80817689,STANDARD,3,True,28.0,2,False,9,3,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-25-7-34ad5abb15,STANDARD,3,True,18.0,1,False,17,6,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:51.701+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-25-9-2b0f55c3c2,HIGH_SPENDER,3,False,0.0,0,False,8,4,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-25-10-4ae719b6cf,STANDARD,3,False,0.0,0,False,4,1,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-25-11-0f9a9d0a0a,STANDARD,2,True,5.0,1,False,16,4,
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:54.100+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-25,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:55.774+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-26-0-9ad86df513,STANDARD,3,True,33.5,4,True,17,6,
+2026-04-26,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:45:57.741+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-26-2-bb5132d412,HIGH_SPENDER,2,True,68.5,5,False,11,7,
+2026-04-26,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-26-3-5796a46ec0,LOW_SPENDER,3,False,0.0,0,False,6,1,
+2026-04-26,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:00.081+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:01.355+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-26-6-3626805501,STANDARD,3,True,19.0,3,False,15,7,
+2026-04-26,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:03.848+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-26-8-cc4c59a452,LOW_SPENDER,2,False,0.0,0,False,11,5,
+2026-04-26,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:05.817+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-26-10-1d1d5d043a,HIGH_SPENDER,3,False,0.0,0,False,16,10,
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-0-fb5eeeab82,LOW_SPENDER,2,False,0.0,0,False,5,0,
+2026-04-26,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:07.767+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-2-f81009298b,LOW_SPENDER,2,False,0.0,0,False,7,1,
+2026-04-26,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:09.446+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-4-281fc40d18,HIGH_SPENDER,2,False,0.0,0,False,18,5,
+2026-04-26,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:11.347+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-6-0c662efef7,LOW_SPENDER,3,False,0.0,0,False,8,3,
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-7-183b6eefac,CHAOTIC,3,True,11.0,1,False,12,6,
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-8-8a18e21323,LOW_SPENDER,3,False,0.0,0,False,4,0,
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-9-9e6ad81261,LOW_SPENDER,3,False,0.0,0,False,11,2,
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-10-d892ad2ebd,STANDARD,2,True,16.0,1,False,15,5,
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-11-148799ddf4,LOW_SPENDER,2,False,0.0,0,False,10,5,
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-12-2c3702fb5f,STANDARD,3,False,0.0,0,False,14,4,
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-13-a7e7f1b96c,STANDARD,2,True,24.0,2,False,15,6,
+2026-04-26,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-26-14-edb599ae1e,STANDARD,2,True,6.0,1,False,7,4,
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:16.621+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-26-1-f4a7d98ecf,STANDARD,2,True,32.0,2,False,5,2,
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-26-2-50040afacd,STANDARD,3,True,31.5,4,False,16,7,
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-26-3-272689e911,LOW_SPENDER,3,True,14.0,1,False,8,4,
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-26-4-af52671aef,STANDARD,2,False,0.0,0,False,6,1,
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:19.836+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-26-6-c8eaf774a5,CHAOTIC,3,False,0.0,0,False,12,7,
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-26-7-ddffcb5959,STANDARD,3,True,26.0,2,False,5,4,
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:22.065+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:23.649+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-26,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-26-10-b4ad5d6f6a,STANDARD,3,False,0.0,0,False,10,2,
+2026-04-27,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-27-0-c3aafae18e,STANDARD,2,False,0.0,0,False,10,5,
+2026-04-27,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-27-1-326bf0de50,STANDARD,3,True,13.5,1,False,11,3,
+2026-04-27,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-27-2-6171deeb43,CHAOTIC,2,False,0.0,0,False,16,5,
+2026-04-27,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-27-0-6a22ad7b38,STANDARD,3,False,0.0,0,False,17,7,
+2026-04-27,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-27-1-a9400ad65d,HIGH_SPENDER,3,True,19.5,2,False,10,4,
+2026-04-27,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:28.222+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-27,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:29.930+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-27,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-27-1-b9bdaf0092,STANDARD,2,False,0.0,0,False,4,1,
+2026-04-27,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:31.629+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-27,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-27-3-1c2ddb0ee3,STANDARD,2,True,16.0,2,True,11,1,
+2026-04-27,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-27-4-cc1d57d53c,STANDARD,3,True,13.0,2,False,8,3,
+2026-04-28,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-28-0-5b76e91378,CHAOTIC,2,False,0.0,0,False,12,9,
+2026-04-28,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-28-1-611d2de13b,LOW_SPENDER,3,False,0.0,0,False,7,2,
+2026-04-28,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-28-0-61dcd9d8d1,STANDARD,2,False,0.0,0,False,7,1,
+2026-04-28,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-28-1-55f3282ba5,STANDARD,2,False,0.0,0,False,5,1,
+2026-04-28,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-28-2-645f0c3260,HIGH_SPENDER,2,True,37.5,4,False,11,6,
+2026-04-28,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-28-3-3873c19546,LOW_SPENDER,3,False,0.0,0,False,12,2,
+2026-04-28,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:35.990+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-28,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:37.322+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-29,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-29-0-601105f0ac,LOW_SPENDER,3,False,0.0,0,False,11,1,
+2026-04-29,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-29-1-d01c9357e4,LOW_SPENDER,3,False,0.0,0,False,12,5,
+2026-04-29,1,Spaghetti In Corso - lunch profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:39.600+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-29,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-29-0-c294ab386d,HIGH_SPENDER,3,True,41.0,3,True,5,3,
+2026-04-29,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-29-1-a3856aae0e,LOW_SPENDER,2,True,1.5,1,False,7,1,
+2026-04-29,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-29-2-5e7625c824,STANDARD,2,False,0.0,0,False,5,2,
+2026-04-29,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-29-0-12a0bb2f33,CHAOTIC,2,True,40.5,3,False,7,4,
+2026-04-30,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-30-0-2e92c609e7,STANDARD,3,True,16.0,1,False,15,7,
+2026-04-30,1,Spaghetti In Corso - lunch profile,sim-1-2026-04-30-1-fb6da99fca,STANDARD,3,True,17.0,4,False,10,5,
+2026-04-30,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-30-0-8212226bf7,STANDARD,2,False,0.0,0,False,11,2,
+2026-04-30,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:43.710+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-30,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:45.175+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-30,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:46.387+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-30,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-30-4-de26ea5524,HIGH_SPENDER,3,True,21.2,3,False,5,3,
+2026-04-30,1,Spaghetti In Corso - dinner profile,sim-1-2026-04-30-5-0ec56223f2,STANDARD,3,True,12.5,1,False,6,4,
+2026-04-30,1,Spaghetti In Corso - dinner profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:48.441+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-30,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:49.922+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-30,1,Spaghetti In Corso - weekend heavy profile,sim-1-2026-04-30-1-9db100db83,STANDARD,3,True,13.5,1,False,4,1,
+2026-04-30,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:51.596+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-30,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:53.075+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"
+2026-04-30,1,Spaghetti In Corso - weekend heavy profile,ERROR,UNKNOWN,0,False,0.0,0,False,0,0,"HTTP 500 http://localhost:8080/api/customer/orders: {
+  ""timestamp"" : ""2026-04-09T16:46:54.350+00:00"",
+  ""status"" : 500,
+  ""error"" : ""Internal Server Error"",
+  ""path"" : ""/api/customer/orders""
+}"

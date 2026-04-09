@@ -11,10 +11,13 @@ public record DishPerformanceDTO(
         String category,
         BigDecimal price,
         long views,
+        long impressions,
         long clicks,
         long addToCart,
         long orderCount,
         BigDecimal viewToCartRate,
+        BigDecimal ctr,
+        BigDecimal revenuePerImpression,
         BigDecimal viewToOrderRate,
         String performanceLabel
 ) {

@@ -37,6 +37,12 @@ public class OrdineItem {
 
     private String imageUrl;
 
+    @Column(length = 50)
+    private String source;
+
+    @Column(name = "source_dish_id")
+    private Long sourceDishId;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 }

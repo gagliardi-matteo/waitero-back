@@ -4,9 +4,13 @@ import com.waitero.back.dto.AnalyticsDashboardDTO;
 import com.waitero.back.dto.AnalyticsOverviewDTO;
 import com.waitero.back.dto.BenchmarkInsightDTO;
 import com.waitero.back.dto.DishPerformanceDTO;
+import com.waitero.back.dto.ExperimentMetricsDTO;
+import com.waitero.back.dto.ExperimentDecision;
 import com.waitero.back.dto.RevenueOpportunityDTO;
+import com.waitero.back.dto.RevenueKpiDTO;
 import com.waitero.back.security.AccessContextService;
 import com.waitero.back.service.AnalyticsService;
+import com.waitero.back.service.ExperimentIntelligenceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +25,7 @@ public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
     private final AccessContextService accessContextService;
+    private final ExperimentIntelligenceService experimentIntelligenceService;
 
     @GetMapping("/overview")
     public AnalyticsOverviewDTO getOverview() {
@@ -42,8 +47,24 @@ public class AnalyticsController {
         return analyticsService.getRevenueOpportunities(accessContextService.getActingRestaurantIdOrThrow());
     }
 
+
+    @GetMapping("/revenue-kpis")
+    public RevenueKpiDTO getRevenueKpis() {
+        return analyticsService.getRevenueBreakdown(accessContextService.getActingRestaurantIdOrThrow());
+    }
+
+    @GetMapping("/ab-test")
+    public ExperimentMetricsDTO getAbTestMetrics() {
+        return analyticsService.getExperimentMetrics(accessContextService.getActingRestaurantIdOrThrow());
+    }
+    @GetMapping("/experiment-decision")
+    public ExperimentDecision getExperimentDecision() {
+        return experimentIntelligenceService.evaluateExperiment(accessContextService.getActingRestaurantIdOrThrow());
+    }
     @GetMapping("/benchmarks")
     public List<BenchmarkInsightDTO> getBenchmarkInsights() {
         return analyticsService.getBenchmarkInsights(accessContextService.getActingRestaurantIdOrThrow());
     }
 }
+
+

@@ -12,4 +12,5 @@ public class AnalyticsDashboardDTO {
     private List<DishPerformanceDTO> dishPerformance;
     private List<RevenueOpportunityDTO> revenueOpportunities;
     private List<BenchmarkInsightDTO> benchmarkInsights;
+    private RevenueKpiDTO revenueKpis;
 }

@@ -10,6 +10,7 @@ import com.waitero.back.repository.DishOrderCountProjection;
 import com.waitero.back.repository.OrdineItemRepository;
 import com.waitero.back.repository.PiattoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,8 @@ public class UpsellService {
     private final DishCooccurrenceRepository dishCooccurrenceRepository;
     private final PiattoRepository piattoRepository;
     private final MenuIntelligenceService menuIntelligenceService;
+    private final AnalyticsService analyticsService;
+    private final ExperimentService experimentService;
 
     private final Map<Long, Instant> refreshByRestaurant = new ConcurrentHashMap<>();
     private final Map<Long, Object> locksByRestaurant = new ConcurrentHashMap<>();
@@ -54,7 +57,14 @@ public class UpsellService {
                 .map(dish -> rankSuggestions(List.of(dish), restaurantId, 2))
                 .orElseGet(List::of);
     }
-
+    @Transactional
+    public List<Piatto> getUpsellSuggestions(Long dishId, Long restaurantId, String sessionId) {
+        String variant = experimentService.getVariant(sessionId, restaurantId);
+        if ("B".equals(variant) || ExperimentService.VARIANT_HOLDOUT.equals(variant)) {
+            return getSimpleUpsellSuggestions(List.of(dishId), restaurantId, 2);
+        }
+        return getUpsellSuggestions(dishId, restaurantId);
+    }
     @Transactional
     public List<Piatto> getCartUpsellSuggestions(List<Long> dishIds, Long restaurantId) {
         if (restaurantId == null || dishIds == null || dishIds.isEmpty()) {
@@ -75,14 +85,29 @@ public class UpsellService {
 
         return rankSuggestions(cartDishes, restaurantId, 2);
     }
-
+    @Transactional
+    public List<Piatto> getCartUpsellSuggestions(List<Long> dishIds, Long restaurantId, String sessionId) {
+        String variant = experimentService.getVariant(sessionId, restaurantId);
+        if ("B".equals(variant) || ExperimentService.VARIANT_HOLDOUT.equals(variant)) {
+            return getSimpleUpsellSuggestions(dishIds, restaurantId, 2);
+        }
+        return getCartUpsellSuggestions(dishIds, restaurantId);
+    }
     private List<Piatto> rankSuggestions(List<Piatto> baseDishes, Long restaurantId, int limit) {
         if (baseDishes == null || baseDishes.isEmpty()) {
             return List.of();
         }
 
         Map<Long, Piatto> availableDishById = loadAvailableDishMap(restaurantId);
-        Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(restaurantId);
+        Map<Long, AnalyticsService.DishFeatures> featuresByDishId = analyticsService.getDishFeatures(restaurantId)
+                .stream()
+                .collect(Collectors.toMap(features -> features.dishId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+        double avgPrice = availableDishById.values().stream()
+                .map(Piatto::getPrezzo)
+                .filter(Objects::nonNull)
+                .mapToDouble(BigDecimal::doubleValue)
+                .average()
+                .orElse(0.0d);
         Set<Long> excludedDishIds = baseDishes.stream()
                 .map(Piatto::getId)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -97,59 +122,182 @@ public class UpsellService {
         for (Piatto baseDish : baseDishes) {
             for (DishCooccurrence cooccurrence : dishCooccurrenceRepository.findAvailableSuggestions(baseDish.getId(), restaurantId)) {
                 Piatto suggestedDish = availableDishById.get(cooccurrence.getSuggestedDish().getId());
-                if (suggestedDish == null || excludedDishIds.contains(suggestedDish.getId())) {
+                if (suggestedDish == null) {
                     continue;
                 }
 
                 CandidateScore candidate = candidateByDishId.computeIfAbsent(suggestedDish.getId(), id -> new CandidateScore(suggestedDish));
-                candidate.addCooccurrence(scoreCooccurrence(cooccurrence, suggestedDish, signals.get(suggestedDish.getId()), cartCategories, hasMainDish),
+                candidate.addCooccurrence(scoreCooccurrence(cooccurrence, suggestedDish, featuresByDishId.get(suggestedDish.getId()), cartCategories, hasMainDish)
+                        + alreadyInCartPenalty(suggestedDish, excludedDishIds),
                         cooccurrence.getConfidence() != null ? cooccurrence.getConfidence() : 0.0d);
             }
         }
 
         for (Piatto candidateDish : availableDishById.values()) {
-            if (excludedDishIds.contains(candidateDish.getId())) {
-                continue;
-            }
-
             CandidateScore candidate = candidateByDishId.computeIfAbsent(candidateDish.getId(), id -> new CandidateScore(candidateDish));
-            candidate.addFallback(scoreFallback(candidateDish, signals.get(candidateDish.getId()), cartCategories, hasMainDish));
+            candidate.addFallback(scoreFallback(candidateDish, featuresByDishId.get(candidateDish.getId()), cartCategories, hasMainDish, avgPrice)
+                    + alreadyInCartPenalty(candidateDish, excludedDishIds));
         }
 
-        return candidateByDishId.values().stream()
+        List<Piatto> ranked = candidateByDishId.values().stream()
                 .sorted(Comparator
                         .comparingDouble(CandidateScore::totalScore).reversed()
-                        .thenComparingInt(CandidateScore::pairHits).reversed()
-                        .thenComparingDouble(CandidateScore::bestConfidence).reversed()
-                        .thenComparing(candidate -> safePrice(candidate.dish().getPrezzo())))
+                        .thenComparing(Comparator.comparingInt(CandidateScore::pairHits).reversed())
+                        .thenComparing(Comparator.comparingDouble(CandidateScore::bestConfidence).reversed())
+                        .thenComparing(candidate -> safePrice(candidate.dish().getPrezzo()))
+                        .thenComparing(candidate -> candidate.dish().getId()))
                 .map(CandidateScore::dish)
+                .toList();
+
+        return enforceUpsellCategoryMix(ranked, availableDishById, excludedDishIds).stream()
                 .limit(limit)
                 .toList();
     }
+    private List<Piatto> getSimpleUpsellSuggestions(List<Long> dishIds, Long restaurantId, int limit) {
+        if (dishIds == null || dishIds.isEmpty() || restaurantId == null) {
+            return List.of();
+        }
 
+        Set<Long> baseDishIds = dishIds.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (baseDishIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Piatto> suggestionsById = new LinkedHashMap<>();
+        List<DishCooccurrence> cooccurrences = new ArrayList<>();
+        for (Long baseDishId : baseDishIds) {
+            cooccurrences.addAll(dishCooccurrenceRepository.findAvailableSuggestions(baseDishId, restaurantId));
+        }
+
+        cooccurrences.stream()
+                .sorted(Comparator
+                        .comparing((DishCooccurrence cooccurrence) -> cooccurrence.getConfidence() == null ? 0.0d : cooccurrence.getConfidence()).reversed()
+                        .thenComparing(Comparator.comparing((DishCooccurrence cooccurrence) -> cooccurrence.getCount() == null ? 0L : cooccurrence.getCount()).reversed())
+                        .thenComparing(cooccurrence -> cooccurrence.getSuggestedDish().getId()))
+                .map(DishCooccurrence::getSuggestedDish)
+                .filter(this::isAvailable)
+                .filter(dish -> !baseDishIds.contains(dish.getId()))
+                .forEach(dish -> suggestionsById.putIfAbsent(dish.getId(), dish));
+
+        return suggestionsById.values().stream()
+                .limit(limit)
+                .toList();
+    }
     private double scoreCooccurrence(DishCooccurrence cooccurrence,
                                      Piatto suggestedDish,
-                                     MenuIntelligenceService.DishSignal signal,
+                                     AnalyticsService.DishFeatures features,
                                      Set<Categoria> cartCategories,
                                      boolean hasMainDish) {
         double confidence = cooccurrence.getConfidence() != null ? cooccurrence.getConfidence() : 0.0d;
-        return (0.62d * confidence)
-                + (0.23d * performanceScore(signal))
-                + categoryGapScore(suggestedDish.getCategoria(), cartCategories, hasMainDish)
-                + recommendationBoost(suggestedDish)
-                + affordabilityBoost(suggestedDish.getPrezzo());
+        double baseScore = (0.5d * confidence)
+                + (0.3d * featureValue(features, "rpi"))
+                + (0.2d * featureValue(features, "orderRate"));
+        double conversionEstimate = (0.6d * confidence) + (0.4d * featureValue(features, "orderRate"));
+        double expectedLift = safeNumericPrice(suggestedDish.getPrezzo()) * conversionEstimate;
+        return expectedLift + categoryBoost(suggestedDish.getCategoria()) + categoryGapScore(suggestedDish.getCategoria(), cartCategories, hasMainDish);
     }
 
     private double scoreFallback(Piatto candidateDish,
-                                 MenuIntelligenceService.DishSignal signal,
+                                 AnalyticsService.DishFeatures features,
                                  Set<Categoria> cartCategories,
-                                 boolean hasMainDish) {
-        return (0.58d * performanceScore(signal))
+                                 boolean hasMainDish,
+                                 double avgPrice) {
+        double baseScore = (0.3d * featureValue(features, "rpi"))
+                + (0.2d * featureValue(features, "orderRate"));
+        double conversionEstimate = 0.4d * featureValue(features, "orderRate");
+        double price = safeNumericPrice(candidateDish.getPrezzo());
+        double expectedLift = price * conversionEstimate;
+        return expectedLift
                 + categoryGapScore(candidateDish.getCategoria(), cartCategories, hasMainDish)
-                + recommendationBoost(candidateDish)
-                + affordabilityBoost(candidateDish.getPrezzo());
+                + lowPriceBoost(price, avgPrice);
     }
 
+
+
+
+    private double alreadyInCartPenalty(Piatto dish, Set<Long> excludedDishIds) {
+        if (dish == null || dish.getId() == null) {
+            return 0.0d;
+        }
+        return excludedDishIds.contains(dish.getId()) ? -0.5d : 0.0d;
+    }
+    private List<Piatto> enforceUpsellCategoryMix(List<Piatto> ranked, Map<Long, Piatto> availableDishById, Set<Long> excludedDishIds) {
+        List<Piatto> result = new ArrayList<>();
+        Set<Long> seen = new LinkedHashSet<>();
+        for (Piatto dish : ranked) {
+            if (dish == null || dish.getId() == null || !seen.add(dish.getId())) {
+                continue;
+            }
+            result.add(dish);
+        }
+
+        ensureCategory(result, availableDishById, excludedDishIds, Categoria.BEVANDA);
+        if (result.stream().noneMatch(this::isNonMainDish)) {
+            availableDishById.values().stream()
+                    .filter(this::isAvailable)
+                    .filter(this::isNonMainDish)
+                    .filter(dish -> result.stream().noneMatch(existing -> existing.getId().equals(dish.getId())))
+                    .findFirst()
+                    .ifPresent(dish -> result.add(Math.min(1, result.size()), dish));
+        }
+        return result;
+    }
+
+    private void ensureCategory(List<Piatto> result, Map<Long, Piatto> availableDishById, Set<Long> excludedDishIds, Categoria category) {
+        if (result.stream().anyMatch(dish -> dish.getCategoria() == category)) {
+            return;
+        }
+        availableDishById.values().stream()
+                .filter(this::isAvailable)
+                .filter(dish -> dish.getCategoria() == category)
+                .filter(dish -> result.stream().noneMatch(existing -> existing.getId().equals(dish.getId())))
+                .findFirst()
+                .ifPresent(dish -> result.add(0, dish));
+    }
+
+    private boolean isNonMainDish(Piatto dish) {
+        return dish != null && (dish.getCategoria() == Categoria.CONTORNO || dish.getCategoria() == Categoria.DOLCE);
+    }
+    private double featureValue(AnalyticsService.DishFeatures features, String field) {
+        if (features == null) {
+            return 0.0d;
+        }
+        return switch (field) {
+            case "rpi" -> features.rpi;
+            case "orderRate" -> features.orderRate;
+            default -> 0.0d;
+        };
+    }
+
+    private double categoryBoost(Categoria candidateCategory) {
+        if (candidateCategory == Categoria.BEVANDA) {
+            return 0.25d;
+        }
+        if (candidateCategory == Categoria.CONTORNO) {
+            return 0.20d;
+        }
+        if (candidateCategory == Categoria.DOLCE) {
+            return 0.15d;
+        }
+        return 0.0d;
+    }
+
+    private double lowPriceBoost(double price, double avgPrice) {
+        if (avgPrice <= 0.0d || price <= 0.0d) {
+            return 0.0d;
+        }
+        return price < avgPrice * 0.5d ? 0.1d : 0.0d;
+    }
+
+    private double safeNumericPrice(BigDecimal price) {
+        if (price == null) {
+            return 0.0d;
+        }
+        double value = price.doubleValue();
+        return Double.isFinite(value) ? value : 0.0d;
+    }
     private double performanceScore(MenuIntelligenceService.DishSignal signal) {
         if (signal == null) {
             return 0.0d;
@@ -291,6 +439,7 @@ public class UpsellService {
     }
 
     @Transactional
+    @Async
     public void refreshAggregatesForRestaurant(Long restaurantId) {
         if (restaurantId == null) {
             return;
@@ -304,33 +453,42 @@ public class UpsellService {
         return price != null ? price.doubleValue() : Double.MAX_VALUE;
     }
 
-    private record CandidateScore(
-            Piatto dish,
-            double cooccurrenceScore,
-            double fallbackScore,
-            double bestConfidence,
-            int pairHits
-    ) {
+    private static class CandidateScore {
+        private final Piatto dish;
+        private double cooccurrenceScore;
+        private double fallbackScore;
+        private double bestConfidence;
+        private int pairHits;
+
         private CandidateScore(Piatto dish) {
-            this(dish, 0.0d, 0.0d, 0.0d, 0);
+            this.dish = dish;
         }
 
-        private CandidateScore addCooccurrence(double score, double confidence) {
-            return new CandidateScore(
-                    dish,
-                    cooccurrenceScore + score,
-                    fallbackScore,
-                    Math.max(bestConfidence, confidence),
-                    pairHits + 1
-            );
+        private Piatto dish() {
+            return dish;
         }
 
-        private CandidateScore addFallback(double score) {
-            return new CandidateScore(dish, cooccurrenceScore, Math.max(fallbackScore, score), bestConfidence, pairHits);
+        private void addCooccurrence(double score, double confidence) {
+            double adjustedScore = this.pairHits > 0 ? score * 0.7d : score;
+            this.cooccurrenceScore += adjustedScore;
+            this.pairHits += 1;
+            this.bestConfidence = Math.max(this.bestConfidence, confidence);
+        }
+
+        private void addFallback(double score) {
+            this.fallbackScore = Math.max(this.fallbackScore, score);
         }
 
         private double totalScore() {
             return cooccurrenceScore + fallbackScore;
+        }
+
+        private int pairHits() {
+            return pairHits;
+        }
+
+        private double bestConfidence() {
+            return bestConfidence;
         }
     }
 }

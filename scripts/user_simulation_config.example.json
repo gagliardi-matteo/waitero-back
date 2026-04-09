@@ -1,0 +1,74 @@
+{
+  "base_url": "http://localhost:8080",
+  "days": 30,
+  "start_date": "2026-04-01",
+  "output_dir": "simulation_output",
+  "seed": 12345,
+  "request_timeout_seconds": 12,
+  "sleep_between_sessions_ms": 0,
+  "fail_fast": false,
+  "restaurants": [
+    {
+      "restaurant_id": 1,
+      "name": "Restaurant 1",
+      "weekday_sessions_min": 18,
+      "weekday_sessions_max": 45,
+      "weekend_sessions_min": 55,
+      "weekend_sessions_max": 110,
+      "latitude": null,
+      "longitude": null,
+      "analytics_token": null,
+      "api_token": null,
+      "auto_pay_orders": true,
+      "tables": [
+        {
+          "table_id": 1,
+          "qr_token": "REPLACE_WITH_REAL_QR_TOKEN",
+          "table_public_id": null
+        }
+      ]
+    },
+    {
+      "restaurant_id": 2,
+      "name": "Restaurant 2",
+      "weekday_sessions_min": 14,
+      "weekday_sessions_max": 36,
+      "weekend_sessions_min": 45,
+      "weekend_sessions_max": 95,
+      "latitude": null,
+      "longitude": null,
+      "analytics_token": null,
+      "api_token": null,
+      "auto_pay_orders": true,
+      "tables": [
+        {
+          "table_id": 1,
+          "qr_token": "REPLACE_WITH_REAL_QR_TOKEN",
+          "table_public_id": null
+        }
+      ]
+    },
+    {
+      "restaurant_id": 3,
+      "name": "Restaurant 3",
+      "weekday_sessions_min": 22,
+      "weekday_sessions_max": 52,
+      "weekend_sessions_min": 65,
+      "weekend_sessions_max": 125,
+      "latitude": null,
+      "longitude": null,
+      "analytics_token": null,
+      "api_token": null,
+      "auto_pay_orders": true,
+      "tables": [
+        {
+          "table_id": 1,
+          "qr_token": "REPLACE_WITH_REAL_QR_TOKEN",
+          "table_public_id": null
+        }
+      ]
+    }
+  ]
+}
+
+

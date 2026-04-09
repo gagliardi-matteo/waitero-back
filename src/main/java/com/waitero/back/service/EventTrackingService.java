@@ -5,11 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.waitero.back.dto.EventTrackingRequest;
 import com.waitero.back.entity.EventLog;
 import com.waitero.back.repository.EventLogRepository;
+import com.waitero.back.repository.PiattoRepository;
+import com.waitero.back.repository.TavoloRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -19,8 +22,13 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class EventTrackingService {
 
+    private static final int MAX_EVENTS_PER_SESSION_PER_MINUTE = 120;
+    private static final Duration DEDUPE_WINDOW = Duration.ofSeconds(1);
+    private static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(1);
+
     private static final Set<String> SUPPORTED_EVENT_TYPES = Set.of(
             "view_dish",
+            "view_menu_item",
             "click_dish",
             "add_to_cart",
             "remove_from_cart",
@@ -30,6 +38,8 @@ public class EventTrackingService {
     );
 
     private final EventLogRepository eventLogRepository;
+    private final PiattoRepository piattoRepository;
+    private final TavoloRepository tavoloRepository;
     private final ObjectMapper objectMapper;
 
     public void track(EventTrackingRequest request) {
@@ -38,10 +48,18 @@ public class EventTrackingService {
         }
 
         String eventType = normalizeEventType(request.getEventType());
+        String sessionId = normalize(request.getSessionId());
+        if (!isValidDishContext(request) || !isValidTableContext(request)) {
+            return;
+        }
+        if (tooManyEventsFromSession(sessionId) || existsRecentEvent(sessionId, request.getDishId(), eventType)) {
+            return;
+        }
+
         eventLogRepository.save(EventLog.builder()
                 .eventType(eventType)
                 .userId(normalize(request.getUserId()))
-                .sessionId(normalize(request.getSessionId()))
+                .sessionId(sessionId)
                 .restaurantId(request.getRestaurantId())
                 .tableId(request.getTableId())
                 .dishId(request.getDishId())
@@ -81,6 +99,42 @@ public class EventTrackingService {
                 .dishId(dishId)
                 .metadata(metadata)
                 .build());
+    }
+
+    private boolean isValidDishContext(EventTrackingRequest request) {
+        if (request.getDishId() == null) {
+            return true;
+        }
+        if (request.getRestaurantId() == null) {
+            return false;
+        }
+        return piattoRepository.existsByIdAndRistoratoreId(request.getDishId(), request.getRestaurantId());
+    }
+
+    private boolean isValidTableContext(EventTrackingRequest request) {
+        if (request.getTableId() == null) {
+            return true;
+        }
+        if (request.getRestaurantId() == null) {
+            return false;
+        }
+        return tavoloRepository.existsByRistoratoreIdAndNumero(request.getRestaurantId(), request.getTableId());
+    }
+
+    private boolean tooManyEventsFromSession(String sessionId) {
+        if (sessionId == null) {
+            return false;
+        }
+        LocalDateTime since = LocalDateTime.now().minus(RATE_LIMIT_WINDOW);
+        return eventLogRepository.countBySessionIdAndCreatedAtAfter(sessionId, since) >= MAX_EVENTS_PER_SESSION_PER_MINUTE;
+    }
+
+    private boolean existsRecentEvent(String sessionId, Long dishId, String eventType) {
+        if (sessionId == null || eventType == null) {
+            return false;
+        }
+        LocalDateTime since = LocalDateTime.now().minus(DEDUPE_WINDOW);
+        return eventLogRepository.existsRecentDuplicate(sessionId, dishId, eventType, since);
     }
 
     private String normalizeEventType(String eventType) {

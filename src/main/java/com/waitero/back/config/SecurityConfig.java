@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/me", "/api/auth/userID", "/api/auth/profile", "/api/auth/password").authenticated()
                         .requestMatchers("/api/image/**").permitAll()
                         .requestMatchers("/api/customer/**").permitAll()
+                        .requestMatchers("/api/events").permitAll()
                         .requestMatchers("/api/table/access").permitAll()
                         .requestMatchers("/api/orders/stream").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("MASTER")
@@ -84,5 +85,6 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(jwtService);
     }
 }
+
 
 

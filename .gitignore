@@ -58,3 +58,9 @@ src/main/resources/application-*.secrets.yaml
 *.pfx
 service-account*.json
 google-credentials*.json
+
+# Waitero simulation local artifacts
+scripts/user_simulation_config.local.json
+simulation_output_real_r1/
+__pycache__/
+**/__pycache__/

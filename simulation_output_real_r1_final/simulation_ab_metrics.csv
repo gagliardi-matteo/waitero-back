@@ -1,0 +1,4 @@
+restaurant_id,variant,orders,revenue,avg_order_value,items_per_order,uplift_revenue,uplift_avg_order_value,uplift_items_per_order,status
+1,UNAVAILABLE,,,,,,,,missing analytics_token
+1,UNAVAILABLE,,,,,,,,missing analytics_token
+1,UNAVAILABLE,,,,,,,,missing analytics_token
