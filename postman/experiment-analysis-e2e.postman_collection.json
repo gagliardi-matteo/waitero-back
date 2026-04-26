@@ -1,0 +1,87 @@
+{
+  "info": {
+    "name": "WaiterO Experiment Analysis E2E",
+    "_postman_id": "6f697725-8e84-48ef-b929-8a2fd939f1d1",
+    "description": "Authenticate with local-login and verify /api/experiment/analysis end-to-end.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "email", "value": "your-email@example.com" },
+    { "key": "password", "value": "your-password" },
+    { "key": "ristoranteId", "value": "1" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Local Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/local-login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "local-login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(200);",
+              "const json = pm.response.json();",
+              "pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+              "pm.collectionVariables.set('accessToken', json.accessToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Experiment Analysis",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/experiment/analysis?ristoranteId={{ristoranteId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "experiment", "analysis"],
+          "query": [
+            { "key": "ristoranteId", "value": "{{ristoranteId}}" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(200);",
+              "const json = pm.response.json();",
+              "pm.expect(json.metrics).to.be.an('object');",
+              "['A', 'B', 'C'].forEach((variant) => {",
+              "  pm.expect(json.metrics[variant]).to.be.an('object');",
+              "  ['totalRevenue', 'totalOrders', 'totalSessions', 'rps', 'aov', 'cr'].forEach((field) => {",
+              "    pm.expect(json.metrics[variant][field]).to.not.equal(null);",
+              "  });",
+              "});",
+              "pm.expect(['A', 'B', 'C', 'NONE']).to.include(json.winner);",
+              "pm.expect(json.currentMode).to.be.a('string').and.not.empty;"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

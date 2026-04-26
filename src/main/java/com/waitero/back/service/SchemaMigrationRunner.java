@@ -288,10 +288,15 @@ public class SchemaMigrationRunner implements ApplicationRunner {
             jdbcTemplate.execute("ALTER TABLE customer_orders ADD COLUMN variant varchar(1)");
             log.info("Added missing column customer_orders.variant");
         }
+        if (!columnExists("customer_orders", "session_id")) {
+            jdbcTemplate.execute("ALTER TABLE customer_orders ADD COLUMN session_id varchar(128)");
+            log.info("Added missing column customer_orders.session_id");
+        }
         jdbcTemplate.execute("UPDATE customer_orders SET variant = 'A' WHERE variant IS NULL OR btrim(variant) = ''");
         jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN variant SET NOT NULL");
         jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN variant TYPE varchar(20)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_orders_variant ON customer_orders(ristoratore_id, variant)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_orders_experiment_window ON customer_orders(ristoratore_id, created_at, variant, session_id)");
     }
 
     private void ensureCustomerOrderItemColumns() {
@@ -311,6 +316,7 @@ public class SchemaMigrationRunner implements ApplicationRunner {
 
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_order_items_source ON customer_order_items(source)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_order_items_source_dish_id ON customer_order_items(source_dish_id)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_order_items_ordine_piatto ON customer_order_items(ordine_id, piatto_id)");
     }
     private void ensureDishCooccurrenceTable() {
         jdbcTemplate.execute(

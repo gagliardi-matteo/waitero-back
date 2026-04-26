@@ -29,11 +29,12 @@ public class MenuPublicController {
     private final MenuIntelligenceService menuIntelligenceService;
 
     @GetMapping("/menu/piatti/{id}")
-    public List<PiattoDTO> getPiatti(@PathVariable Long id, @RequestParam(required = false) String sessionId) {
+    public List<PiattoDTO> getPiatti(@PathVariable Long id, @RequestParam(required = false) String sessionId, @RequestParam(required = false) Integer tableId) {
         Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(id);
         menuService.ensureRestaurantServiceOpen(id);
-        return menuService.toDTOList(menuIntelligenceService.rankDishesByRevenue(id, sessionId))
+        return menuService.toDTOList(menuIntelligenceService.rankDishesByRevenue(id, sessionId, tableId))
                 .stream()
+                .filter(dto -> Boolean.TRUE.equals(dto.getDisponibile()))
                 .map(dto -> enrichWithSignal(dto, signals.get(dto.getId())))
                 .toList();
     }
@@ -47,19 +48,21 @@ public class MenuPublicController {
     }
 
     @GetMapping("/upsell/{dishId}")
-    public List<PiattoDTO> getUpsellSuggestions(@PathVariable Long dishId, @RequestParam Long restaurantId, @RequestParam(required = false) String sessionId) {
+    public List<PiattoDTO> getUpsellSuggestions(@PathVariable Long dishId, @RequestParam Long restaurantId, @RequestParam(required = false) String sessionId, @RequestParam(required = false) Integer tableId) {
         Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(restaurantId);
-        return menuService.toDTOList(upsellService.getUpsellSuggestions(dishId, restaurantId, sessionId))
+        return menuService.toDTOList(upsellService.getUpsellSuggestions(dishId, restaurantId, sessionId, tableId))
                 .stream()
+                .filter(dto -> Boolean.TRUE.equals(dto.getDisponibile()))
                 .map(dto -> enrichWithSignal(dto, signals.get(dto.getId())))
                 .toList();
     }
 
     @GetMapping("/upsell/cart-suggestions")
-    public List<PiattoDTO> getCartUpsellSuggestions(@RequestParam Long restaurantId, @RequestParam List<Long> dishIds, @RequestParam(required = false) String sessionId) {
+    public List<PiattoDTO> getCartUpsellSuggestions(@RequestParam Long restaurantId, @RequestParam List<Long> dishIds, @RequestParam(required = false) String sessionId, @RequestParam(required = false) Integer tableId) {
         Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(restaurantId);
-        return menuService.toDTOList(upsellService.getCartUpsellSuggestions(dishIds, restaurantId, sessionId))
+        return menuService.toDTOList(upsellService.getCartUpsellSuggestions(dishIds, restaurantId, sessionId, tableId))
                 .stream()
+                .filter(dto -> Boolean.TRUE.equals(dto.getDisponibile()))
                 .map(dto -> enrichWithSignal(dto, signals.get(dto.getId())))
                 .toList();
     }
@@ -96,3 +99,4 @@ public class MenuPublicController {
         return dto;
     }
 }
+

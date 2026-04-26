@@ -46,7 +46,8 @@ public class OrdineService {
     public OrdineDTO createOrAppend(CustomerOrderRequest request) {
         validateCustomerRequest(request);
         Long restaurantId = Long.parseLong(request.getRestaurantId());
-        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), request.getNoteCucina(), request.getSessionId());
+        String variant = experimentService.getVariant(request.getSessionId(), restaurantId, request.getTableId());
+        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), request.getNoteCucina(), request.getSessionId(), variant);
     }
 
     @Transactional
@@ -59,7 +60,7 @@ public class OrdineService {
             throw new RuntimeException("Ordine vuoto");
         }
         tavoloService.requireActiveTable(restaurantId, request.getTableId());
-        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), null, null);
+        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), null, null, ExperimentService.VARIANT_HOLDOUT);
     }
 
     @Transactional(readOnly = true)
@@ -462,11 +463,10 @@ public class OrdineService {
         }
     }
 
-    private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina, String sessionId) {
+    private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina, String sessionId, String experimentVariant) {
         tavoloService.requireActiveTable(restaurantId, tableId);
         Ristoratore ristoratore = ristoratoreRepository.findById(restaurantId)
                 .orElseThrow(() -> new RuntimeException("Ristorante non trovato"));
-        String variant = experimentService.getVariant(resolveExperimentSessionId(sessionId, restaurantId, tableId), restaurantId);
 
         Ordine ordine = ordineRepository
                 .findFirstByRistoratoreIdAndTableIdAndStatusInOrderByCreatedAtDesc(restaurantId, tableId, ACTIVE_STATUSES)
@@ -477,12 +477,15 @@ public class OrdineService {
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
                         .totale(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP))
+                        .variant((experimentVariant == null || experimentVariant.isBlank()) ? ExperimentService.VARIANT_HOLDOUT : experimentVariant)
+                        .sessionId(normalizeSessionId(sessionId))
+                        .itemCount(0)
                         .items(new ArrayList<>())
                         .payments(new ArrayList<>())
                         .build());
 
-        if (ordine.getVariant() == null || ordine.getVariant().isBlank()) {
-            ordine.setVariant(variant);
+        if (ordine.getSessionId() == null) {
+            ordine.setSessionId(normalizeSessionId(sessionId));
         }
 
         Map<Long, OrdineItem> existingItemsByDishId = new LinkedHashMap<>();
@@ -578,13 +581,7 @@ public class OrdineService {
         }
         return normalized.length() > 50 ? normalized.substring(0, 50) : normalized;
     }
-    private String resolveExperimentSessionId(String sessionId, Long restaurantId, Integer tableId) {
-        String normalized = normalizeSessionId(sessionId);
-        if (normalized != null) {
-            return normalized;
-        }
-        return "order-" + restaurantId + "-" + tableId;
-    }
+
     private String normalizeSessionId(String sessionId) {
         if (sessionId == null) {
             return null;
@@ -671,9 +668,16 @@ public class OrdineService {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
+    private int calculateItemCount(Ordine ordine) {
+        return ordine.getItems().stream()
+                .mapToInt(OrdineItem::getQuantity)
+                .sum();
+    }
+
     private OrderFinancialSnapshot refreshFinancials(Ordine ordine) {
         BigDecimal total = calculateTotalFromItems(ordine);
         ordine.setTotale(total);
+        ordine.setItemCount(calculateItemCount(ordine));
         BigDecimal paidAmount = calculatePaid(ordine);
         BigDecimal remainingAmount = total.subtract(paidAmount).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
         return new OrderFinancialSnapshot(total, paidAmount, remainingAmount);
@@ -765,6 +769,17 @@ public class OrdineService {
     private record OrderFinancialSnapshot(BigDecimal total, BigDecimal paidAmount, BigDecimal remainingAmount) {
     }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 

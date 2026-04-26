@@ -19,6 +19,14 @@ public record DishPerformanceDTO(
         BigDecimal ctr,
         BigDecimal revenuePerImpression,
         BigDecimal viewToOrderRate,
+        long recentViews,
+        long previousViews,
+        long recentOrderCount,
+        long previousOrderCount,
+        BigDecimal recentViewToOrderRate,
+        BigDecimal previousViewToOrderRate,
+        BigDecimal trendDelta,
+        String trendDirection,
         String performanceLabel
 ) {
 }

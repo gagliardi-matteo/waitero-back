@@ -24,14 +24,18 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Deprecated(since = "2026-04", forRemoval = false)
 public class AnalyticsService {
+
+    private static final long TREND_MIN_RECENT_VIEWS = 5L;
+    private static final BigDecimal TREND_FLAT_THRESHOLD = new BigDecimal("0.0200");
 
     private final JdbcTemplate jdbcTemplate;
     private final PerformanceLabelResolver performanceLabelResolver;
 
     public AnalyticsDashboardDTO getDashboard(Long restaurantId) {
-        AnalyticsOverviewDTO overview = getOverview(restaurantId);
-        List<DishPerformanceDTO> dishPerformance = getDishPerformance(restaurantId);
+        AnalyticsOverviewDTO overview = buildOverview(restaurantId);
+        List<DishPerformanceDTO> dishPerformance = buildDishPerformance(restaurantId);
 
         return AnalyticsDashboardDTO.builder()
                 .overview(overview)
@@ -43,6 +47,10 @@ public class AnalyticsService {
     }
 
     public AnalyticsOverviewDTO getOverview(Long restaurantId) {
+        return buildOverview(restaurantId);
+    }
+
+    private AnalyticsOverviewDTO buildOverview(Long restaurantId) {
         long views = readCount(
                 "select count(*) from event_log where restaurant_id = ? and event_type = 'view_dish'",
                 restaurantId
@@ -93,8 +101,18 @@ public class AnalyticsService {
     }
 
     public List<DishPerformanceDTO> getDishPerformance(Long restaurantId) {
+        return buildDishPerformance(restaurantId);
+    }
+
+    private List<DishPerformanceDTO> buildDishPerformance(Long restaurantId) {
         return jdbcTemplate.query(
                 """
+                with anchor as (
+                    select greatest(
+                        coalesce((select max(created_at) from event_log where restaurant_id = ?), timestamp 'epoch'),
+                        coalesce((select max(created_at) from customer_orders where ristoratore_id = ?), timestamp 'epoch')
+                    ) as anchor_at
+                )
                 select
                     p.id as dish_id,
                     p.nome as dish_name,
@@ -104,25 +122,48 @@ public class AnalyticsService {
                     coalesce(ev.impressions, 0) as impressions,
                     coalesce(ev.clicks, 0) as clicks,
                     coalesce(ev.add_to_cart, 0) as add_to_cart,
+                    coalesce(ev.recent_views, 0) as recent_views,
+                    coalesce(ev.previous_views, 0) as previous_views,
                     coalesce(ord.order_count, 0) as order_count,
+                    coalesce(ord.recent_order_count, 0) as recent_order_count,
+                    coalesce(ord.previous_order_count, 0) as previous_order_count,
                     coalesce(ord.revenue, 0) as revenue
                 from piatto p
-                left join (
+                cross join anchor a
+                left join lateral (
                     select
                         dish_id,
                         count(*) filter (where event_type = 'view_dish') as views,
                         count(*) filter (where event_type = 'view_menu_item') as impressions,
                         count(*) filter (where event_type = 'click_dish') as clicks,
-                        count(*) filter (where event_type = 'add_to_cart') as add_to_cart
+                        count(*) filter (where event_type = 'add_to_cart') as add_to_cart,
+                        count(*) filter (
+                            where event_type = 'view_dish'
+                              and created_at > a.anchor_at - interval '7 day'
+                              and created_at <= a.anchor_at
+                        ) as recent_views,
+                        count(*) filter (
+                            where event_type = 'view_dish'
+                              and created_at > a.anchor_at - interval '14 day'
+                              and created_at <= a.anchor_at - interval '7 day'
+                        ) as previous_views
                     from event_log
                     where restaurant_id = ?
                       and dish_id is not null
                     group by dish_id
                 ) ev on ev.dish_id = p.id
-                left join (
+                left join lateral (
                     select
                         coi.piatto_id as dish_id,
                         count(distinct co.id) as order_count,
+                        count(distinct co.id) filter (
+                            where co.created_at > a.anchor_at - interval '7 day'
+                              and co.created_at <= a.anchor_at
+                        ) as recent_order_count,
+                        count(distinct co.id) filter (
+                            where co.created_at > a.anchor_at - interval '14 day'
+                              and co.created_at <= a.anchor_at - interval '7 day'
+                        ) as previous_order_count,
                         coalesce(sum(coi.prezzo_unitario * coi.quantity), 0) as revenue
                     from customer_order_items coi
                     join customer_orders co on co.id = coi.ordine_id
@@ -138,8 +179,15 @@ public class AnalyticsService {
                     long clicks = rs.getLong("clicks");
                     long addToCart = rs.getLong("add_to_cart");
                     long orderCount = rs.getLong("order_count");
+                    long recentViews = rs.getLong("recent_views");
+                    long previousViews = rs.getLong("previous_views");
+                    long recentOrderCount = rs.getLong("recent_order_count");
+                    long previousOrderCount = rs.getLong("previous_order_count");
                     BigDecimal viewToCartRate = ratio(addToCart, views);
                     BigDecimal viewToOrderRate = ratio(orderCount, views);
+                    BigDecimal recentViewToOrderRate = ratio(recentOrderCount, recentViews);
+                    BigDecimal previousViewToOrderRate = ratio(previousOrderCount, previousViews);
+                    BigDecimal trendDelta = recentViewToOrderRate.subtract(previousViewToOrderRate).setScale(4, RoundingMode.HALF_UP);
 
                     return DishPerformanceDTO.builder()
                             .dishId(rs.getLong("dish_id"))
@@ -155,9 +203,19 @@ public class AnalyticsService {
                             .ctr(ratio(clicks, impressions))
                             .revenuePerImpression(moneyRatio(rs.getBigDecimal("revenue"), impressions))
                             .viewToOrderRate(viewToOrderRate)
+                            .recentViews(recentViews)
+                            .previousViews(previousViews)
+                            .recentOrderCount(recentOrderCount)
+                            .previousOrderCount(previousOrderCount)
+                            .recentViewToOrderRate(recentViewToOrderRate)
+                            .previousViewToOrderRate(previousViewToOrderRate)
+                            .trendDelta(trendDelta)
+                            .trendDirection(resolveTrendDirection(recentViews, previousViews, trendDelta))
                             .performanceLabel(performanceLabelResolver.resolve(views, addToCart, orderCount))
                             .build();
                 },
+                restaurantId,
+                restaurantId,
                 restaurantId,
                 restaurantId,
                 restaurantId
@@ -336,13 +394,17 @@ public class AnalyticsService {
                 with order_rows as (
                     select
                         co.id as order_id,
-                        coalesce(nullif(btrim(co.variant), ''), 'A') as variant,
+                        case
+                            when upper(coalesce(nullif(btrim(co.variant), ''), '')) = 'A' then 'A'
+                            when upper(coalesce(nullif(btrim(co.variant), ''), '')) = 'B' then 'B'
+                            else null
+                        end as variant,
                         coalesce(co.totale, coalesce(sum(coi.quantity * coi.prezzo_unitario), 0)) as total_price,
-                        coalesce(sum(coi.quantity), 0) as item_count
+                        coalesce(co.item_count, coalesce(sum(coi.quantity), 0)) as item_count
                     from customer_orders co
                     left join customer_order_items coi on coi.ordine_id = co.id
                     where co.ristoratore_id = ?
-                    group by co.id, co.variant, co.totale
+                    group by co.id, co.variant, co.totale, co.item_count
                 )
                 select
                     variant,
@@ -351,6 +413,7 @@ public class AnalyticsService {
                     coalesce(avg(total_price), 0) as avg_order_value,
                     coalesce(sum(item_count), 0) as total_items
                 from order_rows
+                where variant is not null
                 group by variant
                 """,
                 (rs, rowNum) -> new ExperimentMetricRow(
@@ -695,6 +758,16 @@ public class AnalyticsService {
                 .divide(BigDecimal.valueOf(denominator), 4, RoundingMode.HALF_UP);
     }
 
+    private String resolveTrendDirection(long recentViews, long previousViews, BigDecimal trendDelta) {
+        if (recentViews < TREND_MIN_RECENT_VIEWS) {
+            return "insufficient_data";
+        }
+        if (trendDelta == null || trendDelta.abs().compareTo(TREND_FLAT_THRESHOLD) < 0) {
+            return "flat";
+        }
+        return trendDelta.signum() > 0 ? "up" : "down";
+    }
+
 
     public double safeDivide(double numerator, double denominator) {
         if (!Double.isFinite(numerator) || !Double.isFinite(denominator) || denominator == 0.0d) {
@@ -754,3 +827,5 @@ public class AnalyticsService {
         }
     }
 }
+
+

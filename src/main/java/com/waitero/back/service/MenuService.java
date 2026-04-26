@@ -18,8 +18,10 @@ import com.waitero.back.repository.RistoratoreRepository;
 import com.waitero.back.repository.ServiceHourRepository;
 import com.waitero.back.security.AccessContextService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -56,7 +58,9 @@ public class MenuService {
 
     public List<Piatto> getPiatti() {
         Ristoratore ristoratore = getRistoratoreAutenticato();
-        return piattoRepo.findAllByRistoratoreIdWithCanonical(ristoratore.getId());
+        return piattoRepo.findAllByRistoratoreIdWithCanonical(ristoratore.getId()).stream()
+                .filter(this::isAvailable)
+                .toList();
     }
 
     public Piatto getPiattoById(Long id) {
@@ -67,7 +71,9 @@ public class MenuService {
     }
 
     public List<Piatto> getPiattiByRistoratore(Long id) {
-        return piattoRepo.findAllByRistoratoreIdWithCanonical(id);
+        return piattoRepo.findAllByRistoratoreIdWithCanonical(id).stream()
+                .filter(this::isAvailable)
+                .toList();
     }
 
     public List<Piatto> getPublicPiattiByRistoratore(Long id) {
@@ -79,6 +85,9 @@ public class MenuService {
         Piatto piatto = piattoRepo.findByIdWithCanonical(id)
                 .orElseThrow(() -> new RuntimeException("Piatto non trovato"));
         ensureRestaurantServiceOpen(piatto.getRistoratore().getId());
+        if (!isAvailable(piatto)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Piatto non disponibile");
+        }
         return piatto;
     }
 
@@ -99,11 +108,9 @@ public class MenuService {
         entity.setNome(dto.getNome());
         entity.setDescrizione(dto.getDescrizione());
         entity.setPrezzo(dto.getPrezzo());
-        entity.setDisponibile(dto.getDisponibile());
         entity.setCategoria(Categoria.valueOf(dto.getCategoria()));
         entity.setIngredienti(normalizeText(dto.getIngredienti()));
         entity.setAllergeni(normalizeText(dto.getAllergeni()));
-        entity.setConsigliato(Boolean.TRUE.equals(dto.getConsigliato()));
     }
 
     @Transactional
@@ -114,13 +121,22 @@ public class MenuService {
         esistente.setNome(nuovo.getNome());
         esistente.setDescrizione(nuovo.getDescrizione());
         esistente.setPrezzo(nuovo.getPrezzo());
-        esistente.setDisponibile(nuovo.getDisponibile());
         esistente.setCategoria(nuovo.getCategoria());
         esistente.setIngredienti(normalizeText(nuovo.getIngredienti()));
         esistente.setAllergeni(normalizeText(nuovo.getAllergeni()));
-        esistente.setConsigliato(Boolean.TRUE.equals(nuovo.getConsigliato()));
         syncDishIngredients(esistente, esistente.getIngredienti());
         return piattoRepo.save(esistente);
+    }
+
+    public boolean isDecisionFieldUpdateRequested(Piatto existing, PiattoDTO incoming) {
+        if (existing == null || incoming == null) {
+            return false;
+        }
+        boolean availabilityChanged = incoming.getDisponibile() != null
+                && !Objects.equals(Boolean.TRUE.equals(existing.getDisponibile()), Boolean.TRUE.equals(incoming.getDisponibile()));
+        boolean recommendationChanged = incoming.getConsigliato() != null
+                && !Objects.equals(Boolean.TRUE.equals(existing.getConsigliato()), Boolean.TRUE.equals(incoming.getConsigliato()));
+        return availabilityChanged || recommendationChanged;
     }
 
     @Transactional
@@ -180,12 +196,12 @@ public class MenuService {
         p.setNome(dto.getNome());
         p.setDescrizione(dto.getDescrizione());
         p.setPrezzo(dto.getPrezzo());
-        p.setDisponibile(dto.getDisponibile());
+        p.setDisponibile(true);
         p.setCategoria(Categoria.valueOf(dto.getCategoria()));
         p.setImageUrl(dto.getImageUrl());
         p.setIngredienti(normalizeText(dto.getIngredienti()));
         p.setAllergeni(normalizeText(dto.getAllergeni()));
-        p.setConsigliato(Boolean.TRUE.equals(dto.getConsigliato()));
+        p.setConsigliato(false);
         return p;
     }
 
@@ -201,6 +217,10 @@ public class MenuService {
         if (!isOpen) {
             throw new RuntimeException("Servizio non disponibile in questo orario");
         }
+    }
+
+    private boolean isAvailable(Piatto dish) {
+        return dish != null && Boolean.TRUE.equals(dish.getDisponibile());
     }
 
     private void syncDishIngredients(Piatto piatto, String ingredientiText) {

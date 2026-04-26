@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/waitero}
+    username: ${TEST_DB_USERNAME:waitero}
+    password: ${TEST_DB_PASSWORD:waitero}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+app:
+  cors:
+    allowed-origin-patterns: http://localhost
+  master:
+    bootstrap-emails:
+  local-login:
+    restaurant-bootstrap-password:

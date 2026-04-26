@@ -1,5 +1,11 @@
 package com.waitero.back.service;
 
+import com.waitero.back.dto.DishIntelligenceDTO;
+import com.waitero.analyticsv2.dto.MenuRankedDishV2DTO;
+import com.waitero.analyticsv2.service.MenuIntelligenceV2Service;
+import com.waitero.analyticsv2.support.AnalyticsV2JsonLogger;
+import com.waitero.analyticsv2.support.AnalyticsV2TimeRange;
+import com.waitero.analyticsv2.support.AnalyticsV2TimeRangeResolver;
 import com.waitero.back.entity.Piatto;
 import com.waitero.back.repository.PiattoRepository;
 import lombok.Builder;
@@ -14,9 +20,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -29,18 +37,52 @@ public class MenuIntelligenceService {
     private final PerformanceLabelResolver performanceLabelResolver;
     private final AnalyticsService analyticsService;
     private final ExperimentService experimentService;
+    private final AnalyticsV2JsonLogger analyticsV2JsonLogger;
     private final PiattoRepository piattoRepository;
+    private final MenuIntelligenceV2Service menuIntelligenceV2Service;
+    private final AnalyticsV2TimeRangeResolver analyticsV2TimeRangeResolver;
+    private final DishIntelligenceService dishIntelligenceService;
+    private final MenuRankingExperimentLogger menuRankingExperimentLogger;
     private final Map<Long, CachedRanking> rankingCache = new ConcurrentHashMap<>();
 
-
+    @Deprecated(since = "2026-04", forRemoval = false)
     public List<Piatto> rankDishesByRevenue(Long restaurantId) {
+        return rankDishesByRevenueInternal(restaurantId);
+    }
+
+    public List<Piatto> rankDishesByRevenue(Long restaurantId, String sessionId) {
+        return rankDishesByRevenue(restaurantId, sessionId, null);
+    }
+
+    public List<Piatto> rankDishesByRevenue(Long restaurantId, String sessionId, Integer tableId) {
+        String variant = experimentService.getVariant(sessionId, restaurantId, tableId);
+        if (ExperimentService.VARIANT_B.equals(variant)) {
+            return rankDishesByRevenueWithV2Fallback(restaurantId, sessionId, tableId, variant);
+        }
+        if (ExperimentService.VARIANT_C.equals(variant)) {
+            return rankDishesByDishScoreWithFallback(restaurantId, sessionId, tableId);
+        }
+        return rankDishesByRevenueInternal(restaurantId);
+    }
+
+    private List<Piatto> rankDishesByRevenueWithV2Fallback(Long restaurantId, String sessionId, Integer tableId, String assignedVariant) {
+        try {
+            return rankDishesByAnalyticsV2(restaurantId);
+        } catch (Exception ex) {
+            experimentService.pinVariant(sessionId, restaurantId, tableId, ExperimentService.VARIANT_A);
+            analyticsV2JsonLogger.logFallback("ranking", restaurantId, assignedVariant, null, List.of(), ex);
+            return rankDishesByRevenueInternal(restaurantId);
+        }
+    }
+
+    private List<Piatto> rankDishesByRevenueInternal(Long restaurantId) {
         Instant now = Instant.now();
         CachedRanking cached = rankingCache.get(restaurantId);
         if (cached != null && now.isBefore(cached.expiresAt())) {
-            return cached.ranking();
+            return materializeCachedRanking(restaurantId, cached);
         }
 
-        List<Piatto> dishes = piattoRepository.findAllByRistoratoreIdWithCanonical(restaurantId);
+        List<Piatto> dishes = loadAvailableDishes(restaurantId);
         if (dishes.isEmpty()) {
             return List.of();
         }
@@ -105,39 +147,132 @@ public class MenuIntelligenceService {
                         .thenComparing(Piatto::getId))
                 .toList();
         List<Piatto> diversified = applyDiversity(ranked);
-        rankingCache.put(restaurantId, new CachedRanking(diversified, scoreByDishId, now.plus(RANKING_CACHE_TTL)));
+        rankingCache.put(restaurantId, new CachedRanking(
+                diversified.stream().map(Piatto::getId).toList(),
+                scoreByDishId,
+                now.plus(RANKING_CACHE_TTL)
+        ));
         return diversified;
     }
-    public List<Piatto> rankDishesByRevenue(Long restaurantId, String sessionId) {
-        String variant = experimentService.getVariant(sessionId, restaurantId);
-        if ("B".equals(variant) || ExperimentService.VARIANT_HOLDOUT.equals(variant)) {
-            return rankDishesByBaseline(restaurantId);
-        }
-        return rankDishesByRevenue(restaurantId);
-    }
 
-    private List<Piatto> rankDishesByBaseline(Long restaurantId) {
-        List<Piatto> dishes = piattoRepository.findAllByRistoratoreIdWithCanonical(restaurantId);
+    private List<Piatto> rankDishesByAnalyticsV2(Long restaurantId) {
+        List<Piatto> dishes = loadAvailableDishes(restaurantId);
         if (dishes.isEmpty()) {
             return List.of();
         }
 
-        Map<Long, AnalyticsService.DishFeatures> featuresByDishId = new LinkedHashMap<>();
-        for (AnalyticsService.DishFeatures features : analyticsService.getDishFeatures(restaurantId)) {
-            featuresByDishId.put(features.dishId, features);
+        Map<Long, Piatto> dishById = new LinkedHashMap<>();
+        for (Piatto dish : dishes) {
+            dishById.put(dish.getId(), dish);
         }
 
-        return dishes.stream()
-                .sorted(Comparator
-                        .comparing((Piatto dish) -> {
-                            AnalyticsService.DishFeatures features = featuresByDishId.get(dish.getId());
-                            double popularity = features != null ? features.popularity : 0.0d;
-                            double price = dish.getPrezzo() != null ? dish.getPrezzo().doubleValue() : 0.0d;
-                            return popularity + price;
-                        }).reversed()
-                        .thenComparing(Piatto::getId))
-                .toList();
+        AnalyticsV2TimeRange timeRange = analyticsV2TimeRangeResolver.resolve(null, null);
+        List<MenuRankedDishV2DTO> rankedMenu = menuIntelligenceV2Service.getRankedMenu(restaurantId, dishes.size(), timeRange);
+
+        List<Piatto> ordered = new ArrayList<>(dishes.size());
+        Set<Long> seenDishIds = new LinkedHashSet<>();
+        for (MenuRankedDishV2DTO row : rankedMenu) {
+            Piatto dish = dishById.get(row.dishId());
+            if (dish != null && seenDishIds.add(dish.getId())) {
+                ordered.add(dish);
+            }
+        }
+
+        dishes.stream()
+                .sorted(Comparator.comparing(Piatto::getId))
+                .filter(dish -> seenDishIds.add(dish.getId()))
+                .forEach(ordered::add);
+
+        return ordered;
     }
+
+    private List<Piatto> rankDishesByDishScoreWithFallback(Long restaurantId, String sessionId, Integer tableId) {
+        try {
+            return rankDishesByDishScore(restaurantId, sessionId);
+        } catch (Exception ex) {
+            experimentService.pinVariant(sessionId, restaurantId, tableId, ExperimentService.VARIANT_A);
+            menuRankingExperimentLogger.logDishScoreFallback(restaurantId, sessionId, ex);
+            return rankDishesByRevenueInternal(restaurantId);
+        }
+    }
+
+    private List<Piatto> rankDishesByDishScore(Long restaurantId, String sessionId) {
+        List<Piatto> dishes = loadAvailableDishes(restaurantId);
+        if (dishes.isEmpty()) {
+            return List.of();
+        }
+
+        List<DishIntelligenceDTO> intelligence = dishIntelligenceService.getDishIntelligence(restaurantId);
+        if (intelligence.isEmpty()) {
+            throw new IllegalStateException("Dish intelligence returned an empty ranking");
+        }
+
+        Map<Long, Piatto> dishById = new LinkedHashMap<>();
+        for (Piatto dish : dishes) {
+            dishById.put(dish.getId(), dish);
+        }
+
+        List<DishIntelligenceDTO> orderedIntelligence = intelligence.stream()
+                .sorted(Comparator
+                        .comparing(DishIntelligenceDTO::score, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(DishIntelligenceDTO::dishId, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+
+        List<Piatto> ordered = new ArrayList<>(dishes.size());
+        Set<Long> seenDishIds = new LinkedHashSet<>();
+        Map<Long, BigDecimal> scoreByDishId = new LinkedHashMap<>();
+        for (DishIntelligenceDTO row : orderedIntelligence) {
+            scoreByDishId.put(row.dishId(), row.score());
+            Piatto dish = dishById.get(row.dishId());
+            if (dish != null && seenDishIds.add(dish.getId())) {
+                ordered.add(dish);
+            }
+        }
+
+        dishes.stream()
+                .sorted(Comparator.comparing(Piatto::getId))
+                .filter(dish -> seenDishIds.add(dish.getId()))
+                .forEach(ordered::add);
+
+        List<Piatto> withCategoryCoverage = ensureCategoryCoverage(ordered);
+        List<Piatto> diversified = applyDiversity(withCategoryCoverage);
+        menuRankingExperimentLogger.logDishScoreRanking(restaurantId, sessionId, diversified, scoreByDishId);
+        return diversified;
+    }
+
+    private List<Piatto> ensureCategoryCoverage(List<Piatto> ranked) {
+        if (ranked == null || ranked.size() <= 1) {
+            return ranked == null ? List.of() : ranked;
+        }
+
+        List<Piatto> categoryLeads = new ArrayList<>();
+        Set<Object> seenCategories = new LinkedHashSet<>();
+        Set<Long> categoryLeadIds = new LinkedHashSet<>();
+        for (Piatto dish : ranked) {
+            if (dish == null || dish.getId() == null || dish.getCategoria() == null) {
+                continue;
+            }
+            if (seenCategories.add(dish.getCategoria())) {
+                categoryLeads.add(dish);
+                categoryLeadIds.add(dish.getId());
+            }
+        }
+
+        if (categoryLeads.size() <= 1) {
+            return ranked;
+        }
+
+        List<Piatto> reordered = new ArrayList<>(ranked.size());
+        reordered.addAll(categoryLeads);
+        for (Piatto dish : ranked) {
+            if (dish == null || dish.getId() == null || categoryLeadIds.contains(dish.getId())) {
+                continue;
+            }
+            reordered.add(dish);
+        }
+        return reordered;
+    }
+
     private List<Piatto> applyDiversity(List<Piatto> ranked) {
         List<Piatto> result = new ArrayList<>(ranked);
         for (int i = 2; i < result.size(); i++) {
@@ -176,6 +311,7 @@ public class MenuIntelligenceService {
         );
         return value == null ? 0L : value;
     }
+
     public Map<Long, DishSignal> getDishSignals(Long restaurantId) {
         List<DishSignal> signals = jdbcTemplate.query(
                 """
@@ -207,6 +343,7 @@ public class MenuIntelligenceService {
                     group by coi.piatto_id
                 ) ord on ord.dish_id = p.id
                 where p.ristoratore_id = ?
+                  and coalesce(p.disponibile, false) = true
                 """,
                 (rs, rowNum) -> {
                     long views = rs.getLong("views");
@@ -243,7 +380,43 @@ public class MenuIntelligenceService {
                 .divide(BigDecimal.valueOf(denominator), 4, RoundingMode.HALF_UP);
     }
 
-    private record CachedRanking(List<Piatto> ranking, Map<Long, Double> scoreByDishId, Instant expiresAt) {
+    private List<Piatto> materializeCachedRanking(Long restaurantId, CachedRanking cachedRanking) {
+        if (cachedRanking == null) {
+            return List.of();
+        }
+
+        Map<Long, Piatto> availableDishById = loadAvailableDishes(restaurantId).stream()
+                .collect(java.util.stream.Collectors.toMap(Piatto::getId, dish -> dish, (left, right) -> left, LinkedHashMap::new));
+        if (availableDishById.isEmpty()) {
+            return List.of();
+        }
+
+        List<Piatto> ordered = new ArrayList<>(availableDishById.size());
+        Set<Long> seenDishIds = new LinkedHashSet<>();
+        for (Long dishId : cachedRanking.dishIds()) {
+            Piatto dish = availableDishById.get(dishId);
+            if (dish != null && seenDishIds.add(dishId)) {
+                ordered.add(dish);
+            }
+        }
+        availableDishById.values().stream()
+                .filter(dish -> dish.getId() != null && seenDishIds.add(dish.getId()))
+                .sorted(Comparator.comparing(Piatto::getId))
+                .forEach(ordered::add);
+        return ordered;
+    }
+
+    private List<Piatto> loadAvailableDishes(Long restaurantId) {
+        return piattoRepository.findAllByRistoratoreIdWithCanonical(restaurantId).stream()
+                .filter(this::isAvailable)
+                .toList();
+    }
+
+    private boolean isAvailable(Piatto dish) {
+        return dish != null && Boolean.TRUE.equals(dish.getDisponibile());
+    }
+
+    private record CachedRanking(List<Long> dishIds, Map<Long, Double> scoreByDishId, Instant expiresAt) {
     }
 
     @Builder
@@ -259,3 +432,4 @@ public class MenuIntelligenceService {
     ) {
     }
 }
+

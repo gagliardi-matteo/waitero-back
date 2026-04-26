@@ -7,10 +7,12 @@ import com.waitero.back.service.MenuService;
 import com.waitero.back.service.RistoratoreService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 
 import java.io.IOException;
@@ -74,6 +76,7 @@ public class MenuController {
     @PutMapping("/piatti/{id}")
     public PiattoDTO aggiornaPiatto(@PathVariable Long id, @RequestBody PiattoDTO dto) {
         Piatto piatto = menuService.getPiattoById(id);
+        rejectDecisionFieldWriteIfRequested(piatto, dto);
         menuService.updateFromDTO(piatto, dto);
         return menuService.toDTO(menuService.aggiornaPiatto(id, piatto));
     }
@@ -85,6 +88,7 @@ public class MenuController {
             @RequestPart(value = "file", required = false) MultipartFile file
     ) {
         Piatto piatto = menuService.getPiattoById(id);
+        rejectDecisionFieldWriteIfRequested(piatto, dto);
         menuService.updateFromDTO(piatto, dto);
 
         if (file != null && !file.isEmpty()) {
@@ -110,6 +114,15 @@ public class MenuController {
     @GetMapping("/piattiRistoratore/{id}")
     public List<PiattoDTO> getPiattiByRistoratore(@PathVariable Long id) {
         return menuService.toDTOList(menuService.getPiattiByRistoratore(id));
+    }
+
+    private void rejectDecisionFieldWriteIfRequested(Piatto existing, PiattoDTO incoming) {
+        if (menuService.isDecisionFieldUpdateRequested(existing, incoming)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "consigliato e disponibile sono gestiti da Dish Intelligence"
+            );
+        }
     }
 }
 

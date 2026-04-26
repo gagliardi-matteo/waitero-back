@@ -1,5 +1,10 @@
 package com.waitero.back.service;
 
+import com.waitero.analyticsv2.dto.UpsellSuggestionV2DTO;
+import com.waitero.analyticsv2.service.UpsellV2Service;
+import com.waitero.analyticsv2.support.AnalyticsV2JsonLogger;
+import com.waitero.analyticsv2.support.AnalyticsV2TimeRange;
+import com.waitero.analyticsv2.support.AnalyticsV2TimeRangeResolver;
 import com.waitero.back.entity.Categoria;
 import com.waitero.back.entity.DishCooccurrence;
 import com.waitero.back.entity.DishCooccurrenceId;
@@ -42,31 +47,103 @@ public class UpsellService {
     private final MenuIntelligenceService menuIntelligenceService;
     private final AnalyticsService analyticsService;
     private final ExperimentService experimentService;
-
+    private final AnalyticsV2JsonLogger analyticsV2JsonLogger;
+    private final UpsellV2Service upsellV2Service;
+    private final AnalyticsV2TimeRangeResolver analyticsV2TimeRangeResolver;
+    private final DishIntelligenceService dishIntelligenceService;
     private final Map<Long, Instant> refreshByRestaurant = new ConcurrentHashMap<>();
     private final Map<Long, Object> locksByRestaurant = new ConcurrentHashMap<>();
 
+    @Deprecated(since = "2026-04", forRemoval = false)
     @Transactional
     public List<Piatto> getUpsellSuggestions(Long dishId, Long restaurantId) {
+        return getUpsellSuggestionsInternal(dishId, restaurantId);
+    }
+
+    @Transactional
+    public List<Piatto> getUpsellSuggestions(Long dishId, Long restaurantId, String sessionId) {
+        return getUpsellSuggestions(dishId, restaurantId, sessionId, null);
+    }
+
+    @Transactional
+    public List<Piatto> getUpsellSuggestions(Long dishId, Long restaurantId, String sessionId, Integer tableId) {
+        String variant = experimentService.getVariant(sessionId, restaurantId, tableId);
+        if (ExperimentService.VARIANT_B.equals(variant)) {
+            return getDishUpsellSuggestionsV2First(dishId, restaurantId, sessionId, tableId, variant);
+        }
+        if (ExperimentService.VARIANT_C.equals(variant)) {
+            return getDishUpsellSuggestionsWithDishIntelligenceBoost(dishId, restaurantId);
+        }
+        return getUpsellSuggestionsInternal(dishId, restaurantId);
+    }
+
+    private List<Piatto> getDishUpsellSuggestionsV2First(Long dishId, Long restaurantId, String sessionId, Integer tableId, String assignedVariant) {
+        try {
+            return getV2DishUpsellSuggestions(dishId, restaurantId, 2);
+        } catch (Exception ex) {
+            experimentService.pinVariant(sessionId, restaurantId, tableId, ExperimentService.VARIANT_A);
+            analyticsV2JsonLogger.logFallback("upsell_dish", restaurantId, assignedVariant, dishId, List.of(dishId), ex);
+            return getUpsellSuggestionsInternal(dishId, restaurantId);
+        }
+    }
+
+    private List<Piatto> getUpsellSuggestionsInternal(Long dishId, Long restaurantId) {
+        return getUpsellSuggestionsInternal(dishId, restaurantId, 2);
+    }
+
+    private List<Piatto> getUpsellSuggestionsInternal(Long dishId, Long restaurantId, int limit) {
         if (dishId == null || restaurantId == null) {
             return List.of();
         }
 
         return piattoRepository.findByIdAndRistoratoreId(dishId, restaurantId)
                 .filter(this::isAvailable)
-                .map(dish -> rankSuggestions(List.of(dish), restaurantId, 2))
+                .map(dish -> rankSuggestions(List.of(dish), restaurantId, limit))
                 .orElseGet(List::of);
     }
-    @Transactional
-    public List<Piatto> getUpsellSuggestions(Long dishId, Long restaurantId, String sessionId) {
-        String variant = experimentService.getVariant(sessionId, restaurantId);
-        if ("B".equals(variant) || ExperimentService.VARIANT_HOLDOUT.equals(variant)) {
-            return getSimpleUpsellSuggestions(List.of(dishId), restaurantId, 2);
-        }
-        return getUpsellSuggestions(dishId, restaurantId);
-    }
+
+    @Deprecated(since = "2026-04", forRemoval = false)
     @Transactional
     public List<Piatto> getCartUpsellSuggestions(List<Long> dishIds, Long restaurantId) {
+        return getCartUpsellSuggestionsInternal(dishIds, restaurantId);
+    }
+
+    @Transactional
+    public List<Piatto> getCartUpsellSuggestions(List<Long> dishIds, Long restaurantId, String sessionId) {
+        return getCartUpsellSuggestions(dishIds, restaurantId, sessionId, null);
+    }
+
+    @Transactional
+    public List<Piatto> getCartUpsellSuggestions(List<Long> dishIds, Long restaurantId, String sessionId, Integer tableId) {
+        String variant = experimentService.getVariant(sessionId, restaurantId, tableId);
+        if (ExperimentService.VARIANT_B.equals(variant)) {
+            return getCartUpsellSuggestionsV2First(dishIds, restaurantId, sessionId, tableId, variant);
+        }
+        if (ExperimentService.VARIANT_C.equals(variant)) {
+            return getCartUpsellSuggestionsWithDishIntelligenceBoost(dishIds, restaurantId);
+        }
+        return getCartUpsellSuggestionsInternal(dishIds, restaurantId);
+    }
+
+    private List<Piatto> getCartUpsellSuggestionsV2First(List<Long> dishIds, Long restaurantId, String sessionId, Integer tableId, String assignedVariant) {
+        try {
+            return getV2CartUpsellSuggestions(dishIds, restaurantId, 2);
+        } catch (Exception ex) {
+            List<Long> normalizedDishIds = dishIds == null ? List.of() : dishIds.stream()
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+            experimentService.pinVariant(sessionId, restaurantId, tableId, ExperimentService.VARIANT_A);
+            analyticsV2JsonLogger.logFallback("upsell_cart", restaurantId, assignedVariant, null, normalizedDishIds, ex);
+            return getCartUpsellSuggestionsInternal(dishIds, restaurantId);
+        }
+    }
+
+    private List<Piatto> getCartUpsellSuggestionsInternal(List<Long> dishIds, Long restaurantId) {
+        return getCartUpsellSuggestionsInternal(dishIds, restaurantId, 2);
+    }
+
+    private List<Piatto> getCartUpsellSuggestionsInternal(List<Long> dishIds, Long restaurantId, int limit) {
         if (restaurantId == null || dishIds == null || dishIds.isEmpty()) {
             return List.of();
         }
@@ -83,16 +160,117 @@ public class UpsellService {
             return List.of();
         }
 
-        return rankSuggestions(cartDishes, restaurantId, 2);
+        return rankSuggestions(cartDishes, restaurantId, limit);
     }
-    @Transactional
-    public List<Piatto> getCartUpsellSuggestions(List<Long> dishIds, Long restaurantId, String sessionId) {
-        String variant = experimentService.getVariant(sessionId, restaurantId);
-        if ("B".equals(variant) || ExperimentService.VARIANT_HOLDOUT.equals(variant)) {
-            return getSimpleUpsellSuggestions(dishIds, restaurantId, 2);
+
+    private List<Piatto> getV2DishUpsellSuggestions(Long dishId, Long restaurantId, int limit) {
+        if (dishId == null || restaurantId == null) {
+            return List.of();
         }
-        return getCartUpsellSuggestions(dishIds, restaurantId);
+
+        Map<Long, Piatto> dishById = piattoRepository.findAllByRistoratoreIdWithCanonical(restaurantId)
+                .stream()
+                .collect(Collectors.toMap(Piatto::getId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+        AnalyticsV2TimeRange timeRange = analyticsV2TimeRangeResolver.resolve(null, null);
+
+        return upsellV2Service.getDishSuggestions(restaurantId, dishId, limit, timeRange).stream()
+                .map(UpsellSuggestionV2DTO::dishId)
+                .map(dishById::get)
+                .filter(Objects::nonNull)
+                .filter(this::isAvailable)
+                .toList();
     }
+
+    private List<Piatto> getV2CartUpsellSuggestions(List<Long> dishIds, Long restaurantId, int limit) {
+        if (restaurantId == null || dishIds == null || dishIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Piatto> dishById = piattoRepository.findAllByRistoratoreIdWithCanonical(restaurantId)
+                .stream()
+                .collect(Collectors.toMap(Piatto::getId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+        AnalyticsV2TimeRange timeRange = analyticsV2TimeRangeResolver.resolve(null, null);
+
+        return upsellV2Service.getCartSuggestions(restaurantId, dishIds, limit, timeRange).stream()
+                .map(UpsellSuggestionV2DTO::dishId)
+                .map(dishById::get)
+                .filter(Objects::nonNull)
+                .filter(this::isAvailable)
+                .toList();
+    }
+
+    private List<Piatto> getDishUpsellSuggestionsWithDishIntelligenceBoost(Long dishId, Long restaurantId) {
+        try {
+            return rerankWithDishIntelligenceBoost(
+                    getUpsellSuggestionsInternal(dishId, restaurantId, 6),
+                    restaurantId,
+                    2
+            );
+        } catch (Exception ex) {
+            return getUpsellSuggestionsInternal(dishId, restaurantId);
+        }
+    }
+
+    private List<Piatto> getCartUpsellSuggestionsWithDishIntelligenceBoost(List<Long> dishIds, Long restaurantId) {
+        try {
+            return rerankWithDishIntelligenceBoost(
+                    getCartUpsellSuggestionsInternal(dishIds, restaurantId, 6),
+                    restaurantId,
+                    2
+            );
+        } catch (Exception ex) {
+            return getCartUpsellSuggestionsInternal(dishIds, restaurantId);
+        }
+    }
+
+    private List<Piatto> rerankWithDishIntelligenceBoost(List<Piatto> suggestions, Long restaurantId, int limit) {
+        if (restaurantId == null || suggestions == null || suggestions.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Double> affinityScoreByDishId = dishIntelligenceService.getDishIntelligence(restaurantId).stream()
+                .filter(dto -> dto.dishId() != null)
+                .collect(Collectors.toMap(
+                        dto -> dto.dishId(),
+                        dto -> dto.affinityScore() == null ? 0.0d : dto.affinityScore().doubleValue(),
+                        (left, right) -> left,
+                        LinkedHashMap::new
+                ));
+
+        Map<Long, Integer> baseRankByDishId = new LinkedHashMap<>();
+        for (int index = 0; index < suggestions.size(); index++) {
+            Piatto suggestion = suggestions.get(index);
+            if (suggestion != null && suggestion.getId() != null) {
+                baseRankByDishId.putIfAbsent(suggestion.getId(), index);
+            }
+        }
+
+        return suggestions.stream()
+                .filter(this::isAvailable)
+                .filter(dish -> dish.getId() != null)
+                .collect(Collectors.toMap(Piatto::getId, Function.identity(), (left, right) -> left, LinkedHashMap::new))
+                .values()
+                .stream()
+                .sorted(Comparator
+                        .comparingDouble((Piatto dish) -> boostedDishIntelligenceScore(dish, baseRankByDishId, affinityScoreByDishId))
+                        .reversed()
+                        .thenComparing(dish -> baseRankByDishId.getOrDefault(dish.getId(), Integer.MAX_VALUE))
+                        .thenComparing(Piatto::getId))
+                .limit(limit)
+                .toList();
+    }
+
+    private double boostedDishIntelligenceScore(
+            Piatto dish,
+            Map<Long, Integer> baseRankByDishId,
+            Map<Long, Double> affinityScoreByDishId
+    ) {
+        int baseRank = baseRankByDishId.getOrDefault(dish.getId(), Integer.MAX_VALUE);
+        double legacyWeight = baseRank == Integer.MAX_VALUE ? 0.0d : Math.max(0.0d, 1.0d - (baseRank * 0.08d));
+        double affinityBoost = affinityScoreByDishId.getOrDefault(dish.getId(), 0.0d) * 0.18d;
+        return legacyWeight + affinityBoost;
+    }
+
     private List<Piatto> rankSuggestions(List<Piatto> baseDishes, Long restaurantId, int limit) {
         if (baseDishes == null || baseDishes.isEmpty()) {
             return List.of();
@@ -492,3 +670,10 @@ public class UpsellService {
         }
     }
 }
+
+
+
+
+
+
+

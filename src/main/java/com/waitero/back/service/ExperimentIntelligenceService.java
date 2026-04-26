@@ -1,78 +1,87 @@
 package com.waitero.back.service;
 
+import com.waitero.analyticsv2.support.AnalyticsV2TimeRange;
+import com.waitero.analyticsv2.support.AnalyticsV2TimeRangeResolver;
+import com.waitero.back.dto.ExperimentAnalysisDTO;
 import com.waitero.back.dto.ExperimentDecision;
-import com.waitero.back.dto.ExperimentMetricsDTO;
-import com.waitero.back.dto.ExperimentVariantMetricsDTO;
+import com.waitero.back.dto.ExperimentVariantPerformanceDTO;
 import com.waitero.back.entity.ExperimentConfig;
 import com.waitero.back.entity.ExperimentDecisionLog;
 import com.waitero.back.repository.ExperimentConfigRepository;
 import com.waitero.back.repository.ExperimentDecisionLogRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class ExperimentIntelligenceService {
 
-    private static final String KEEP_A = "KEEP_A";
-    private static final String KEEP_B = "KEEP_B";
-    private static final String WAIT = "WAIT";
-    private static final String WINNER_A = "A";
-    private static final String WINNER_B = "B";
     private static final String WINNER_NONE = "NONE";
+    private static final String ACTION_KEEP_CURRENT = "KEEP_CURRENT_MODE";
+    private static final String ACTION_KEEP_EXPLORING = "KEEP_EXPLORING";
+    private static final String ACTION_INSUFFICIENT_DATA = "INSUFFICIENT_DATA";
+    private static final String ACTION_COOLDOWN_HOLD = "COOLDOWN_HOLD";
+    private static final List<String> SWITCH_ACTIONS = List.of("SWITCH_TO_A", "SWITCH_TO_B", "SWITCH_TO_C");
 
-    private final AnalyticsService analyticsService;
+    private final ExperimentAnalyticsService experimentAnalyticsService;
+    private final ExperimentDecisionService experimentDecisionService;
     private final ExperimentConfigRepository experimentConfigRepository;
     private final ExperimentDecisionLogRepository experimentDecisionLogRepository;
     private final ExperimentService experimentService;
+    private final AnalyticsV2TimeRangeResolver analyticsV2TimeRangeResolver;
+    private final ExperimentAutopilotLogger experimentAutopilotLogger;
+    private final Clock analyticsV2Clock;
 
-    @Transactional
+    @Value("${waitero.experiment.min-sessions-per-variant:100}")
+    private long minSessionsPerVariant;
+
+    @Value("${waitero.experiment.min-orders-per-variant:30}")
+    private long minOrdersPerVariant;
+
+    @Value("${waitero.experiment.min-active-days-per-variant:7}")
+    private long minActiveDaysPerVariant;
+
+    @Value("${waitero.experiment.max-uplift-drift:0.10}")
+    private BigDecimal maxUpliftDrift;
+
+    @Value("${waitero.experiment.autopilot.cooldown-minutes:30}")
+    private long autopilotCooldownMinutes;
+
+    @Transactional(readOnly = true)
+    public ExperimentAnalysisDTO getExperimentAnalysis(Long restaurantId, LocalDate dateFrom, LocalDate dateTo) {
+        return analyze(restaurantId, analyticsV2TimeRangeResolver.resolve(dateFrom, dateTo));
+    }
+
+    @Transactional(readOnly = true)
     public ExperimentDecision evaluateExperiment(Long restaurantId) {
-        ExperimentConfig config = loadConfig(restaurantId);
-        ExperimentMetricsDTO metrics = analyticsService.getExperimentMetrics(restaurantId);
-        ExperimentVariantMetricsDTO a = metrics.variantA();
-        ExperimentVariantMetricsDTO b = metrics.variantB();
+        ExperimentAnalysisDTO analysis = getExperimentAnalysis(restaurantId, null, null);
+        ExperimentVariantPerformanceDTO baseline = analysis.variantB();
+        ExperimentVariantPerformanceDTO winner = winnerMetrics(analysis);
 
-        double revenueA = toDouble(a.revenue());
-        double revenueB = toDouble(b.revenue());
-        double aovA = toDouble(a.avgOrderValue());
-        double aovB = toDouble(b.avgOrderValue());
-        double itemsA = toDouble(a.itemsPerOrder());
-        double itemsB = toDouble(b.itemsPerOrder());
-        int sampleSize = Math.toIntExact(Math.min((long) Integer.MAX_VALUE, a.orders() + b.orders()));
-
-        double upliftRevenue = revenueA - revenueB;
-        double upliftAOV = aovA - aovB;
-        double upliftItems = itemsA - itemsB;
-        double upliftPercent = safeDivide(upliftRevenue, revenueB) * 100.0d;
-        double confidence = confidence(aovA, aovB, sampleSize);
-
-        String recommendation = recommendation(sampleSize, confidence, upliftPercent, config);
-        String winningVariant = switch (recommendation) {
-            case KEEP_A -> WINNER_A;
-            case KEEP_B -> WINNER_B;
-            default -> WINNER_NONE;
-        };
-        boolean significant = !WAIT.equals(recommendation);
-
-        ExperimentDecision decision = ExperimentDecision.builder()
-                .restaurantId(restaurantId)
-                .winningVariant(winningVariant)
-                .upliftRevenue(upliftRevenue)
-                .upliftAOV(upliftAOV)
-                .upliftItems(upliftItems)
-                .upliftPercent(upliftPercent)
-                .confidence(confidence)
-                .sampleSize(sampleSize)
-                .isSignificant(significant)
-                .recommendation(recommendation)
+        return ExperimentDecision.builder()
+                .restaurantId(analysis.restaurantId())
+                .winningVariant(analysis.suggestedWinner())
+                .upliftRevenue(moneyDiff(winner == null ? null : winner.totalRevenue(), baseline == null ? null : baseline.totalRevenue()))
+                .upliftAOV(moneyDiff(winner == null ? null : winner.aov(), baseline == null ? null : baseline.aov()))
+                .upliftItems(0.0d)
+                .upliftPercent(percentValue(analysis.upliftVsBaseline()))
+                .confidence(analysis.stable() ? 1.0d : 0.0d)
+                .sampleSize(Math.toIntExact(Math.min(Integer.MAX_VALUE, totalOrders(analysis))))
+                .isSignificant(analysis.sufficientData() && analysis.stable())
+                .recommendation(analysis.action())
                 .build();
-        logDecision(decision);
-        return decision;
     }
 
     @Transactional
@@ -82,12 +91,88 @@ public class ExperimentIntelligenceService {
             return;
         }
 
-        ExperimentDecision decision = evaluateExperiment(restaurantId);
-        if (KEEP_A.equals(decision.recommendation())) {
-            experimentService.setExperimentMode(restaurantId, ExperimentService.MODE_FORCE_A);
-        } else if (KEEP_B.equals(decision.recommendation())) {
-            experimentService.setExperimentMode(restaurantId, ExperimentService.MODE_FORCE_B);
+        ExperimentAnalysisDTO analysis = analyze(restaurantId, analyticsV2TimeRangeResolver.resolve(null, null));
+        if (analysis.action().startsWith("SWITCH_TO_") && analysis.targetMode() != null) {
+            experimentService.setExperimentMode(restaurantId, analysis.targetMode());
         }
+
+        experimentAutopilotLogger.logDecision(analysis);
+        experimentDecisionLogRepository.save(ExperimentDecisionLog.builder()
+                .restaurantId(restaurantId)
+                .decision(analysis.action())
+                .uplift(toDouble(analysis.upliftVsBaseline()))
+                .confidence(analysis.stable() ? 1.0d : 0.0d)
+                .createdAt(Instant.now(analyticsV2Clock))
+                .build());
+    }
+
+    private ExperimentAnalysisDTO analyze(Long restaurantId, AnalyticsV2TimeRange timeRange) {
+        ExperimentConfig config = loadConfig(restaurantId);
+        String currentMode = experimentService.getExperimentMode(restaurantId);
+        Map<String, ExperimentVariantPerformanceDTO> fullMetrics = experimentAnalyticsService.computeMetrics(restaurantId, timeRange);
+        Map<String, ExperimentVariantPerformanceDTO> recentMetrics = experimentAnalyticsService.computeMetrics(restaurantId, recentHalf(timeRange));
+
+        ExperimentDecisionService.ProposedDecision proposedDecision = experimentDecisionService.determineWinner(
+                fullMetrics,
+                recentMetrics,
+                thresholds(config)
+        );
+
+        String action = resolveAction(restaurantId, currentMode, proposedDecision);
+        String targetMode = proposedDecision.targetMode() != null ? proposedDecision.targetMode() : currentMode;
+        if (ACTION_COOLDOWN_HOLD.equals(action)) {
+            targetMode = currentMode;
+        }
+
+        return ExperimentAnalysisDTO.builder()
+                .restaurantId(restaurantId)
+                .dateFrom(timeRange.dateFrom())
+                .dateTo(timeRange.dateTo())
+                .variantA(fullMetrics.get(ExperimentService.VARIANT_A))
+                .variantB(fullMetrics.get(ExperimentService.VARIANT_B))
+                .variantC(fullMetrics.get(ExperimentService.VARIANT_C))
+                .currentMode(currentMode)
+                .targetMode(targetMode)
+                .suggestedWinner(proposedDecision.suggestedWinner())
+                .upliftVsBaseline(safeRate(proposedDecision.upliftVsBaseline()))
+                .sufficientData(proposedDecision.sufficientData())
+                .stable(proposedDecision.stable())
+                .reason(proposedDecision.reason())
+                .action(action)
+                .build();
+    }
+
+    private String resolveAction(
+            Long restaurantId,
+            String currentMode,
+            ExperimentDecisionService.ProposedDecision proposedDecision
+    ) {
+        if (proposedDecision == null) {
+            return ACTION_INSUFFICIENT_DATA;
+        }
+        if (proposedDecision.targetMode() == null || WINNER_NONE.equals(proposedDecision.suggestedWinner())) {
+            if (ExperimentService.MODE_ABC.equals(currentMode)) {
+                return ACTION_KEEP_EXPLORING;
+            }
+            return ACTION_INSUFFICIENT_DATA;
+        }
+        if (proposedDecision.targetMode().equals(currentMode)) {
+            return ExperimentService.MODE_ABC.equals(currentMode) ? ACTION_KEEP_EXPLORING : ACTION_KEEP_CURRENT;
+        }
+        if (cooldownActive(restaurantId)) {
+            return ACTION_COOLDOWN_HOLD;
+        }
+        return "SWITCH_TO_" + proposedDecision.suggestedWinner();
+    }
+
+    private boolean cooldownActive(Long restaurantId) {
+        Instant now = Instant.now(analyticsV2Clock);
+        return experimentDecisionLogRepository
+                .findFirstByRestaurantIdAndDecisionInOrderByCreatedAtDesc(restaurantId, SWITCH_ACTIONS)
+                .map(ExperimentDecisionLog::getCreatedAt)
+                .filter(createdAt -> createdAt != null)
+                .map(createdAt -> now.isBefore(createdAt.plus(Duration.ofMinutes(Math.max(1L, autopilotCooldownMinutes)))))
+                .orElse(false);
     }
 
     private ExperimentConfig loadConfig(Long restaurantId) {
@@ -98,65 +183,77 @@ public class ExperimentIntelligenceService {
                         .minSampleSize(50)
                         .minUpliftPercent(5.0d)
                         .minConfidence(0.95d)
-                        .holdoutPercent(10)
-                        .updatedAt(Instant.now())
+                        .holdoutPercent(5)
+                        .updatedAt(Instant.now(analyticsV2Clock))
                         .build());
     }
 
-    private String recommendation(int sampleSize, double confidence, double upliftPercent, ExperimentConfig config) {
-        if (sampleSize < config.getMinSampleSize()) {
-            return WAIT;
-        }
-        if (confidence < config.getMinConfidence()) {
-            return WAIT;
-        }
-        if (upliftPercent > config.getMinUpliftPercent()) {
-            return KEEP_A;
-        }
-        if (upliftPercent < -config.getMinUpliftPercent()) {
-            return KEEP_B;
-        }
-        return WAIT;
+    private ExperimentDecisionService.DecisionThresholds thresholds(ExperimentConfig config) {
+        long minSessions = Math.max(minSessionsPerVariant, config == null ? 0L : config.getMinSampleSize());
+        long minOrders = Math.max(1L, minOrdersPerVariant);
+        long minDays = Math.max(1L, minActiveDaysPerVariant);
+
+        return new ExperimentDecisionService.DecisionThresholds(
+                minSessions,
+                minOrders,
+                minDays,
+                Math.max(1L, minSessions / 2L),
+                Math.max(1L, minOrders / 2L),
+                Math.max(3L, minDays / 2L),
+                BigDecimal.valueOf(config == null ? 5.0d : config.getMinUpliftPercent())
+                        .movePointLeft(2)
+                        .setScale(4, RoundingMode.HALF_UP),
+                safeRate(maxUpliftDrift)
+        );
     }
 
-    private double confidence(double aovA, double aovB, int sampleSize) {
-        if (sampleSize <= 0) {
-            return 0.0d;
-        }
-        double diff = aovA - aovB;
-        double variance = (aovA + aovB) / 2.0d;
-        if (!Double.isFinite(variance) || variance <= 0.0d) {
-            return 0.0d;
-        }
-        double z = diff / Math.sqrt(variance / sampleSize);
-        if (!Double.isFinite(z)) {
-            return 0.0d;
-        }
-        return 1.0d / (1.0d + Math.exp(-z));
+    private AnalyticsV2TimeRange recentHalf(AnalyticsV2TimeRange timeRange) {
+        long spanDays = Math.max(1L, ChronoUnit.DAYS.between(timeRange.dateFrom(), timeRange.dateTo()) + 1L);
+        long recentSpan = Math.max(1L, spanDays / 2L);
+        LocalDate recentFrom = timeRange.dateTo().minusDays(recentSpan - 1L);
+        return new AnalyticsV2TimeRange(recentFrom, timeRange.dateTo());
     }
 
-    private double safeDivide(double numerator, double denominator) {
-        if (!Double.isFinite(numerator) || !Double.isFinite(denominator) || denominator == 0.0d) {
+    private ExperimentVariantPerformanceDTO winnerMetrics(ExperimentAnalysisDTO analysis) {
+        if (analysis == null) {
+            return null;
+        }
+        return switch (analysis.suggestedWinner()) {
+            case ExperimentService.VARIANT_A -> analysis.variantA();
+            case ExperimentService.VARIANT_B -> analysis.variantB();
+            case ExperimentService.VARIANT_C -> analysis.variantC();
+            default -> null;
+        };
+    }
+
+    private long totalOrders(ExperimentAnalysisDTO analysis) {
+        if (analysis == null) {
+            return 0L;
+        }
+        return analysis.variantA().totalOrders() + analysis.variantB().totalOrders() + analysis.variantC().totalOrders();
+    }
+
+    private BigDecimal safeRate(BigDecimal value) {
+        if (value == null) {
+            return BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
+        }
+        return value.setScale(4, RoundingMode.HALF_UP);
+    }
+
+    private double moneyDiff(BigDecimal left, BigDecimal right) {
+        if (left == null || right == null) {
             return 0.0d;
         }
-        return numerator / denominator;
+        BigDecimal safeLeft = left;
+        BigDecimal safeRight = right;
+        return safeLeft.subtract(safeRight).doubleValue();
+    }
+
+    private double percentValue(BigDecimal uplift) {
+        return safeRate(uplift).movePointRight(2).doubleValue();
     }
 
     private double toDouble(BigDecimal value) {
-        if (value == null) {
-            return 0.0d;
-        }
-        double result = value.doubleValue();
-        return Double.isFinite(result) ? result : 0.0d;
-    }
-
-    private void logDecision(ExperimentDecision decision) {
-        experimentDecisionLogRepository.save(ExperimentDecisionLog.builder()
-                .restaurantId(decision.restaurantId())
-                .decision(decision.recommendation())
-                .uplift(decision.upliftPercent())
-                .confidence(decision.confidence())
-                .createdAt(Instant.now())
-                .build());
+        return value == null ? 0.0d : value.doubleValue();
     }
 }

@@ -50,6 +50,12 @@ public class Ordine {
     @Column(length = 20)
     private String variant;
 
+    @Column(name = "session_id", length = 128)
+    private String sessionId;
+
+    @Column(name = "item_count")
+    private Integer itemCount;
+
     @OneToMany(mappedBy = "ordine", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrdineItem> items = new ArrayList<>();
