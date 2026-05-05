@@ -14,6 +14,7 @@ import com.waitero.back.service.AuthService;
 import com.waitero.back.service.BackofficeAccountService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +30,7 @@ import java.security.GeneralSecurityException;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthController {
 
     private final AuthService authService;
@@ -37,14 +39,32 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody IdTokenRequest request) throws GeneralSecurityException, IOException {
-        AuthResponse response = authService.loginWithGoogle(request.getIdToken());
-        return ResponseEntity.ok(response);
+        int tokenLength = request != null && request.getIdToken() != null ? request.getIdToken().length() : 0;
+        log.info("AuthController /login received google auth request tokenLength={}", tokenLength);
+        try {
+            AuthResponse response = authService.loginWithGoogle(request.getIdToken());
+            log.info("AuthController /login google auth success");
+            return ResponseEntity.ok(response);
+        } catch (GeneralSecurityException | IOException ex) {
+            log.error("AuthController /login google auth technical failure tokenLength={}", tokenLength, ex);
+            throw ex;
+        } catch (RuntimeException ex) {
+            log.warn("AuthController /login google auth rejected tokenLength={} message={}", tokenLength, ex.getMessage());
+            throw ex;
+        }
     }
 
     @PostMapping("/local-login")
     public ResponseEntity<AuthResponse> localLogin(@RequestBody LocalLoginRequest request) {
-        AuthResponse response = authService.loginWithLocalCredentials(request);
-        return ResponseEntity.ok(response);
+        log.info("AuthController /local-login received local auth request email={}", request != null ? request.getEmail() : null);
+        try {
+            AuthResponse response = authService.loginWithLocalCredentials(request);
+            log.info("AuthController /local-login local auth success email={}", request != null ? request.getEmail() : null);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException ex) {
+            log.warn("AuthController /local-login local auth rejected email={} message={}", request != null ? request.getEmail() : null, ex.getMessage());
+            throw ex;
+        }
     }
 
     @PostMapping("/refresh-token")
