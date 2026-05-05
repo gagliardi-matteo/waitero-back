@@ -10,6 +10,7 @@ import com.waitero.back.entity.BackofficeRole;
 import com.waitero.back.entity.BackofficeUser;
 import com.waitero.back.repository.BackofficeUserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,9 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private static final String GOOGLE_PROVIDER = "GOOGLE";
@@ -46,11 +49,29 @@ public class AuthService {
         String email = payload.getEmail();
         String sub = payload.getSubject();
         String name = (String) payload.get("name");
+        Optional<BackofficeUser> byProviderId = backofficeUserRepository.findByProviderId(sub);
+        Optional<BackofficeUser> byMasterEmail = backofficeUserRepository.findFirstByEmailIgnoreCaseAndRole(email, BackofficeRole.MASTER);
+        Optional<BackofficeUser> byRistoratoreEmail = backofficeUserRepository.findFirstByEmailIgnoreCaseAndRole(email, BackofficeRole.RISTORATORE);
 
-        BackofficeUser user = backofficeUserRepository.findByProviderId(sub)
-                .or(() -> backofficeUserRepository.findFirstByEmailIgnoreCaseAndRole(email, BackofficeRole.MASTER))
-                .or(() -> backofficeUserRepository.findFirstByEmailIgnoreCaseAndRole(email, BackofficeRole.RISTORATORE))
-                .orElseThrow(() -> new RuntimeException("Account Google non autorizzato"));
+        log.info(
+                "Google login attempt email={} sub={} byProviderId={} byMasterEmail={} byRistoratoreEmail={}",
+                email,
+                sub,
+                summarizeUser(byProviderId),
+                summarizeUser(byMasterEmail),
+                summarizeUser(byRistoratoreEmail)
+        );
+
+        BackofficeUser user = byProviderId
+                .or(() -> byMasterEmail)
+                .or(() -> byRistoratoreEmail)
+                .orElseThrow(() -> new RuntimeException(
+                        "Account Google non autorizzato. email=" + email +
+                                ", sub=" + sub +
+                                ", byProviderId=" + summarizeUser(byProviderId) +
+                                ", byMasterEmail=" + summarizeUser(byMasterEmail) +
+                                ", byRistoratoreEmail=" + summarizeUser(byRistoratoreEmail)
+                ));
 
         linkGoogleAccountIfNeeded(user, sub, name);
         return buildResponse(user);
@@ -106,5 +127,15 @@ public class AuthService {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
         return new AuthResponse(accessToken, refreshToken);
+    }
+
+    private String summarizeUser(Optional<BackofficeUser> user) {
+        return user.map(value -> "found{id=" + value.getId()
+                        + ",email=" + value.getEmail()
+                        + ",role=" + value.getRole()
+                        + ",provider=" + value.getProvider()
+                        + ",providerId=" + value.getProviderId()
+                        + "}")
+                .orElse("none");
     }
 }
