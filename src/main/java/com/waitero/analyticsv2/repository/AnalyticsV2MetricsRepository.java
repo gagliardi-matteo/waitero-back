@@ -77,7 +77,7 @@ public class AnalyticsV2MetricsRepository {
                     p.id as dish_id,
                     p.nome as dish_name,
                     p.descrizione as description,
-                    cast(p.categoria as varchar) as category,
+                    coalesce(mc.label, 'Senza categoria') as category,
                     coalesce(p.prezzo, 0) as current_price,
                     coalesce(p.disponibile, false) as available,
                     p.image_url as image_url,
@@ -90,6 +90,7 @@ public class AnalyticsV2MetricsRepository {
                     end as order_frequency_per_dish
                 from piatto p
                 cross join total_orders to2
+                left join menu_category mc on mc.id = p.categoria_id
                 left join dish_order_rows dor on dor.dish_id = p.id
                 where p.ristoratore_id = :restaurantId
                 """ + availabilityFilter + """

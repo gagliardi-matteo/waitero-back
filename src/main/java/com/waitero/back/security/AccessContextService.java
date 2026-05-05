@@ -36,7 +36,7 @@ public class AccessContextService {
     public Long getActingRestaurantIdOrThrow() {
         Long restaurantId = requirePrincipal().effectiveRestaurantId();
         if (restaurantId == null) {
-            throw new RuntimeException("Nessun ristorante operativo selezionato");
+            throw new RuntimeException("Nessun locale operativo selezionato");
         }
         return restaurantId;
     }

@@ -217,7 +217,7 @@ public class AnalyticsV2ShadowModeService {
                     i + 1,
                     dish.getId(),
                     dish.getNome(),
-                    dish.getCategoria() == null ? null : dish.getCategoria().name()
+                    dish.getCategoriaLabel()
             ));
         }
         return snapshots;

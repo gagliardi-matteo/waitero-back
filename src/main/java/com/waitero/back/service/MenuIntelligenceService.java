@@ -246,13 +246,14 @@ public class MenuIntelligenceService {
         }
 
         List<Piatto> categoryLeads = new ArrayList<>();
-        Set<Object> seenCategories = new LinkedHashSet<>();
+        Set<String> seenCategories = new LinkedHashSet<>();
         Set<Long> categoryLeadIds = new LinkedHashSet<>();
         for (Piatto dish : ranked) {
-            if (dish == null || dish.getId() == null || dish.getCategoria() == null) {
+            String categoryCode = dish == null ? null : dish.getCategoriaCode();
+            if (dish == null || dish.getId() == null || categoryCode == null) {
                 continue;
             }
-            if (seenCategories.add(dish.getCategoria())) {
+            if (seenCategories.add(categoryCode)) {
                 categoryLeads.add(dish);
                 categoryLeadIds.add(dish.getId());
             }
@@ -300,7 +301,7 @@ public class MenuIntelligenceService {
         if (left == null || right == null) {
             return false;
         }
-        return Objects.equals(left.getCategoria(), right.getCategoria());
+        return Objects.equals(left.getCategoriaCode(), right.getCategoriaCode());
     }
 
     private long readTotalOrders(Long restaurantId) {

@@ -2,7 +2,6 @@ package com.waitero.back.service;
 
 import com.waitero.back.dto.IngredienteDTO;
 import com.waitero.back.dto.PiattoDTO;
-import com.waitero.back.entity.Categoria;
 import com.waitero.back.entity.Ingrediente;
 import com.waitero.back.entity.Piatto;
 import com.waitero.back.entity.PiattoCanonicale;
@@ -49,6 +48,7 @@ public class MenuService {
     private final PiattoIngredienteRistoratoreRepository piattoIngredienteRistoratoreRepository;
     private final IngredienteRepository ingredienteRepository;
     private final AccessContextService accessContextService;
+    private final MenuCategoryService menuCategoryService;
 
     private Ristoratore getRistoratoreAutenticato() {
         Long id = accessContextService.getActingRestaurantIdOrThrow();
@@ -105,10 +105,11 @@ public class MenuService {
     }
 
     public void updateFromDTO(Piatto entity, PiattoDTO dto) {
+        Ristoratore restaurant = entity.getRistoratore() != null ? entity.getRistoratore() : getRistoratoreAutenticato();
         entity.setNome(dto.getNome());
         entity.setDescrizione(dto.getDescrizione());
         entity.setPrezzo(dto.getPrezzo());
-        entity.setCategoria(Categoria.valueOf(dto.getCategoria()));
+        entity.setCategoria(menuCategoryService.resolveCategory(restaurant, dto));
         entity.setIngredienti(normalizeText(dto.getIngredienti()));
         entity.setAllergeni(normalizeText(dto.getAllergeni()));
     }
@@ -176,7 +177,11 @@ public class MenuService {
         dto.setDescrizione(piatto.getDescrizione());
         dto.setPrezzo(piatto.getPrezzo());
         dto.setDisponibile(piatto.getDisponibile());
-        dto.setCategoria(String.valueOf(piatto.getCategoria()));
+        dto.setCategoria(piatto.getCategoriaCode());
+        dto.setCategoriaId(piatto.getCategoria() != null ? piatto.getCategoria().getId() : null);
+        dto.setCategoriaCode(piatto.getCategoriaCode());
+        dto.setCategoriaLabel(piatto.getCategoriaLabel());
+        dto.setCategoriaSortOrder(piatto.getCategoriaSortOrder());
         dto.setImageUrl(piatto.getImageUrl());
         List<IngredienteDTO> structuredIngredients = resolveStructuredIngredients(
                 piatto,
@@ -191,13 +196,14 @@ public class MenuService {
     }
 
     public Piatto fromDTO(PiattoDTO dto) {
+        Ristoratore restaurant = getRistoratoreAutenticato();
         Piatto p = new Piatto();
         p.setId(dto.getId());
         p.setNome(dto.getNome());
         p.setDescrizione(dto.getDescrizione());
         p.setPrezzo(dto.getPrezzo());
         p.setDisponibile(true);
-        p.setCategoria(Categoria.valueOf(dto.getCategoria()));
+        p.setCategoria(menuCategoryService.resolveCategory(restaurant, dto));
         p.setImageUrl(dto.getImageUrl());
         p.setIngredienti(normalizeText(dto.getIngredienti()));
         p.setAllergeni(normalizeText(dto.getAllergeni()));

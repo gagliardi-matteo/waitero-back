@@ -21,8 +21,9 @@ public class Piatto {
     private BigDecimal prezzo;
     private Boolean disponibile;
 
-    @Enumerated(EnumType.STRING)
-    private Categoria categoria;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "categoria_id", nullable = false)
+    private MenuCategory categoria;
 
     private String imageUrl;
 
@@ -42,4 +43,16 @@ public class Piatto {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "piatto_canonico_id")
     private PiattoCanonicale piattoCanonicale;
+
+    public String getCategoriaCode() {
+        return categoria != null ? categoria.getCode() : null;
+    }
+
+    public String getCategoriaLabel() {
+        return categoria != null ? categoria.getLabel() : null;
+    }
+
+    public Integer getCategoriaSortOrder() {
+        return categoria != null ? categoria.getSortOrder() : null;
+    }
 }

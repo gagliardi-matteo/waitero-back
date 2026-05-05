@@ -5,7 +5,6 @@ import com.waitero.analyticsv2.service.UpsellV2Service;
 import com.waitero.analyticsv2.support.AnalyticsV2JsonLogger;
 import com.waitero.analyticsv2.support.AnalyticsV2TimeRange;
 import com.waitero.analyticsv2.support.AnalyticsV2TimeRangeResolver;
-import com.waitero.back.entity.Categoria;
 import com.waitero.back.entity.DishCooccurrence;
 import com.waitero.back.entity.DishCooccurrenceId;
 import com.waitero.back.entity.Piatto;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -289,8 +289,9 @@ public class UpsellService {
         Set<Long> excludedDishIds = baseDishes.stream()
                 .map(Piatto::getId)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        Set<Categoria> cartCategories = baseDishes.stream()
-                .map(Piatto::getCategoria)
+        Set<String> cartCategories = baseDishes.stream()
+                .map(Piatto::getCategoriaCode)
+                .map(MenuCategoryRules::normalize)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         boolean hasMainDish = hasMainDish(cartCategories);
@@ -366,7 +367,7 @@ public class UpsellService {
     private double scoreCooccurrence(DishCooccurrence cooccurrence,
                                      Piatto suggestedDish,
                                      AnalyticsService.DishFeatures features,
-                                     Set<Categoria> cartCategories,
+                                     Set<String> cartCategories,
                                      boolean hasMainDish) {
         double confidence = cooccurrence.getConfidence() != null ? cooccurrence.getConfidence() : 0.0d;
         double baseScore = (0.5d * confidence)
@@ -374,12 +375,13 @@ public class UpsellService {
                 + (0.2d * featureValue(features, "orderRate"));
         double conversionEstimate = (0.6d * confidence) + (0.4d * featureValue(features, "orderRate"));
         double expectedLift = safeNumericPrice(suggestedDish.getPrezzo()) * conversionEstimate;
-        return expectedLift + categoryBoost(suggestedDish.getCategoria()) + categoryGapScore(suggestedDish.getCategoria(), cartCategories, hasMainDish);
+        String categoryCode = suggestedDish.getCategoriaCode();
+        return expectedLift + categoryBoost(categoryCode) + categoryGapScore(categoryCode, cartCategories, hasMainDish);
     }
 
     private double scoreFallback(Piatto candidateDish,
                                  AnalyticsService.DishFeatures features,
-                                 Set<Categoria> cartCategories,
+                                 Set<String> cartCategories,
                                  boolean hasMainDish,
                                  double avgPrice) {
         double baseScore = (0.3d * featureValue(features, "rpi"))
@@ -388,7 +390,7 @@ public class UpsellService {
         double price = safeNumericPrice(candidateDish.getPrezzo());
         double expectedLift = price * conversionEstimate;
         return expectedLift
-                + categoryGapScore(candidateDish.getCategoria(), cartCategories, hasMainDish)
+                + categoryGapScore(candidateDish.getCategoriaCode(), cartCategories, hasMainDish)
                 + lowPriceBoost(price, avgPrice);
     }
 
@@ -411,11 +413,12 @@ public class UpsellService {
             result.add(dish);
         }
 
-        ensureCategory(result, availableDishById, excludedDishIds, Categoria.BEVANDA);
+        ensureCategory(result, availableDishById, excludedDishIds, MenuCategoryRules::isBeverage);
         if (result.stream().noneMatch(this::isNonMainDish)) {
             availableDishById.values().stream()
                     .filter(this::isAvailable)
                     .filter(this::isNonMainDish)
+                    .filter(dish -> dish.getId() != null && !excludedDishIds.contains(dish.getId()))
                     .filter(dish -> result.stream().noneMatch(existing -> existing.getId().equals(dish.getId())))
                     .findFirst()
                     .ifPresent(dish -> result.add(Math.min(1, result.size()), dish));
@@ -423,20 +426,30 @@ public class UpsellService {
         return result;
     }
 
-    private void ensureCategory(List<Piatto> result, Map<Long, Piatto> availableDishById, Set<Long> excludedDishIds, Categoria category) {
-        if (result.stream().anyMatch(dish -> dish.getCategoria() == category)) {
+    private void ensureCategory(
+            List<Piatto> result,
+            Map<Long, Piatto> availableDishById,
+            Set<Long> excludedDishIds,
+            Predicate<String> categoryMatcher
+    ) {
+        if (result.stream().map(Piatto::getCategoriaCode).anyMatch(categoryMatcher)) {
             return;
         }
         availableDishById.values().stream()
                 .filter(this::isAvailable)
-                .filter(dish -> dish.getCategoria() == category)
+                .filter(dish -> dish.getId() != null && !excludedDishIds.contains(dish.getId()))
+                .filter(dish -> categoryMatcher.test(dish.getCategoriaCode()))
                 .filter(dish -> result.stream().noneMatch(existing -> existing.getId().equals(dish.getId())))
                 .findFirst()
                 .ifPresent(dish -> result.add(0, dish));
     }
 
     private boolean isNonMainDish(Piatto dish) {
-        return dish != null && (dish.getCategoria() == Categoria.CONTORNO || dish.getCategoria() == Categoria.DOLCE);
+        if (dish == null) {
+            return false;
+        }
+        String categoryCode = dish.getCategoriaCode();
+        return MenuCategoryRules.isSide(categoryCode) || MenuCategoryRules.isDessert(categoryCode);
     }
     private double featureValue(AnalyticsService.DishFeatures features, String field) {
         if (features == null) {
@@ -449,14 +462,14 @@ public class UpsellService {
         };
     }
 
-    private double categoryBoost(Categoria candidateCategory) {
-        if (candidateCategory == Categoria.BEVANDA) {
+    private double categoryBoost(String candidateCategory) {
+        if (MenuCategoryRules.isBeverage(candidateCategory)) {
             return 0.25d;
         }
-        if (candidateCategory == Categoria.CONTORNO) {
+        if (MenuCategoryRules.isSide(candidateCategory)) {
             return 0.20d;
         }
-        if (candidateCategory == Categoria.DOLCE) {
+        if (MenuCategoryRules.isDessert(candidateCategory)) {
             return 0.15d;
         }
         return 0.0d;
@@ -503,26 +516,30 @@ public class UpsellService {
         return 0.0d;
     }
 
-    private double categoryGapScore(Categoria candidateCategory, Set<Categoria> cartCategories, boolean hasMainDish) {
-        if (candidateCategory == null) {
+    private double categoryGapScore(String candidateCategory, Set<String> cartCategories, boolean hasMainDish) {
+        String normalizedCategory = MenuCategoryRules.normalize(candidateCategory);
+        if (normalizedCategory == null) {
             return 0.0d;
         }
-        if (candidateCategory == Categoria.BEVANDA && !cartCategories.contains(Categoria.BEVANDA)) {
+        if (MenuCategoryRules.isBeverage(normalizedCategory)
+                && !MenuCategoryRules.hasCategory(cartCategories, MenuCategoryRules::isBeverage)) {
             return 0.24d;
         }
-        if (candidateCategory == Categoria.CONTORNO && hasMainDish && !cartCategories.contains(Categoria.CONTORNO)) {
+        if (MenuCategoryRules.isSide(normalizedCategory)
+                && hasMainDish
+                && !MenuCategoryRules.hasCategory(cartCategories, MenuCategoryRules::isSide)) {
             return 0.20d;
         }
-        if (candidateCategory == Categoria.DOLCE && hasMainDish && !cartCategories.contains(Categoria.DOLCE)) {
+        if (MenuCategoryRules.isDessert(normalizedCategory)
+                && hasMainDish
+                && !MenuCategoryRules.hasCategory(cartCategories, MenuCategoryRules::isDessert)) {
             return 0.14d;
         }
         return 0.0d;
     }
 
-    private boolean hasMainDish(Set<Categoria> categories) {
-        return categories.contains(Categoria.PRIMO)
-                || categories.contains(Categoria.SECONDO)
-                || categories.contains(Categoria.ANTIPASTO);
+    private boolean hasMainDish(Set<String> categories) {
+        return MenuCategoryRules.hasCategory(categories, MenuCategoryRules::isMainDish);
     }
 
     private double recommendationBoost(Piatto dish) {

@@ -86,7 +86,7 @@ public class OrderController {
             restaurantId = jwtService.extractRestaurantId(token);
         }
         if (restaurantId == null) {
-            throw new RuntimeException("Nessun ristorante operativo disponibile nel token");
+            throw new RuntimeException("Nessun locale operativo disponibile nel token");
         }
         return orderStreamService.subscribe(restaurantId);
     }

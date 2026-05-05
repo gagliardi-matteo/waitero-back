@@ -38,6 +38,7 @@ public class SchemaMigrationRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         ensureRestaurantColumns();
+        ensureMenuCategoryTable();
         ensureBackofficeUserTable();
         ensureTablePublicIdColumn();
         ensureDishColumns();
@@ -62,8 +63,72 @@ public class SchemaMigrationRunner implements ApplicationRunner {
             log.info("Added missing column ristoratore.created_at");
         }
 
+        if (!columnExists("ristoratore", "business_type")) {
+            jdbcTemplate.execute("ALTER TABLE ristoratore ADD COLUMN business_type varchar(32)");
+            log.info("Added missing column ristoratore.business_type");
+        }
+
         jdbcTemplate.execute("UPDATE ristoratore SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL");
+        jdbcTemplate.execute("UPDATE ristoratore SET business_type = 'RISTORANTE' WHERE business_type IS NULL OR btrim(business_type) = ''");
         jdbcTemplate.execute("ALTER TABLE ristoratore ALTER COLUMN created_at SET NOT NULL");
+        jdbcTemplate.execute("ALTER TABLE ristoratore ALTER COLUMN business_type SET NOT NULL");
+        jdbcTemplate.execute("ALTER TABLE ristoratore ALTER COLUMN business_type SET DEFAULT 'RISTORANTE'");
+    }
+
+    private void ensureMenuCategoryTable() {
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS menu_category (
+                    id BIGSERIAL PRIMARY KEY,
+                    business_type varchar(32) NOT NULL,
+                    code varchar(64) NOT NULL,
+                    label varchar(120) NOT NULL,
+                    sort_order integer NOT NULL,
+                    active boolean NOT NULL DEFAULT true
+                )
+                """
+        );
+
+        jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_menu_category_business_code_unique ON menu_category(business_type, code)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_menu_category_business_sort ON menu_category(business_type, sort_order)");
+
+        seedMenuCategory("RISTORANTE", "ANTIPASTO", "Antipasti", 10);
+        seedMenuCategory("RISTORANTE", "PRIMO", "Primi", 20);
+        seedMenuCategory("RISTORANTE", "SECONDO", "Secondi", 30);
+        seedMenuCategory("RISTORANTE", "CONTORNO", "Contorni", 40);
+        seedMenuCategory("RISTORANTE", "DOLCE", "Dolci", 50);
+        seedMenuCategory("RISTORANTE", "BEVANDA", "Bevande", 60);
+        seedMenuCategory("RISTORANTE", "ALTRO", "Altro", 999);
+
+        seedMenuCategory("PUB", "BIRRA_SPINA", "Birre alla spina", 10);
+        seedMenuCategory("PUB", "BIRRA_BOTTIGLIA", "Birre in bottiglia", 20);
+        seedMenuCategory("PUB", "COCKTAIL", "Cocktail", 30);
+        seedMenuCategory("PUB", "DISTILLATO", "Distillati", 40);
+        seedMenuCategory("PUB", "VINO", "Vini", 50);
+        seedMenuCategory("PUB", "ANALCOLICO", "Analcolici", 60);
+        seedMenuCategory("PUB", "PANINO", "Panini", 70);
+        seedMenuCategory("PUB", "TAGLIERE", "Taglieri", 80);
+        seedMenuCategory("PUB", "FRITTO", "Fritti", 90);
+        seedMenuCategory("PUB", "DOLCE", "Dolci", 100);
+        seedMenuCategory("PUB", "ALTRO", "Altro", 999);
+    }
+
+    private void seedMenuCategory(String businessType, String code, String label, int sortOrder) {
+        jdbcTemplate.update(
+                """
+                INSERT INTO menu_category (business_type, code, label, sort_order, active)
+                VALUES (?, ?, ?, ?, true)
+                ON CONFLICT (business_type, code)
+                DO UPDATE SET
+                    label = EXCLUDED.label,
+                    sort_order = EXCLUDED.sort_order,
+                    active = true
+                """,
+                businessType,
+                code,
+                label,
+                sortOrder
+        );
     }
 
     private void ensureBackofficeUserTable() {
@@ -249,6 +314,67 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         if (!columnExists("piatto", "consigliato")) {
             jdbcTemplate.execute("ALTER TABLE piatto ADD COLUMN consigliato boolean NOT NULL DEFAULT false");
             log.info("Added missing column piatto.consigliato");
+        }
+
+        if (!columnExists("piatto", "categoria_id")) {
+            jdbcTemplate.execute("ALTER TABLE piatto ADD COLUMN categoria_id bigint");
+            log.info("Added missing column piatto.categoria_id");
+        }
+
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_piatto_categoria_id ON piatto(categoria_id)");
+
+        if (columnExists("piatto", "categoria")) {
+            jdbcTemplate.execute(
+                    """
+                    UPDATE piatto p
+                    SET categoria_id = mc.id
+                    FROM ristoratore r, menu_category mc
+                    WHERE p.ristoratore_id = r.id
+                      AND upper(mc.business_type) = upper(coalesce(r.business_type, 'RISTORANTE'))
+                      AND upper(mc.code) = upper(coalesce(nullif(btrim(cast(p.categoria as varchar)), ''), 'ALTRO'))
+                      AND p.categoria_id IS NULL
+                    """
+            );
+        }
+
+        jdbcTemplate.execute(
+                """
+                UPDATE piatto p
+                SET categoria_id = mc.id
+                FROM ristoratore r, menu_category mc
+                WHERE p.ristoratore_id = r.id
+                  AND upper(mc.business_type) = upper(coalesce(r.business_type, 'RISTORANTE'))
+                  AND upper(mc.code) = 'ALTRO'
+                  AND p.categoria_id IS NULL
+                """
+        );
+
+        jdbcTemplate.execute(
+                """
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM pg_constraint
+                        WHERE conname = 'fk_piatto_menu_category'
+                    ) THEN
+                        ALTER TABLE piatto
+                        ADD CONSTRAINT fk_piatto_menu_category
+                        FOREIGN KEY (categoria_id) REFERENCES menu_category(id);
+                    END IF;
+                END
+                $$;
+                """
+        );
+
+        Integer uncategorized = jdbcTemplate.queryForObject(
+                "select count(*) from piatto where categoria_id is null",
+                Integer.class
+        );
+        if (uncategorized != null && uncategorized == 0) {
+            jdbcTemplate.execute("ALTER TABLE piatto ALTER COLUMN categoria_id SET NOT NULL");
+        } else {
+            log.warn("Skipped NOT NULL on piatto.categoria_id because {} rows are still uncategorized", uncategorized);
         }
     }
 

@@ -5,7 +5,8 @@ import com.waitero.analyticsv2.service.MenuIntelligenceV2Service;
 import com.waitero.analyticsv2.support.AnalyticsV2JsonLogger;
 import com.waitero.analyticsv2.support.AnalyticsV2TimeRangeResolver;
 import com.waitero.back.dto.DishIntelligenceDTO;
-import com.waitero.back.entity.Categoria;
+import com.waitero.back.entity.BusinessType;
+import com.waitero.back.entity.MenuCategory;
 import com.waitero.back.entity.Piatto;
 import com.waitero.back.repository.PiattoRepository;
 import org.junit.jupiter.api.Test;
@@ -68,9 +69,9 @@ class MenuIntelligenceServiceTest {
     void shouldRankUsingVariantCByDishScoreAndKeepDeterministicOrdering() {
         Long restaurantId = 10L;
         List<Piatto> dishes = List.of(
-                dish(1L, "Primo Alpha", Categoria.PRIMO, "12.00"),
-                dish(2L, "Primo Beta", Categoria.PRIMO, "11.00"),
-                dish(3L, "Drink Gamma", Categoria.BEVANDA, "5.00")
+                dish(1L, "Primo Alpha", category("PRIMO", "Primi", 10), "12.00"),
+                dish(2L, "Primo Beta", category("PRIMO", "Primi", 10), "11.00"),
+                dish(3L, "Drink Gamma", category("BEVANDA", "Bevande", 60), "5.00")
         );
         when(experimentService.getVariant("session-c", restaurantId, 4)).thenReturn(ExperimentService.VARIANT_C);
         when(piattoRepository.findAllByRistoratoreIdWithCanonical(restaurantId)).thenReturn(dishes);
@@ -92,8 +93,8 @@ class MenuIntelligenceServiceTest {
     void shouldFallbackToLegacyRankingWhenVariantCFails() {
         Long restaurantId = 20L;
         List<Piatto> dishes = List.of(
-                dish(11L, "Legacy High", Categoria.PRIMO, "14.00"),
-                dish(12L, "Legacy Low", Categoria.SECONDO, "10.00")
+                dish(11L, "Legacy High", category("PRIMO", "Primi", 10), "14.00"),
+                dish(12L, "Legacy Low", category("SECONDO", "Secondi", 20), "10.00")
         );
         when(experimentService.getVariant("session-fallback-c", restaurantId, 8)).thenReturn(ExperimentService.VARIANT_C);
         when(piattoRepository.findAllByRistoratoreIdWithCanonical(restaurantId)).thenReturn(dishes);
@@ -115,9 +116,9 @@ class MenuIntelligenceServiceTest {
     @Test
     void shouldHideUnavailableDishesEvenWhenLegacyRankingIsServedFromCache() {
         Long restaurantId = 30L;
-        Piatto visibleDish = dish(21L, "Visible Dish", Categoria.PRIMO, "12.00");
-        Piatto removedDishFirstLoad = dish(22L, "Removed Later", Categoria.SECONDO, "10.00");
-        Piatto removedDishSecondLoad = dish(22L, "Removed Later", Categoria.SECONDO, "10.00");
+        Piatto visibleDish = dish(21L, "Visible Dish", category("PRIMO", "Primi", 10), "12.00");
+        Piatto removedDishFirstLoad = dish(22L, "Removed Later", category("SECONDO", "Secondi", 20), "10.00");
+        Piatto removedDishSecondLoad = dish(22L, "Removed Later", category("SECONDO", "Secondi", 20), "10.00");
         removedDishSecondLoad.setDisponibile(false);
 
         when(experimentService.getVariant("session-a", restaurantId, 2)).thenReturn(ExperimentService.VARIANT_A);
@@ -139,13 +140,23 @@ class MenuIntelligenceServiceTest {
         assertIterableEquals(List.of(21L), second.stream().map(Piatto::getId).toList());
     }
 
-    private Piatto dish(Long id, String name, Categoria category, String price) {
+    private Piatto dish(Long id, String name, MenuCategory category, String price) {
         return Piatto.builder()
                 .id(id)
                 .nome(name)
                 .categoria(category)
                 .prezzo(new BigDecimal(price))
                 .disponibile(true)
+                .build();
+    }
+
+    private MenuCategory category(String code, String label, int sortOrder) {
+        return MenuCategory.builder()
+                .businessType(BusinessType.RISTORANTE)
+                .code(code)
+                .label(label)
+                .sortOrder(sortOrder)
+                .active(true)
                 .build();
     }
 

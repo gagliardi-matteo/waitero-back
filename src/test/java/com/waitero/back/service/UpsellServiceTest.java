@@ -5,7 +5,8 @@ import com.waitero.analyticsv2.service.UpsellV2Service;
 import com.waitero.analyticsv2.support.AnalyticsV2JsonLogger;
 import com.waitero.analyticsv2.support.AnalyticsV2TimeRangeResolver;
 import com.waitero.back.dto.DishIntelligenceDTO;
-import com.waitero.back.entity.Categoria;
+import com.waitero.back.entity.BusinessType;
+import com.waitero.back.entity.MenuCategory;
 import com.waitero.back.entity.Piatto;
 import com.waitero.back.repository.DishCooccurrenceRepository;
 import com.waitero.back.repository.OrdineItemRepository;
@@ -65,11 +66,12 @@ class UpsellServiceTest {
     void shouldBoostVariantCSuggestionsUsingDishIntelligenceWhileFilteringUnavailableDishes() {
         Long restaurantId = 1L;
         Long baseDishId = 10L;
-        Piatto baseDish = dish(baseDishId, "Base", Categoria.PRIMO, "12.00", true);
-        Piatto suggestionA = dish(21L, "Suggestion A", Categoria.PRIMO, "5.00", true);
-        Piatto suggestionB = dish(22L, "Suggestion B", Categoria.PRIMO, "6.00", true);
-        Piatto suggestionC = dish(23L, "Suggestion C", Categoria.PRIMO, "7.00", true);
-        Piatto unavailableSuggestion = dish(24L, "Unavailable", Categoria.PRIMO, "4.00", false);
+        MenuCategory primi = category("PRIMO", "Primi", 10);
+        Piatto baseDish = dish(baseDishId, "Base", primi, "12.00", true);
+        Piatto suggestionA = dish(21L, "Suggestion A", primi, "5.00", true);
+        Piatto suggestionB = dish(22L, "Suggestion B", primi, "6.00", true);
+        Piatto suggestionC = dish(23L, "Suggestion C", primi, "7.00", true);
+        Piatto unavailableSuggestion = dish(24L, "Unavailable", primi, "4.00", false);
 
         when(experimentService.getVariant("session-c", restaurantId, 4)).thenReturn(ExperimentService.VARIANT_C);
         when(piattoRepository.findByIdAndRistoratoreId(baseDishId, restaurantId)).thenReturn(Optional.of(baseDish));
@@ -97,8 +99,9 @@ class UpsellServiceTest {
     void shouldFilterUnavailableV2SuggestionsForVariantB() {
         Long restaurantId = 2L;
         Long baseDishId = 30L;
-        Piatto availableSuggestion = dish(41L, "Available", Categoria.BEVANDA, "3.50", true);
-        Piatto unavailableSuggestion = dish(42L, "Unavailable", Categoria.BEVANDA, "4.00", false);
+        MenuCategory bevande = category("BEVANDA", "Bevande", 60);
+        Piatto availableSuggestion = dish(41L, "Available", bevande, "3.50", true);
+        Piatto unavailableSuggestion = dish(42L, "Unavailable", bevande, "4.00", false);
 
         when(experimentService.getVariant("session-b", restaurantId, 7)).thenReturn(ExperimentService.VARIANT_B);
         when(piattoRepository.findAllByRistoratoreIdWithCanonical(restaurantId)).thenReturn(List.of(
@@ -115,13 +118,23 @@ class UpsellServiceTest {
         assertIterableEquals(List.of(41L), ranked.stream().map(Piatto::getId).toList());
     }
 
-    private Piatto dish(Long id, String name, Categoria category, String price, boolean available) {
+    private Piatto dish(Long id, String name, MenuCategory category, String price, boolean available) {
         return Piatto.builder()
                 .id(id)
                 .nome(name)
                 .categoria(category)
                 .prezzo(new BigDecimal(price))
                 .disponibile(available)
+                .build();
+    }
+
+    private MenuCategory category(String code, String label, int sortOrder) {
+        return MenuCategory.builder()
+                .businessType(BusinessType.RISTORANTE)
+                .code(code)
+                .label(label)
+                .sortOrder(sortOrder)
+                .active(true)
                 .build();
     }
 

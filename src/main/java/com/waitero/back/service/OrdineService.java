@@ -466,7 +466,7 @@ public class OrdineService {
     private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina, String sessionId, String experimentVariant) {
         tavoloService.requireActiveTable(restaurantId, tableId);
         Ristoratore ristoratore = ristoratoreRepository.findById(restaurantId)
-                .orElseThrow(() -> new RuntimeException("Ristorante non trovato"));
+                .orElseThrow(() -> new RuntimeException("Locale non trovato"));
 
         Ordine ordine = ordineRepository
                 .findFirstByRistoratoreIdAndTableIdAndStatusInOrderByCreatedAtDesc(restaurantId, tableId, ACTIVE_STATUSES)
@@ -502,7 +502,7 @@ public class OrdineService {
                     .orElseThrow(() -> new RuntimeException("Piatto non trovato: " + itemRequest.getDishId()));
 
             if (!piatto.getRistoratore().getId().equals(restaurantId)) {
-                throw new RuntimeException("Piatto non associato al ristorante autenticato");
+            throw new RuntimeException("Piatto non associato al locale autenticato");
             }
 
             if (Boolean.FALSE.equals(piatto.getDisponibile())) {

@@ -1,8 +1,10 @@
 package com.waitero.back.controller;
 
+import com.waitero.back.dto.MenuCategoryDTO;
 import com.waitero.back.dto.PiattoDTO;
 import com.waitero.back.entity.Piatto;
 import com.waitero.back.entity.Ristoratore;
+import com.waitero.back.service.MenuCategoryService;
 import com.waitero.back.service.MenuService;
 import com.waitero.back.service.RistoratoreService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ import java.util.UUID;
 public class MenuController {
 
     private final MenuService menuService;
+    private final MenuCategoryService menuCategoryService;
     private final RistoratoreService ristoratoreService;
 
     @GetMapping("/piatti")
@@ -44,6 +47,11 @@ public class MenuController {
         Piatto piattoEntity = menuService.getPiattoById(id);
         return menuService.toDTO(piattoEntity);
 
+    }
+
+    @GetMapping("/categories")
+    public List<MenuCategoryDTO> getCategories() {
+        return menuCategoryService.getAuthenticatedCategories();
     }
 
     @PostMapping(value = "/piatti/{id}", consumes = "multipart/form-data")

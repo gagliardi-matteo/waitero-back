@@ -5,9 +5,10 @@ import lombok.Data;
 
 @Data
 @Builder
-public class PublicRestaurantDTO {
+public class MenuCategoryDTO {
     private Long id;
     private String businessType;
-    private String nome;
-    private String formattedAddress;
+    private String code;
+    private String label;
+    private Integer sortOrder;
 }

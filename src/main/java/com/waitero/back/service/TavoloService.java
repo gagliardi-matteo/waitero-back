@@ -60,7 +60,7 @@ public class TavoloService {
         validateRequest(request, restaurantId, null);
 
         Ristoratore ristoratore = ristoratoreRepository.findById(restaurantId)
-                .orElseThrow(() -> new RuntimeException("Ristorante non trovato"));
+                .orElseThrow(() -> new RuntimeException("Locale non trovato"));
 
         Tavolo tavolo = Tavolo.builder()
                 .ristoratore(ristoratore)

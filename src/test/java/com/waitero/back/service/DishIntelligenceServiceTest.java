@@ -6,7 +6,8 @@ import com.waitero.analyticsv2.support.AnalyticsV2TimeRange;
 import com.waitero.analyticsv2.support.AnalyticsV2TimeRangeResolver;
 import com.waitero.back.dto.DishInsightApplyResultDTO;
 import com.waitero.back.dto.InsightDTO;
-import com.waitero.back.entity.Categoria;
+import com.waitero.back.entity.BusinessType;
+import com.waitero.back.entity.MenuCategory;
 import com.waitero.back.entity.Piatto;
 import com.waitero.back.repository.DishIntelligenceEngagementRepository;
 import com.waitero.back.repository.PiattoRepository;
@@ -105,7 +106,13 @@ class DishIntelligenceServiceTest {
         return Piatto.builder()
                 .id(id)
                 .nome(name)
-                .categoria(Categoria.PRIMO)
+                .categoria(MenuCategory.builder()
+                        .businessType(BusinessType.RISTORANTE)
+                        .code("PRIMO")
+                        .label("Primi")
+                        .sortOrder(10)
+                        .active(true)
+                        .build())
                 .prezzo(new BigDecimal("10.00"))
                 .disponibile(available)
                 .consigliato(recommended)

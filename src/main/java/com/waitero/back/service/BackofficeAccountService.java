@@ -43,7 +43,7 @@ public class BackofficeAccountService {
 
         if (user.getRole() == BackofficeRole.RISTORATORE && user.getRestaurantId() != null) {
             Ristoratore restaurant = ristoratoreRepository.findById(user.getRestaurantId())
-                    .orElseThrow(() -> new RuntimeException("Ristorante non trovato"));
+                    .orElseThrow(() -> new RuntimeException("Locale non trovato"));
             restaurant.setNome(name);
             ristoratoreRepository.save(restaurant);
         }
@@ -84,12 +84,19 @@ public class BackofficeAccountService {
     }
 
     private BackofficeProfileDTO toProfile(BackofficeUser user) {
+        String businessType = null;
+        if (user.getRestaurantId() != null) {
+            businessType = ristoratoreRepository.findById(user.getRestaurantId())
+                    .map(restaurant -> restaurant.getBusinessType().name())
+                    .orElse(null);
+        }
         return BackofficeProfileDTO.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
                 .nome(user.getNome())
                 .role(user.getRole().name())
                 .restaurantId(user.getRestaurantId())
+                .businessType(businessType)
                 .hasPassword(user.getPasswordHash() != null && !user.getPasswordHash().isBlank())
                 .build();
     }

@@ -116,7 +116,7 @@ public class AnalyticsService {
                 select
                     p.id as dish_id,
                     p.nome as dish_name,
-                    p.categoria as category,
+                    coalesce(mc.label, 'Senza categoria') as category,
                     p.prezzo as price,
                     coalesce(ev.views, 0) as views,
                     coalesce(ev.impressions, 0) as impressions,
@@ -130,6 +130,7 @@ public class AnalyticsService {
                     coalesce(ord.revenue, 0) as revenue
                 from piatto p
                 cross join anchor a
+                left join menu_category mc on mc.id = p.categoria_id
                 left join lateral (
                     select
                         dish_id,

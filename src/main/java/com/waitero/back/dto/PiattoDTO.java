@@ -20,6 +20,10 @@ public class PiattoDTO {
     private BigDecimal prezzo;
     private Boolean disponibile;
     private String categoria;
+    private Long categoriaId;
+    private String categoriaCode;
+    private String categoriaLabel;
+    private Integer categoriaSortOrder;
     private String imageUrl;
     private String ingredienti;
     private String allergeni;

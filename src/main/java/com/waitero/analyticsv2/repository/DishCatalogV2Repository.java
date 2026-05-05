@@ -28,11 +28,12 @@ public class DishCatalogV2Repository {
                     p.id as dish_id,
                     p.nome as dish_name,
                     p.descrizione as description,
-                    cast(p.categoria as varchar) as category,
+                    coalesce(mc.label, 'Senza categoria') as category,
                     coalesce(p.prezzo, 0) as price,
                     coalesce(p.disponibile, false) as available,
                     p.image_url as image_url
                 from piatto p
+                left join menu_category mc on mc.id = p.categoria_id
                 where p.ristoratore_id = :restaurantId
                   and p.id = :dishId
                 """;
@@ -63,11 +64,12 @@ public class DishCatalogV2Repository {
                     p.id as dish_id,
                     p.nome as dish_name,
                     p.descrizione as description,
-                    cast(p.categoria as varchar) as category,
+                    coalesce(mc.label, 'Senza categoria') as category,
                     coalesce(p.prezzo, 0) as price,
                     coalesce(p.disponibile, false) as available,
                     p.image_url as image_url
                 from piatto p
+                left join menu_category mc on mc.id = p.categoria_id
                 where p.ristoratore_id = :restaurantId
                   and p.id in (:dishIds)
                 """ + availabilityFilter + """

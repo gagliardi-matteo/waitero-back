@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 public class AdminRestaurantSummaryDto {
     private Long id;
+    private String businessType;
     private String nome;
     private String email;
     private String city;

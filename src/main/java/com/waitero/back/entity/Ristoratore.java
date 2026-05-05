@@ -27,6 +27,11 @@ public class Ristoratore {
 
     private String providerId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "business_type", nullable = false, length = 32)
+    @Builder.Default
+    private BusinessType businessType = BusinessType.RISTORANTE;
+
     @Column(length = 255)
     private String address;
 

@@ -73,7 +73,7 @@ public class AnalyticsV2DebugComparisonService {
                             index + 1,
                             dish.getId(),
                             dish.getNome(),
-                            dish.getCategoria() == null ? null : dish.getCategoria().name()
+                            dish.getCategoriaLabel()
                     );
                 })
                 .toList();

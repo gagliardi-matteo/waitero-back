@@ -6,6 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class CreateRestaurantRequest {
+    private String businessType;
     private String nome;
     private String email;
     private String password;

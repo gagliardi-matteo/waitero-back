@@ -16,6 +16,7 @@ public interface PiattoRepository extends JpaRepository<Piatto, Long> {
     @Query("""
             select p
             from Piatto p
+            left join fetch p.categoria
             left join fetch p.piattoCanonicale
             where p.ristoratore.id = :ristoratoreId
             """)
@@ -24,6 +25,7 @@ public interface PiattoRepository extends JpaRepository<Piatto, Long> {
     @Query("""
             select p
             from Piatto p
+            left join fetch p.categoria
             left join fetch p.piattoCanonicale
             where p.id = :id
             """)

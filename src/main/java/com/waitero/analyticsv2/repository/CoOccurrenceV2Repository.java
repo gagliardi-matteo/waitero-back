@@ -100,7 +100,7 @@ public class CoOccurrenceV2Repository {
                         p.id as dish_id,
                         p.nome as dish_name,
                         p.descrizione as description,
-                        cast(p.categoria as varchar) as category,
+                        coalesce(mc.label, 'Senza categoria') as category,
                         coalesce(p.prezzo, 0) as price,
                         coalesce(p.disponibile, false) as available,
                         p.image_url as image_url,
@@ -118,6 +118,7 @@ public class CoOccurrenceV2Repository {
                     join piatto p
                       on p.id = rp.related_dish_id
                      and p.ristoratore_id = :restaurantId
+                    left join menu_category mc on mc.id = p.categoria_id
                     join base_order_counts boc on boc.base_dish_id = rp.base_dish_id
                     left join dish_order_counts doc on doc.dish_id = rp.related_dish_id
                     cross join total_orders to2
@@ -171,8 +172,9 @@ public class CoOccurrenceV2Repository {
                     join piatto suggested
                       on suggested.id = od2.piatto_id
                      and suggested.ristoratore_id = :restaurantId
+                    join menu_category suggested_category on suggested_category.id = suggested.categoria_id
                     where coalesce(suggested.disponibile, false) = true
-                      and cast(suggested.categoria as varchar) in ('BEVANDA', 'CONTORNO', 'DOLCE')
+                      and upper(suggested_category.code) in ('BEVANDA', 'CONTORNO', 'DOLCE', 'BIRRA_SPINA', 'BIRRA_BOTTIGLIA', 'COCKTAIL', 'DISTILLATO', 'VINO', 'ANALCOLICO', 'TAGLIERE', 'FRITTO')
                     group by od1.piatto_id
                 )
                 select

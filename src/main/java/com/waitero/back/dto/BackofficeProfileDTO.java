@@ -13,5 +13,6 @@ public class BackofficeProfileDTO {
     private String nome;
     private String role;
     private Long restaurantId;
+    private String businessType;
     private boolean hasPassword;
 }

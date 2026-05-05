@@ -1,7 +1,8 @@
 package com.waitero.back.service;
 
 import com.waitero.back.dto.PiattoDTO;
-import com.waitero.back.entity.Categoria;
+import com.waitero.back.entity.BusinessType;
+import com.waitero.back.entity.MenuCategory;
 import com.waitero.back.entity.Piatto;
 import com.waitero.back.repository.IngredienteRepository;
 import com.waitero.back.repository.PiattoIngredienteRepository;
@@ -48,17 +49,21 @@ class MenuServiceTest {
     @Mock
     private AccessContextService accessContextService;
 
+    @Mock
+    private MenuCategoryService menuCategoryService;
+
     @InjectMocks
     private MenuService menuService;
 
     @Test
     void shouldPreserveDecisionOwnedFieldsWhenUpdatingDishData() {
+        MenuCategory primoCategory = category(1L, "PRIMO", "Primi");
         Piatto entity = Piatto.builder()
                 .id(10L)
                 .nome("Carbonara")
                 .descrizione("Prima")
                 .prezzo(new BigDecimal("12.00"))
-                .categoria(Categoria.PRIMO)
+                .categoria(primoCategory)
                 .disponibile(true)
                 .consigliato(false)
                 .build();
@@ -67,9 +72,12 @@ class MenuServiceTest {
         incoming.setNome("Carbonara Premium");
         incoming.setDescrizione("Nuova descrizione");
         incoming.setPrezzo(new BigDecimal("14.00"));
-        incoming.setCategoria(Categoria.PRIMO.name());
+        incoming.setCategoriaCode("PRIMO");
         incoming.setDisponibile(false);
         incoming.setConsigliato(true);
+
+        org.mockito.Mockito.when(menuCategoryService.resolveCategory(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(incoming)))
+                .thenReturn(primoCategory);
 
         assertTrue(menuService.isDecisionFieldUpdateRequested(entity, incoming));
 
@@ -81,18 +89,33 @@ class MenuServiceTest {
 
     @Test
     void shouldForceNeutralDecisionStateWhenCreatingDishFromDto() {
+        MenuCategory secondoCategory = category(2L, "SECONDO", "Secondi");
         PiattoDTO incoming = new PiattoDTO();
         incoming.setId(99L);
         incoming.setNome("Nuovo piatto");
         incoming.setDescrizione("Descrizione");
         incoming.setPrezzo(new BigDecimal("8.00"));
-        incoming.setCategoria(Categoria.SECONDO.name());
+        incoming.setCategoriaCode("SECONDO");
         incoming.setDisponibile(false);
         incoming.setConsigliato(true);
+
+        org.mockito.Mockito.when(menuCategoryService.resolveCategory(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(incoming)))
+                .thenReturn(secondoCategory);
 
         Piatto created = menuService.fromDTO(incoming);
 
         assertTrue(created.getDisponibile());
         assertFalse(created.getConsigliato());
+    }
+
+    private MenuCategory category(Long id, String code, String label) {
+        return MenuCategory.builder()
+                .id(id)
+                .businessType(BusinessType.RISTORANTE)
+                .code(code)
+                .label(label)
+                .sortOrder(10)
+                .active(true)
+                .build();
     }
 }

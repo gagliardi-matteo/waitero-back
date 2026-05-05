@@ -9,6 +9,7 @@ import java.util.List;
 @Builder
 public class RestaurantSettingsDTO {
     private Long id;
+    private String businessType;
     private String nome;
     private String email;
     private String address;

@@ -116,6 +116,7 @@ public class RistoratoreService {
     private RestaurantSettingsDTO toSettingsDto(Ristoratore restaurant, List<ServiceHour> serviceHours) {
         return RestaurantSettingsDTO.builder()
                 .id(restaurant.getId())
+                .businessType(resolveBusinessType(restaurant))
                 .nome(restaurant.getNome())
                 .email(restaurant.getEmail())
                 .address(restaurant.getAddress())
@@ -138,6 +139,7 @@ public class RistoratoreService {
     private PublicRestaurantDTO toPublicRestaurantDto(Ristoratore restaurant) {
         return PublicRestaurantDTO.builder()
                 .id(restaurant.getId())
+                .businessType(resolveBusinessType(restaurant))
                 .nome(restaurant.getNome())
                 .formattedAddress(restaurant.getFormattedAddress())
                 .build();
@@ -145,10 +147,10 @@ public class RistoratoreService {
 
     private void validateRequest(RestaurantSettingsRequest request) {
         if (request == null) {
-            throw new RuntimeException("Dati ristorante mancanti");
+            throw new RuntimeException("Dati locale mancanti");
         }
         if (request.getNome() == null || request.getNome().trim().isBlank()) {
-            throw new RuntimeException("Nome ristorante obbligatorio");
+            throw new RuntimeException("Nome locale obbligatorio");
         }
         if (request.getAddress() == null || request.getAddress().trim().isBlank()) {
             throw new RuntimeException("Indirizzo obbligatorio");
@@ -161,7 +163,11 @@ public class RistoratoreService {
     private Ristoratore getAuthenticatedRestaurant() {
         Long restaurantId = accessContextService.getActingRestaurantIdOrThrow();
         return ristoratoreRepository.findById(restaurantId)
-                .orElseThrow(() -> new RuntimeException("Ristorante non trovato"));
+                .orElseThrow(() -> new RuntimeException("Locale non trovato"));
+    }
+
+    private String resolveBusinessType(Ristoratore restaurant) {
+        return restaurant.getBusinessType() == null ? "RISTORANTE" : restaurant.getBusinessType().name();
     }
 }
 

@@ -7,6 +7,7 @@ import com.waitero.back.dto.admin.ResetRestaurantPasswordRequest;
 import com.waitero.back.dto.admin.StartImpersonationRequest;
 import com.waitero.back.entity.BackofficeRole;
 import com.waitero.back.entity.BackofficeUser;
+import com.waitero.back.entity.BusinessType;
 import com.waitero.back.entity.Ristoratore;
 import com.waitero.back.repository.BackofficeUserRepository;
 import com.waitero.back.repository.RistoratoreRepository;
@@ -51,12 +52,14 @@ public class AdminService {
         validateCreateRestaurantRequest(request);
 
         String email = request.getEmail().trim().toLowerCase();
+        BusinessType businessType = parseBusinessType(request.getBusinessType());
         if (backofficeUserRepository.existsByEmailIgnoreCaseAndProviderIgnoreCase(email, LOCAL_PROVIDER)) {
-            throw new RuntimeException("Esiste gia un ristoratore con questa email");
+            throw new RuntimeException("Esiste gia un locale con questa email");
         }
 
         Ristoratore restaurant = Ristoratore.builder()
                 .email(email)
+                .businessType(businessType)
                 .nome(request.getNome().trim())
                 .provider(LOCAL_PROVIDER)
                 .address(trimToNull(request.getAddress()))
@@ -85,12 +88,12 @@ public class AdminService {
     public void resetRestaurantPassword(Long restaurantId, ResetRestaurantPasswordRequest request) {
         ensureMaster();
         if (restaurantId == null) {
-            throw new RuntimeException("Ristorante mancante");
+            throw new RuntimeException("Locale mancante");
         }
         validatePassword(request == null ? null : request.getPassword());
 
         BackofficeUser user = backofficeUserRepository.findFirstByRestaurantIdAndRole(restaurantId, BackofficeRole.RISTORATORE)
-                .orElseThrow(() -> new RuntimeException("Utente ristoratore non trovato"));
+                .orElseThrow(() -> new RuntimeException("Utente locale non trovato"));
         user.setProvider(LOCAL_PROVIDER);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         backofficeUserRepository.save(user);
@@ -101,13 +104,13 @@ public class AdminService {
     public ImpersonationResponse startImpersonation(StartImpersonationRequest request) {
         ensureMaster();
         if (request == null || request.getRestaurantId() == null) {
-            throw new RuntimeException("Ristorante da impersonare mancante");
+            throw new RuntimeException("Locale da impersonare mancante");
         }
 
         BackofficeUser masterUser = backofficeUserRepository.findById(accessContextService.getAuthenticatedUserId())
                 .orElseThrow(() -> new RuntimeException("Utente master non trovato"));
         Ristoratore restaurant = ristoratoreRepository.findById(request.getRestaurantId())
-                .orElseThrow(() -> new RuntimeException("Ristorante non trovato"));
+                .orElseThrow(() -> new RuntimeException("Locale non trovato"));
 
         String token = jwtService.generateImpersonationAccessToken(masterUser, restaurant.getId());
         adminAuditService.record("ADMIN_START_IMPERSONATION", restaurant.getId(), "restaurant", restaurant.getId(), Map.of("restaurantName", restaurant.getNome()));
@@ -126,10 +129,10 @@ public class AdminService {
 
     private void validateCreateRestaurantRequest(CreateRestaurantRequest request) {
         if (request == null) {
-            throw new RuntimeException("Dati ristorante mancanti");
+            throw new RuntimeException("Dati locale mancanti");
         }
         if (request.getNome() == null || request.getNome().trim().isBlank()) {
-            throw new RuntimeException("Nome ristorante obbligatorio");
+            throw new RuntimeException("Nome locale obbligatorio");
         }
         if (request.getEmail() == null || request.getEmail().trim().isBlank()) {
             throw new RuntimeException("Email obbligatoria");
@@ -162,11 +165,17 @@ public class AdminService {
     private AdminRestaurantSummaryDto toSummary(Ristoratore restaurant) {
         return AdminRestaurantSummaryDto.builder()
                 .id(restaurant.getId())
+                .businessType(restaurant.getBusinessType() == null ? BusinessType.RISTORANTE.name() : restaurant.getBusinessType().name())
                 .nome(restaurant.getNome())
                 .email(restaurant.getEmail())
                 .city(restaurant.getCity())
                 .createdAt(restaurant.getCreatedAt())
                 .build();
+    }
+
+    private BusinessType parseBusinessType(String rawBusinessType) {
+        BusinessType businessType = BusinessType.fromValue(rawBusinessType);
+        return businessType == null ? BusinessType.RISTORANTE : businessType;
     }
 }
 

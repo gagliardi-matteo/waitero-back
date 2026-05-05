@@ -49,7 +49,7 @@ public class TableAccessService {
         if (risk.distanceDenied) {
             logAccess(tavolo, request, risk.score, risk.reasonString());
             maybePublishAlert(restaurantId, tableId, risk);
-            return denied("ACCESS_DENIED_DISTANCE", "Accesso negato: dispositivo troppo distante dal ristorante", tavolo, risk.score);
+            return denied("ACCESS_DENIED_DISTANCE", "Accesso negato: dispositivo troppo distante dal locale", tavolo, risk.score);
         }
 
         registerDevice(tavolo, request);

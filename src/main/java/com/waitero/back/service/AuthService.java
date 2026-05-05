@@ -70,7 +70,7 @@ public class AuthService {
         }
 
         if (user.getRole() != BackofficeRole.RISTORATORE || user.getRestaurantId() == null) {
-            throw new RuntimeException("Account locale non associato a un ristorante");
+            throw new RuntimeException("Account locale non associato a un locale");
         }
 
         return buildResponse(user);
@@ -89,10 +89,9 @@ public class AuthService {
     }
 
     private void linkGoogleAccountIfNeeded(BackofficeUser user, String providerId, String name) {
-        if (user.getProviderId() != null && !user.getProviderId().equals(providerId)) {
-            throw new RuntimeException("Account Google non autorizzato");
-        }
-
+        // Allow relinking when the same backoffice account is reached by email but the stored
+        // Google subject is stale. This keeps Google Sign-In usable after account migrations
+        // or previous test links on the same email address.
         user.setProviderId(providerId);
         if (user.getRole() == BackofficeRole.MASTER) {
             user.setProvider(GOOGLE_PROVIDER);
