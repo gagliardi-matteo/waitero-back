@@ -11,14 +11,17 @@ import com.waitero.back.entity.BackofficeUser;
 import com.waitero.back.repository.BackofficeUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,13 +34,15 @@ public class AuthService {
     private final BackofficeUserRepository backofficeUserRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    @Value("${google.auth.client-ids}")
+    private String googleAuthClientIds;
 
     @Transactional
     public AuthResponse loginWithGoogle(String idTokenString) throws GeneralSecurityException, IOException {
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(), JacksonFactory.getDefaultInstance()
         )
-                .setAudience(List.of("910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com"))
+                .setAudience(getGoogleAuthClientIds())
                 .build();
 
         GoogleIdToken idToken = verifier.verify(idTokenString);
@@ -137,5 +142,12 @@ public class AuthService {
                         + ",providerId=" + value.getProviderId()
                         + "}")
                 .orElse("none");
+    }
+
+    private List<String> getGoogleAuthClientIds() {
+        return Arrays.stream(googleAuthClientIds.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .collect(Collectors.toList());
     }
 }

@@ -25,6 +25,8 @@ jwt:
 google:
   maps:
     api-key: ${GOOGLE_MAPS_API_KEY:}
+  auth:
+    client-ids: ${GOOGLE_AUTH_CLIENT_IDS:910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com}
 
 openai:
   api:
