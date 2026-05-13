@@ -35,6 +35,9 @@ public class SchemaMigrationRunner implements ApplicationRunner {
     @Value("${app.local-login.restaurant-bootstrap-password:}")
     private String restaurantBootstrapPassword;
 
+    @Value("${waitero.ui.explainability-balloons-enabled:true}")
+    private boolean explainabilityBalloonsEnabled;
+
     @Override
     public void run(ApplicationArguments args) {
         ensureRestaurantColumns();
@@ -51,6 +54,7 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         ensureExperimentDecisionLogTable();
         ensureEventLogTable();
         ensureAdminAuditLogTable();
+        ensureUiFeatureConfigTable();
     }
 
     private void ensureRestaurantColumns() {
@@ -573,6 +577,27 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_admin_audit_log_restaurant_created_at ON admin_audit_log(restaurant_id, created_at DESC)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_admin_audit_log_master_created_at ON admin_audit_log(master_user_id, created_at DESC)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_admin_audit_log_action_created_at ON admin_audit_log(action, created_at DESC)");
+    }
+
+    private void ensureUiFeatureConfigTable() {
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ui_feature_config (
+                    id BIGINT PRIMARY KEY,
+                    explainability_balloons_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                    updated_at TIMESTAMP NOT NULL
+                )
+                """
+        );
+        jdbcTemplate.update(
+                """
+                INSERT INTO ui_feature_config (id, explainability_balloons_enabled, updated_at)
+                VALUES (1, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT (id) DO NOTHING
+                """,
+                explainabilityBalloonsEnabled
+        );
+        jdbcTemplate.execute("UPDATE ui_feature_config SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL");
     }
     private List<String> parseBootstrapEmails() {
         if (masterBootstrapEmails == null || masterBootstrapEmails.isBlank()) {

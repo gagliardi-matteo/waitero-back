@@ -1,9 +1,12 @@
 package com.waitero.back.controller;
 
 import com.waitero.back.dto.MenuCategoryDTO;
+import com.waitero.back.dto.MenuImportResultDTO;
 import com.waitero.back.dto.PiattoDTO;
 import com.waitero.back.entity.Piatto;
 import com.waitero.back.entity.Ristoratore;
+import com.waitero.back.service.MenuExportService;
+import com.waitero.back.service.MenuImportService;
 import com.waitero.back.service.MenuCategoryService;
 import com.waitero.back.service.MenuService;
 import com.waitero.back.service.RistoratoreService;
@@ -15,9 +18,15 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,6 +42,8 @@ import java.util.UUID;
 public class MenuController {
 
     private final MenuService menuService;
+    private final MenuImportService menuImportService;
+    private final MenuExportService menuExportService;
     private final MenuCategoryService menuCategoryService;
     private final RistoratoreService ristoratoreService;
 
@@ -124,6 +135,31 @@ public class MenuController {
         return menuService.toDTOList(menuService.getPiattiByRistoratore(id));
     }
 
+    @PostMapping(value = "/piatti/import", consumes = MULTIPART_FORM_DATA_VALUE)
+    public MenuImportResultDTO importaMenu(@RequestPart("file") MultipartFile file) {
+        return menuImportService.importFromExcel(file);
+    }
+
+    @GetMapping("/export/template")
+    public ResponseEntity<byte[]> downloadTemplate() {
+        byte[] bytes = menuExportService.buildTemplateWorkbook();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, attachment("waitero-menu-template.xlsx"))
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(bytes);
+    }
+
+    @GetMapping("/export/current")
+    public ResponseEntity<byte[]> downloadCurrentMenu() {
+        byte[] bytes = menuExportService.buildCurrentMenuArchive();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, attachment("waitero-menu-esportazione.zip"))
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(bytes);
+    }
+
     private void rejectDecisionFieldWriteIfRequested(Piatto existing, PiattoDTO incoming) {
         if (menuService.isDecisionFieldUpdateRequested(existing, incoming)) {
             throw new ResponseStatusException(
@@ -131,6 +167,13 @@ public class MenuController {
                     "consigliato e disponibile sono gestiti da Dish Intelligence"
             );
         }
+    }
+
+    private String attachment(String filename) {
+        return ContentDisposition.attachment()
+                .filename(filename, StandardCharsets.UTF_8)
+                .build()
+                .toString();
     }
 }
 

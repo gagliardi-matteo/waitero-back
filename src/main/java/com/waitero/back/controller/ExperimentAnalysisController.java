@@ -25,6 +25,7 @@ public class ExperimentAnalysisController {
     private final ExperimentIntelligenceService experimentIntelligenceService;
     private final AccessContextService accessContextService;
 
+    // Restituisce l'analisi esperimenti del locale nel range richiesto.
     @GetMapping("/analysis")
     public ExperimentAnalysisResponseDTO getExperimentAnalysis(
             @RequestParam("ristoranteId") Long restaurantId,

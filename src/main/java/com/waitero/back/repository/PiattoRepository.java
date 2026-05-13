@@ -11,6 +11,7 @@ import java.util.Optional;
 public interface PiattoRepository extends JpaRepository<Piatto, Long> {
     List<Piatto> findAllByRistoratoreId(Long ristoratoreId);
     Optional<Piatto> findByIdAndRistoratoreId(Long id, Long ristoratoreId);
+    Optional<Piatto> findFirstByRistoratoreIdAndNomeIgnoreCase(Long ristoratoreId, String nome);
     boolean existsByIdAndRistoratoreId(Long id, Long ristoratoreId);
 
     @Query("""

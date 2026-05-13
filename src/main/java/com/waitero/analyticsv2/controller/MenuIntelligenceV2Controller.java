@@ -26,6 +26,7 @@ public class MenuIntelligenceV2Controller {
     private final CoOccurrenceV2Service coOccurrenceV2Service;
     private final AnalyticsV2TimeRangeResolver timeRangeResolver;
 
+    // Ritorna il ranking V2 dei piatti del locale.
     @GetMapping("/ranking")
     public List<MenuRankedDishV2DTO> getRanking(
             @RequestParam Long restaurantId,
@@ -37,6 +38,7 @@ public class MenuIntelligenceV2Controller {
         return menuIntelligenceV2Service.getRankedMenu(restaurantId, limit, timeRange);
     }
 
+    // Ritorna i piatti correlati a un piatto specifico.
     @GetMapping("/related/{dishId}")
     public List<RelatedDishV2DTO> getTopRelated(
             @PathVariable Long dishId,

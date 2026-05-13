@@ -46,6 +46,7 @@ public class MenuIntelligenceService {
     private final Map<Long, CachedRanking> rankingCache = new ConcurrentHashMap<>();
 
     @Deprecated(since = "2026-04", forRemoval = false)
+    // Ordina i piatti del menu in base al rendimento stimato e ai segnali di vendita.
     public List<Piatto> rankDishesByRevenue(Long restaurantId) {
         return rankDishesByRevenueInternal(restaurantId);
     }
@@ -54,6 +55,7 @@ public class MenuIntelligenceService {
         return rankDishesByRevenue(restaurantId, sessionId, null);
     }
 
+    // Se serve, applica prima la logica sperimentale e poi torna al ranking standard.
     public List<Piatto> rankDishesByRevenue(Long restaurantId, String sessionId, Integer tableId) {
         String variant = experimentService.getVariant(sessionId, restaurantId, tableId);
         if (ExperimentService.VARIANT_B.equals(variant)) {
@@ -65,6 +67,7 @@ public class MenuIntelligenceService {
         return rankDishesByRevenueInternal(restaurantId);
     }
 
+    // Variante B: prova il motore V2 di ranking e usa il fallback classico se fallisce.
     private List<Piatto> rankDishesByRevenueWithV2Fallback(Long restaurantId, String sessionId, Integer tableId, String assignedVariant) {
         try {
             return rankDishesByAnalyticsV2(restaurantId);
@@ -75,6 +78,7 @@ public class MenuIntelligenceService {
         }
     }
 
+    // Calcola il ranking classico a partire dalle feature di analytics e dal catalogo disponibile.
     private List<Piatto> rankDishesByRevenueInternal(Long restaurantId) {
         Instant now = Instant.now();
         CachedRanking cached = rankingCache.get(restaurantId);
@@ -155,6 +159,7 @@ public class MenuIntelligenceService {
         return diversified;
     }
 
+    // Usa il ranking prodotto dal motore V2 come ordine di riferimento.
     private List<Piatto> rankDishesByAnalyticsV2(Long restaurantId) {
         List<Piatto> dishes = loadAvailableDishes(restaurantId);
         if (dishes.isEmpty()) {
@@ -186,6 +191,7 @@ public class MenuIntelligenceService {
         return ordered;
     }
 
+    // Variante C: ordina prima con dish intelligence e ripiega sul ranking storico se serve.
     private List<Piatto> rankDishesByDishScoreWithFallback(Long restaurantId, String sessionId, Integer tableId) {
         try {
             return rankDishesByDishScore(restaurantId, sessionId);
@@ -196,6 +202,7 @@ public class MenuIntelligenceService {
         }
     }
 
+    // Usa i punteggi della dish intelligence per costruire l'ordine finale del menu.
     private List<Piatto> rankDishesByDishScore(Long restaurantId, String sessionId) {
         List<Piatto> dishes = loadAvailableDishes(restaurantId);
         if (dishes.isEmpty()) {
@@ -240,6 +247,7 @@ public class MenuIntelligenceService {
         return diversified;
     }
 
+    // Evita che il menu mostri una sequenza troppo monotona della stessa categoria.
     private List<Piatto> ensureCategoryCoverage(List<Piatto> ranked) {
         if (ranked == null || ranked.size() <= 1) {
             return ranked == null ? List.of() : ranked;
@@ -274,6 +282,7 @@ public class MenuIntelligenceService {
         return reordered;
     }
 
+    // Rimescola localmente il ranking per mantenere un menu piu vario e leggibile.
     private List<Piatto> applyDiversity(List<Piatto> ranked) {
         List<Piatto> result = new ArrayList<>(ranked);
         for (int i = 2; i < result.size(); i++) {
@@ -313,6 +322,7 @@ public class MenuIntelligenceService {
         return value == null ? 0L : value;
     }
 
+    // Espone i segnali sintetici per piatto usati da upsell e intelligence.
     public Map<Long, DishSignal> getDishSignals(Long restaurantId) {
         List<DishSignal> signals = jdbcTemplate.query(
                 """

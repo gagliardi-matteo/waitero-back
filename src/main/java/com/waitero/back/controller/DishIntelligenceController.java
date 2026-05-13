@@ -28,21 +28,25 @@ public class DishIntelligenceController {
     private final DishIntelligenceService dishIntelligenceService;
     private final AccessContextService accessContextService;
 
+    // Ritorna la lista di insight per tutti i piatti del locale.
     @GetMapping
     public List<DishIntelligenceDTO> getDishIntelligence(@RequestParam("ristoranteId") Long restaurantId) {
         return dishIntelligenceService.getDishIntelligence(validateRestaurantScope(restaurantId));
     }
 
+    // Ritorna il piano d'azione generato dagli insight.
     @GetMapping("/action-plan")
     public DishActionPlanDTO getDishActionPlan(@RequestParam("ristoranteId") Long restaurantId) {
         return dishIntelligenceService.getDishActionPlan(validateRestaurantScope(restaurantId));
     }
 
+    // Ritorna solo la lista piatta degli insight, usata dalla UI per i tooltip e le card.
     @GetMapping("/insights")
     public List<InsightDTO> getDishInsights(@RequestParam("ristoranteId") Long restaurantId) {
         return dishIntelligenceService.getDishInsights(validateRestaurantScope(restaurantId));
     }
 
+    // Applica gli insight attualmente calcolati al menu del locale.
     @PostMapping("/insights/apply")
     public DishInsightApplyResultDTO applyDishInsights(@RequestParam("ristoranteId") Long restaurantId) {
         return dishIntelligenceService.applyDishInsights(validateRestaurantScope(restaurantId));

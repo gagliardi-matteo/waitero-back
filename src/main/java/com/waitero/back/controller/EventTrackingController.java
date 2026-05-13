@@ -16,6 +16,7 @@ public class EventTrackingController {
 
     private final EventTrackingService eventTrackingService;
 
+    // Riceve un evento di tracking e lo inoltra al service di persistenza.
     @PostMapping
     public ResponseEntity<Void> track(@RequestBody EventTrackingRequest request) {
         eventTrackingService.track(request);

@@ -23,6 +23,7 @@ public class UpsellV2Controller {
     private final UpsellV2Service upsellV2Service;
     private final AnalyticsV2TimeRangeResolver timeRangeResolver;
 
+    // Ritorna i suggerimenti upsell associati a un singolo piatto.
     @GetMapping("/dish/{dishId}")
     public List<UpsellSuggestionV2DTO> getDishSuggestions(
             @PathVariable Long dishId,
@@ -35,6 +36,7 @@ public class UpsellV2Controller {
         return upsellV2Service.getDishSuggestions(restaurantId, dishId, limit, timeRange);
     }
 
+    // Ritorna i suggerimenti upsell del carrello corrente.
     @GetMapping("/cart")
     public List<UpsellSuggestionV2DTO> getCartSuggestions(
             @RequestParam Long restaurantId,

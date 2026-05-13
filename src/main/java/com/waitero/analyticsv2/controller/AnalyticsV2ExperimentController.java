@@ -25,6 +25,7 @@ public class AnalyticsV2ExperimentController {
     private final AccessContextService accessContextService;
     private final AnalyticsV2TimeRangeResolver timeRangeResolver;
 
+    // Ritorna i risultati consolidati degli esperimenti V2.
     @GetMapping("/results")
     public AnalyticsV2ExperimentResultsDTO getResults(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,

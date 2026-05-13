@@ -104,6 +104,57 @@ public class MenuService {
         return piattoRepo.save(saved);
     }
 
+    @Transactional
+    public Piatto upsertPiattoFromImport(PiattoDTO dto, String imageUrl) {
+        Ristoratore ristoratore = getRistoratoreAutenticato();
+        String nome = normalizeText(dto.getNome());
+        if (nome == null) {
+            throw new IllegalArgumentException("Nome piatto obbligatorio");
+        }
+
+        Piatto piatto = piattoRepo.findFirstByRistoratoreIdAndNomeIgnoreCase(ristoratore.getId(), nome)
+                .orElseGet(Piatto::new);
+        boolean isNew = piatto.getId() == null;
+
+        piatto.setRistoratore(ristoratore);
+        piatto.setNome(nome);
+        piatto.setDescrizione(normalizeText(dto.getDescrizione()));
+        piatto.setPrezzo(dto.getPrezzo());
+        piatto.setCategoria(menuCategoryService.resolveCategory(ristoratore, dto));
+        piatto.setIngredienti(normalizeText(dto.getIngredienti()));
+        piatto.setAllergeni(normalizeText(dto.getAllergeni()));
+
+        if (hasText(imageUrl)) {
+            piatto.setImageUrl(normalizeText(imageUrl));
+        }
+        if (dto.getDisponibile() != null) {
+            piatto.setDisponibile(dto.getDisponibile());
+        } else if (isNew || piatto.getDisponibile() == null) {
+            piatto.setDisponibile(true);
+        }
+        if (dto.getConsigliato() != null) {
+            piatto.setConsigliato(dto.getConsigliato());
+        } else if (isNew || piatto.getConsigliato() == null) {
+            piatto.setConsigliato(false);
+        }
+        if (isNew) {
+            piatto.setPiattoCanonicale(dishNormalizationService.normalizeDish(piatto.getNome()));
+        }
+
+        Piatto saved = piattoRepo.save(piatto);
+        syncDishIngredients(saved, saved.getIngredienti());
+        return piattoRepo.save(saved);
+    }
+
+    public boolean existsDishForAuthenticatedRestaurant(String nome) {
+        Ristoratore ristoratore = getRistoratoreAutenticato();
+        String normalized = normalizeText(nome);
+        if (normalized == null) {
+            return false;
+        }
+        return piattoRepo.findFirstByRistoratoreIdAndNomeIgnoreCase(ristoratore.getId(), normalized).isPresent();
+    }
+
     public void updateFromDTO(Piatto entity, PiattoDTO dto) {
         Ristoratore restaurant = entity.getRistoratore() != null ? entity.getRistoratore() : getRistoratoreAutenticato();
         entity.setNome(dto.getNome());

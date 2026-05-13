@@ -28,6 +28,7 @@ public class AnalyticsV2Controller {
     private final AccessContextService accessContextService;
     private final AnalyticsV2TimeRangeResolver timeRangeResolver;
 
+    // Ritorna l'overview V2 con lo stesso perimetro dati ma logica aggiornata.
     @GetMapping("/overview")
     public AnalyticsV2OverviewDTO getOverview(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
@@ -37,6 +38,7 @@ public class AnalyticsV2Controller {
         return analyticsV2Service.getOverview(accessContextService.getActingRestaurantIdOrThrow(), timeRange);
     }
 
+    // Ritorna le metriche V2 per ciascun piatto.
     @GetMapping("/dishes")
     public List<AnalyticsV2DishMetricsDTO> getDishMetrics(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
@@ -46,6 +48,7 @@ public class AnalyticsV2Controller {
         return analyticsV2Service.getDishMetrics(accessContextService.getActingRestaurantIdOrThrow(), timeRange);
     }
 
+    // Ritorna il dashboard V2 usato dalla nuova UI analytics.
     @GetMapping("/dashboard")
     public AnalyticsV2DashboardDTO getDashboard(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,

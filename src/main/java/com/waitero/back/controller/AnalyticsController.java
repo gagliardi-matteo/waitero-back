@@ -27,40 +27,49 @@ public class AnalyticsController {
     private final AccessContextService accessContextService;
     private final ExperimentIntelligenceService experimentIntelligenceService;
 
+    // Ritorna la vista sintetica del locale: KPI principali, trend e stato generale.
     @GetMapping("/overview")
     public AnalyticsOverviewDTO getOverview() {
         return analyticsService.getOverview(accessContextService.getActingRestaurantIdOrThrow());
     }
 
+    // Ritorna il dashboard completo con tutti i blocchi usati dalla pagina analytics.
     @GetMapping("/dashboard")
     public AnalyticsDashboardDTO getDashboard() {
         return analyticsService.getDashboard(accessContextService.getActingRestaurantIdOrThrow());
     }
 
+    // Ritorna le metriche per singolo piatto: views, click, add to cart e conversioni.
     @GetMapping("/dish-performance")
     public List<DishPerformanceDTO> getDishPerformance() {
         return analyticsService.getDishPerformance(accessContextService.getActingRestaurantIdOrThrow());
     }
 
+    // Ritorna le opportunita di fatturato individuate dal motore analytics.
     @GetMapping("/revenue-opportunities")
     public List<RevenueOpportunityDTO> getRevenueOpportunities() {
         return analyticsService.getRevenueOpportunities(accessContextService.getActingRestaurantIdOrThrow());
     }
 
-
+    // Ritorna il breakdown economico del locale, inclusa la parte upsell.
     @GetMapping("/revenue-kpis")
     public RevenueKpiDTO getRevenueKpis() {
         return analyticsService.getRevenueBreakdown(accessContextService.getActingRestaurantIdOrThrow());
     }
 
+    // Ritorna i risultati degli esperimenti A/B attivi o recenti.
     @GetMapping("/ab-test")
     public ExperimentMetricsDTO getAbTestMetrics() {
         return analyticsService.getExperimentMetrics(accessContextService.getActingRestaurantIdOrThrow());
     }
+
+    // Ritorna la decisione sintetica del motore esperimenti.
     @GetMapping("/experiment-decision")
     public ExperimentDecision getExperimentDecision() {
         return experimentIntelligenceService.evaluateExperiment(accessContextService.getActingRestaurantIdOrThrow());
     }
+
+    // Ritorna confronti con i benchmark usati dalla UI analytics.
     @GetMapping("/benchmarks")
     public List<BenchmarkInsightDTO> getBenchmarkInsights() {
         return analyticsService.getBenchmarkInsights(accessContextService.getActingRestaurantIdOrThrow());

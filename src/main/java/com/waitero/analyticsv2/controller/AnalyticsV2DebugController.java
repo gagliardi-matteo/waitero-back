@@ -28,6 +28,7 @@ public class AnalyticsV2DebugController {
     private final AnalyticsV2TimeRangeResolver timeRangeResolver;
     private final AccessContextService accessContextService;
 
+    // Confronta i risultati di due pipeline analytics per debugging.
     @GetMapping("/compare")
     public AnalyticsV2DebugCompareDTO compare(
             @RequestParam Long restaurantId,

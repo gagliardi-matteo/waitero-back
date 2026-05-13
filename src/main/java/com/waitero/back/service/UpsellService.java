@@ -56,6 +56,7 @@ public class UpsellService {
 
     @Deprecated(since = "2026-04", forRemoval = false)
     @Transactional
+    // Calcola gli abbinamenti suggeriti partendo da un singolo piatto.
     public List<Piatto> getUpsellSuggestions(Long dishId, Long restaurantId) {
         return getUpsellSuggestionsInternal(dishId, restaurantId);
     }
@@ -66,6 +67,7 @@ public class UpsellService {
     }
 
     @Transactional
+    // Se esiste un esperimento attivo, seleziona la variante di ranking da usare per le proposte.
     public List<Piatto> getUpsellSuggestions(Long dishId, Long restaurantId, String sessionId, Integer tableId) {
         String variant = experimentService.getVariant(sessionId, restaurantId, tableId);
         if (ExperimentService.VARIANT_B.equals(variant)) {
@@ -77,6 +79,7 @@ public class UpsellService {
         return getUpsellSuggestionsInternal(dishId, restaurantId);
     }
 
+    // Variante B: prova prima il motore V2 e torna al ranking classico se qualcosa va storto.
     private List<Piatto> getDishUpsellSuggestionsV2First(Long dishId, Long restaurantId, String sessionId, Integer tableId, String assignedVariant) {
         try {
             return getV2DishUpsellSuggestions(dishId, restaurantId, 2);
@@ -87,6 +90,7 @@ public class UpsellService {
         }
     }
 
+    // Flusso standard senza esperimenti: usa il ranking classico sugli stessi dati di vendita.
     private List<Piatto> getUpsellSuggestionsInternal(Long dishId, Long restaurantId) {
         return getUpsellSuggestionsInternal(dishId, restaurantId, 2);
     }
@@ -104,6 +108,7 @@ public class UpsellService {
 
     @Deprecated(since = "2026-04", forRemoval = false)
     @Transactional
+    // Calcola gli abbinamenti suggeriti partendo dal contenuto attuale del carrello.
     public List<Piatto> getCartUpsellSuggestions(List<Long> dishIds, Long restaurantId) {
         return getCartUpsellSuggestionsInternal(dishIds, restaurantId);
     }
@@ -114,6 +119,7 @@ public class UpsellService {
     }
 
     @Transactional
+    // Stesso flusso del carrello, ma con scelta della variante sperimentale se presente.
     public List<Piatto> getCartUpsellSuggestions(List<Long> dishIds, Long restaurantId, String sessionId, Integer tableId) {
         String variant = experimentService.getVariant(sessionId, restaurantId, tableId);
         if (ExperimentService.VARIANT_B.equals(variant)) {
@@ -125,6 +131,7 @@ public class UpsellService {
         return getCartUpsellSuggestionsInternal(dishIds, restaurantId);
     }
 
+    // Variante B per il carrello: usa prima il motore V2 e poi ricade sul classico se serve.
     private List<Piatto> getCartUpsellSuggestionsV2First(List<Long> dishIds, Long restaurantId, String sessionId, Integer tableId, String assignedVariant) {
         try {
             return getV2CartUpsellSuggestions(dishIds, restaurantId, 2);
@@ -163,6 +170,7 @@ public class UpsellService {
         return rankSuggestions(cartDishes, restaurantId, limit);
     }
 
+    // Traduce le previsioni del motore V2 in piatti reali del catalogo.
     private List<Piatto> getV2DishUpsellSuggestions(Long dishId, Long restaurantId, int limit) {
         if (dishId == null || restaurantId == null) {
             return List.of();
@@ -181,6 +189,7 @@ public class UpsellService {
                 .toList();
     }
 
+    // Traduce le previsioni del motore V2 in suggerimenti a partire dal carrello.
     private List<Piatto> getV2CartUpsellSuggestions(List<Long> dishIds, Long restaurantId, int limit) {
         if (restaurantId == null || dishIds == null || dishIds.isEmpty()) {
             return List.of();
@@ -199,6 +208,7 @@ public class UpsellService {
                 .toList();
     }
 
+    // Ricalibra il ranking classico usando il punteggio di dish intelligence come rinforzo.
     private List<Piatto> getDishUpsellSuggestionsWithDishIntelligenceBoost(Long dishId, Long restaurantId) {
         try {
             return rerankWithDishIntelligenceBoost(
@@ -211,6 +221,7 @@ public class UpsellService {
         }
     }
 
+    // Ricalibra il ranking del carrello usando anche i segnali della dish intelligence.
     private List<Piatto> getCartUpsellSuggestionsWithDishIntelligenceBoost(List<Long> dishIds, Long restaurantId) {
         try {
             return rerankWithDishIntelligenceBoost(
@@ -223,6 +234,7 @@ public class UpsellService {
         }
     }
 
+    // Mescola ranking base e affinity score per produrre una lista piu coerente.
     private List<Piatto> rerankWithDishIntelligenceBoost(List<Piatto> suggestions, Long restaurantId, int limit) {
         if (restaurantId == null || suggestions == null || suggestions.isEmpty()) {
             return List.of();
@@ -271,6 +283,7 @@ public class UpsellService {
         return legacyWeight + affinityBoost;
     }
 
+    // Aggrega co-occorrenza, fallback e boost di business per ordinare i suggerimenti finali.
     private List<Piatto> rankSuggestions(List<Piatto> baseDishes, Long restaurantId, int limit) {
         if (baseDishes == null || baseDishes.isEmpty()) {
             return List.of();
@@ -332,6 +345,7 @@ public class UpsellService {
                 .limit(limit)
                 .toList();
     }
+    // Fallback semplice usato quando il ranking principale non puo essere costruito.
     private List<Piatto> getSimpleUpsellSuggestions(List<Long> dishIds, Long restaurantId, int limit) {
         if (dishIds == null || dishIds.isEmpty() || restaurantId == null) {
             return List.of();
@@ -635,6 +649,7 @@ public class UpsellService {
 
     @Transactional
     @Async
+    // Forza l'aggiornamento degli aggregati usati per il ranking degli abbinamenti.
     public void refreshAggregatesForRestaurant(Long restaurantId) {
         if (restaurantId == null) {
             return;

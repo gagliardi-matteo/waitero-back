@@ -87,10 +87,12 @@ public class DishIntelligenceService {
 
     private final Map<Long, CachedSnapshot> snapshotCache = new ConcurrentHashMap<>();
 
+    // Restituisce la graduatoria dei piatti con score, categoria e segnali utili alla pagina intelligence.
     public List<DishIntelligenceDTO> getDishIntelligence(Long restaurantId) {
         return getSnapshot(restaurantId).intelligence();
     }
 
+    // Trasforma il ranking in un piano operativo: promuovi, correggi, proponi upsell o rimuovi.
     public DishActionPlanDTO getDishActionPlan(Long restaurantId) {
         DishIntelligenceSnapshot snapshot = getSnapshot(restaurantId);
         List<DishIntelligenceDTO> intelligence = snapshot.intelligence();
@@ -146,6 +148,7 @@ public class DishIntelligenceService {
                 .build();
     }
 
+    // Traduce i dati di performance in suggerimenti leggibili dal ristoratore.
     public List<InsightDTO> getDishInsights(Long restaurantId) {
         DishIntelligenceSnapshot snapshot = getSnapshot(restaurantId);
         if (snapshot.intelligence().isEmpty()) {
@@ -180,6 +183,7 @@ public class DishIntelligenceService {
     }
 
     @Transactional
+    // Applica al catalogo i suggerimenti calcolati dal motore di intelligence.
     public DishInsightApplyResultDTO applyDishInsights(Long restaurantId) {
         if (restaurantId == null) {
             return emptyApplyResult();
@@ -245,6 +249,7 @@ public class DishIntelligenceService {
     }
 
     @Transactional
+    // Applica un singolo suggerimento al piatto corrispondente.
     public boolean applyInsight(Long restaurantId, InsightDTO insight) {
         if (restaurantId == null || insight == null || insight.type() == null) {
             return false;
@@ -292,6 +297,7 @@ public class DishIntelligenceService {
         return true;
     }
 
+    // Legge lo snapshot in cache oppure lo ricostruisce se e' scaduto.
     private DishIntelligenceSnapshot getSnapshot(Long restaurantId) {
         if (restaurantId == null) {
             return DishIntelligenceSnapshot.empty();
@@ -311,12 +317,14 @@ public class DishIntelligenceService {
         return snapshot;
     }
 
+    // Invalida la cache locale quando cambia il catalogo o vengono applicati suggerimenti.
     private void invalidateSnapshot(Long restaurantId) {
         if (restaurantId != null) {
             snapshotCache.remove(restaurantId);
         }
     }
 
+    // Ricostruisce la fotografia completa del locale per alimentare ranking e azioni.
     private DishIntelligenceSnapshot buildSnapshot(Long restaurantId) {
         if (restaurantId == null) {
             return DishIntelligenceSnapshot.empty();
@@ -403,6 +411,7 @@ public class DishIntelligenceService {
         );
     }
 
+    // Esegue la modifica concreta sul piatto in base al tipo di insight calcolato.
     private void applyInsight(
             Long restaurantId,
             InsightDTO insight,
@@ -450,6 +459,7 @@ public class DishIntelligenceService {
         }
     }
 
+    // Combina performance, margine e affinità con altri piatti in una singola entita di scoring.
     private DishCandidate buildCandidate(
             Piatto dish,
             AnalyticsV2DishMetricsDTO orderMetrics,
@@ -559,6 +569,7 @@ public class DishIntelligenceService {
                 || (candidate.orderCount() == 0L && candidate.impressions() > 0L && candidate.affinityScore() < 0.15d);
     }
 
+    // Estrae le coppie di piatti con la maggiore compatibilita per suggerimenti upsell.
     private List<DishUpsellPairDTO> buildUpsellPairs(DishIntelligenceSnapshot snapshot) {
         if (snapshot.candidates().isEmpty()) {
             return List.of();
@@ -605,6 +616,7 @@ public class DishIntelligenceService {
                 .orElse(null);
     }
 
+    // Marca un piatto come prioritario nella visibilita del menu.
     private void applyPromotion(
             Piatto dish,
             LinkedHashSet<Long> changedDishIds,
@@ -624,6 +636,7 @@ public class DishIntelligenceService {
         }
     }
 
+    // Riduce la priorita di un piatto che sta performando peggio del resto del catalogo.
     private void applyDeprioritization(
             Piatto dish,
             LinkedHashSet<Long> changedDishIds,
@@ -637,6 +650,7 @@ public class DishIntelligenceService {
         deprioritizedDishIds.add(dish.getId());
     }
 
+    // Nasconde un piatto che ha scarso valore commerciale o quasi nessun segnale utile.
     private void applyRemoval(
             Piatto dish,
             LinkedHashSet<Long> changedDishIds,
@@ -660,6 +674,7 @@ public class DishIntelligenceService {
         }
     }
 
+    // Evidenzia il piatto come candidato per gli abbinamenti suggeriti.
     private void applyUpsellTargetPromotion(
             Piatto targetDish,
             String targetPrimaryInsightType,

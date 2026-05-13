@@ -33,6 +33,7 @@ public class AnalyticsService {
     private final JdbcTemplate jdbcTemplate;
     private final PerformanceLabelResolver performanceLabelResolver;
 
+    // Unisce in un unico payload tutto il blocco analytics usato dalla dashboard ristoratore.
     public AnalyticsDashboardDTO getDashboard(Long restaurantId) {
         AnalyticsOverviewDTO overview = buildOverview(restaurantId);
         List<DishPerformanceDTO> dishPerformance = buildDishPerformance(restaurantId);
@@ -46,10 +47,12 @@ public class AnalyticsService {
                 .build();
     }
 
+    // Restituisce i soli KPI di apertura: visite, ordini, sessioni e conversioni.
     public AnalyticsOverviewDTO getOverview(Long restaurantId) {
         return buildOverview(restaurantId);
     }
 
+    // Legge il database e costruisce la vista sintetica con i numeri base del locale.
     private AnalyticsOverviewDTO buildOverview(Long restaurantId) {
         long views = readCount(
                 "select count(*) from event_log where restaurant_id = ? and event_type = 'view_dish'",
@@ -100,10 +103,12 @@ public class AnalyticsService {
                 .build();
     }
 
+    // Calcola la performance di ogni piatto per mostrare volumi, trend e ricavi.
     public List<DishPerformanceDTO> getDishPerformance(Long restaurantId) {
         return buildDishPerformance(restaurantId);
     }
 
+    // Esegue la query principale che incrocia eventi, ordini e ricavi per singolo piatto.
     private List<DishPerformanceDTO> buildDishPerformance(Long restaurantId) {
         return jdbcTemplate.query(
                 """
@@ -223,6 +228,7 @@ public class AnalyticsService {
         );
     }
 
+    // Espone le feature numeriche usate dagli altri motori interni per ranking e suggerimenti.
     public List<DishFeatures> getDishFeatures(Long restaurantId) {
         return jdbcTemplate.query(
                 """
@@ -297,6 +303,7 @@ public class AnalyticsService {
         );
     }
 
+    // Normalizza una serie di valori in un intervallo comune 0-1 per renderli confrontabili.
     public List<Double> normalize(List<Double> values) {
         if (values == null || values.isEmpty()) {
             return List.of();
@@ -318,6 +325,7 @@ public class AnalyticsService {
                 .toList();
     }
 
+    // Ricostruisce i KPI di ricavo e il peso dell'upsell sul totale del locale.
     public RevenueKpiDTO getRevenueBreakdown(Long restaurantId) {
         return jdbcTemplate.queryForObject(
                 """
@@ -389,6 +397,7 @@ public class AnalyticsService {
         );
     }
 
+    // Aggrega i risultati dell'A/B test per confrontare le varianti del ranking.
     public ExperimentMetricsDTO getExperimentMetrics(Long restaurantId) {
         List<ExperimentMetricRow> rows = jdbcTemplate.query(
                 """
@@ -460,10 +469,12 @@ public class AnalyticsService {
                 .itemsPerOrder(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP))
                 .build();
     }
+    // Evidenzia i piatti che sembrano avere piu spazio di crescita sul fatturato.
     public List<RevenueOpportunityDTO> getRevenueOpportunities(Long restaurantId) {
         return buildRevenueOpportunities(getDishPerformance(restaurantId));
     }
 
+    // Confronta il locale con i benchmark interni per mostrare dove sta sopra o sotto media.
     public List<BenchmarkInsightDTO> getBenchmarkInsights(Long restaurantId) {
         return buildBenchmarkInsights(getDishPerformance(restaurantId));
     }
@@ -770,6 +781,7 @@ public class AnalyticsService {
     }
 
 
+    // Divisione difensiva usata dai calcoli di scoring quando il denominatore puo essere zero.
     public double safeDivide(double numerator, double denominator) {
         if (!Double.isFinite(numerator) || !Double.isFinite(denominator) || denominator == 0.0d) {
             return 0.0d;

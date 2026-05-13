@@ -42,6 +42,7 @@ public class EventTrackingService {
     private final TavoloRepository tavoloRepository;
     private final ObjectMapper objectMapper;
 
+    // Registra un evento generico di tracking dopo aver validato contesto e duplicati.
     public void track(EventTrackingRequest request) {
         if (request == null) {
             throw new RuntimeException("Payload evento mancante");
@@ -67,6 +68,7 @@ public class EventTrackingService {
                 .build());
     }
 
+    // Registra il momento in cui un ordine viene inviato, con i dati necessari per l'analytics.
     public void trackOrderSubmitted(Long restaurantId, Integer tableId, String sessionId, Long userId, Long orderId, BigDecimal totalAmount, int itemCount) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("orderId", orderId);
@@ -83,6 +85,7 @@ public class EventTrackingService {
                 .build());
     }
 
+    // Registra il tempo speso su un piatto per alimentare i segnali di interesse.
     public void trackTimeSpent(Long restaurantId, Integer tableId, Long dishId, String sessionId, Duration duration) {
         if (duration == null || duration.isNegative() || duration.isZero()) {
             return;
@@ -101,6 +104,7 @@ public class EventTrackingService {
                 .build());
     }
 
+    // Verifica che il piatto, se presente, appartenga davvero al ristoratore corretto.
     private boolean isValidDishContext(EventTrackingRequest request) {
         if (request.getDishId() == null) {
             return true;
@@ -111,6 +115,7 @@ public class EventTrackingService {
         return piattoRepository.existsByIdAndRistoratoreId(request.getDishId(), request.getRestaurantId());
     }
 
+    // Verifica che il tavolo, se presente, sia valido per quel locale.
     private boolean isValidTableContext(EventTrackingRequest request) {
         if (request.getTableId() == null) {
             return true;
@@ -121,6 +126,7 @@ public class EventTrackingService {
         return tavoloRepository.existsByRistoratoreIdAndNumero(request.getRestaurantId(), request.getTableId());
     }
 
+    // Limita il numero di eventi per sessione per evitare rumore o abuso del tracking.
     private boolean tooManyEventsFromSession(String sessionId) {
         if (sessionId == null) {
             return false;
@@ -129,6 +135,7 @@ public class EventTrackingService {
         return eventLogRepository.countBySessionIdAndCreatedAtAfter(sessionId, since) >= MAX_EVENTS_PER_SESSION_PER_MINUTE;
     }
 
+    // Elimina duplicati ravvicinati dello stesso evento per evitare doppie registrazioni.
     private boolean existsRecentEvent(String sessionId, Long dishId, String eventType) {
         if (sessionId == null || eventType == null) {
             return false;
@@ -137,6 +144,7 @@ public class EventTrackingService {
         return eventLogRepository.existsRecentDuplicate(sessionId, dishId, eventType, since);
     }
 
+    // Normalizza e valida il tipo di evento ricevuto dal frontend.
     private String normalizeEventType(String eventType) {
         String normalized = normalize(eventType);
         if (normalized == null) {
@@ -150,6 +158,7 @@ public class EventTrackingService {
         return value;
     }
 
+    // Converte il metadata JSON in una mappa semplice da salvare nel log.
     private Map<String, Object> readMetadata(EventTrackingRequest request) {
         if (request.getMetadata() == null || request.getMetadata().isNull()) {
             return new LinkedHashMap<>();
@@ -158,6 +167,7 @@ public class EventTrackingService {
         });
     }
 
+    // Pulisce gli input testuali eliminando spazi e stringhe vuote.
     private String normalize(String value) {
         if (value == null) {
             return null;

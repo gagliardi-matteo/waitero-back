@@ -30,6 +30,7 @@ public class MenuPublicController {
 
     @GetMapping("/menu/piatti/{id}")
     public List<PiattoDTO> getPiatti(@PathVariable Long id, @RequestParam(required = false) String sessionId, @RequestParam(required = false) Integer tableId) {
+        // La lista pubblica viene ordinata dal motore revenue-aware e arricchita con i segnali analytics.
         Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(id);
         menuService.ensureRestaurantServiceOpen(id);
         return menuService.toDTOList(menuIntelligenceService.rankDishesByRevenue(id, sessionId, tableId))
@@ -41,12 +42,12 @@ public class MenuPublicController {
 
     @GetMapping("/dettaglio-piatto/{id}")
     public PiattoDTO getDettaglioPiatto(@PathVariable Long id){
+        // Il dettaglio usa il piatto pubblico e aggiunge le metriche di contesto per la UI.
         Piatto piatto = menuService.getPublicPiattoById(id);
-        PiattoDTO dto = menuService.toDTO(piatto);
-        MenuIntelligenceService.DishSignal signal = menuIntelligenceService.getDishSignals(piatto.getRistoratore().getId()).get(dto.getId());
-        return enrichWithSignal(dto, signal);
+        return menuService.toDTO(piatto);
     }
 
+    // Suggerimenti upsell per la scheda del singolo piatto.
     @GetMapping("/upsell/{dishId}")
     public List<PiattoDTO> getUpsellSuggestions(@PathVariable Long dishId, @RequestParam Long restaurantId, @RequestParam(required = false) String sessionId, @RequestParam(required = false) Integer tableId) {
         Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(restaurantId);
@@ -57,6 +58,7 @@ public class MenuPublicController {
                 .toList();
     }
 
+    // Suggerimenti upsell per il carrello corrente.
     @GetMapping("/upsell/cart-suggestions")
     public List<PiattoDTO> getCartUpsellSuggestions(@RequestParam Long restaurantId, @RequestParam List<Long> dishIds, @RequestParam(required = false) String sessionId, @RequestParam(required = false) Integer tableId) {
         Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(restaurantId);
@@ -77,6 +79,7 @@ public class MenuPublicController {
         return ResponseEntity.ok(Collections.singletonMap("valid", valid));
     }
 
+    // Aggancia ai piatti le metriche calcolate dal motore analytics.
     private PiattoDTO enrichWithSignal(PiattoDTO dto, MenuIntelligenceService.DishSignal signal) {
         if (signal == null) {
             dto.setNumeroOrdini(0);
