@@ -32,6 +32,12 @@ public class OrdineItem {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal prezzoUnitario;
 
+    @Column(name = "portion_key", length = 80)
+    private String portionKey;
+
+    @Column(name = "portion_label", length = 120)
+    private String portionLabel;
+
     @Column(nullable = false)
     private Integer quantity;
 

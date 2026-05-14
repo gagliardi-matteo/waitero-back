@@ -11,4 +11,5 @@ public class CustomerDraftMutationRequest {
     private String fingerprint;
     private Long dishId;
     private Integer delta;
+    private String portionKey;
 }

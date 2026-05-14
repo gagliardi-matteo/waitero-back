@@ -41,6 +41,7 @@ public class OrdineService {
     private final EventTrackingService eventTrackingService;
     private final ExperimentService experimentService;
     private final AccessContextService accessContextService;
+    private final DishPortionService dishPortionService;
 
     @Transactional
     public OrdineDTO createOrAppend(CustomerOrderRequest request) {
@@ -236,6 +237,8 @@ public class OrdineService {
                             .dishId(item.getPiatto().getId())
                             .nome(item.getNome())
                             .prezzoUnitario(item.getPrezzoUnitario())
+                            .portionKey(item.getPortionKey())
+                            .portionLabel(item.getPortionLabel())
                             .quantita(item.getQuantity())
                             .paidQuantity(paidQuantity)
                             .remainingQuantity(remainingQuantity)
@@ -356,6 +359,8 @@ public class OrdineService {
                             .dishId(item.getPiatto().getId())
                             .nome(item.getNome())
                             .prezzoUnitario(item.getPrezzoUnitario())
+                            .portionKey(item.getPortionKey())
+                            .portionLabel(item.getPortionLabel())
                             .quantita(item.getQuantity())
                             .paidQuantity(paidQuantity)
                             .remainingQuantity(remainingQuantity)
@@ -488,9 +493,9 @@ public class OrdineService {
             ordine.setSessionId(normalizeSessionId(sessionId));
         }
 
-        Map<Long, OrdineItem> existingItemsByDishId = new LinkedHashMap<>();
+        Map<String, OrdineItem> existingItemsByLineKey = new LinkedHashMap<>();
         for (OrdineItem item : ordine.getItems()) {
-            existingItemsByDishId.put(item.getPiatto().getId(), item);
+            existingItemsByLineKey.put(orderLineKey(item.getPiatto().getId(), item.getPortionKey()), item);
         }
 
         for (CustomerOrderItemRequest itemRequest : itemsRequest) {
@@ -509,7 +514,10 @@ public class OrdineService {
                 throw new RuntimeException("Piatto non disponibile: " + piatto.getNome());
             }
 
-            OrdineItem existing = existingItemsByDishId.get(piatto.getId());
+            PiattoPortionDTO selectedPortion = dishPortionService.resolvePortion(piatto, itemRequest.getPortionKey());
+            String orderLineKey = orderLineKey(piatto.getId(), selectedPortion.getKey());
+
+            OrdineItem existing = existingItemsByLineKey.get(orderLineKey);
             if (existing != null) {
                 existing.setQuantity(existing.getQuantity() + itemRequest.getQuantity());
                 applyAttribution(existing, itemRequest);
@@ -520,7 +528,9 @@ public class OrdineService {
                     .ordine(ordine)
                     .piatto(piatto)
                     .nome(piatto.getNome())
-                    .prezzoUnitario(piatto.getPrezzo())
+                    .prezzoUnitario(selectedPortion.getPrice())
+                    .portionKey(selectedPortion.getKey())
+                    .portionLabel(selectedPortion.getLabel())
                     .quantity(itemRequest.getQuantity())
                     .imageUrl(piatto.getImageUrl())
                     .source(normalizeSource(itemRequest.getSource()))
@@ -529,7 +539,7 @@ public class OrdineService {
                     .build();
 
             ordine.getItems().add(nuovoItem);
-            existingItemsByDishId.put(piatto.getId(), nuovoItem);
+            existingItemsByLineKey.put(orderLineKey, nuovoItem);
         }
 
         if (ordine.getItems().isEmpty()) {
@@ -566,6 +576,13 @@ public class OrdineService {
             item.setSource(source);
             item.setSourceDishId(request.getSourceDishId());
         }
+    }
+
+    private String orderLineKey(Long dishId, String portionKey) {
+        String normalizedPortionKey = portionKey == null || portionKey.isBlank()
+                ? DishPortionService.DEFAULT_PORTION_KEY
+                : portionKey.trim();
+        return dishId + "::" + normalizedPortionKey;
     }
 
     private String normalizeSource(String source) {

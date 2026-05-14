@@ -325,6 +325,11 @@ public class SchemaMigrationRunner implements ApplicationRunner {
             log.info("Added missing column piatto.categoria_id");
         }
 
+        if (!columnExists("piatto", "portion_options_json")) {
+            jdbcTemplate.execute("ALTER TABLE piatto ADD COLUMN portion_options_json text");
+            log.info("Added missing column piatto.portion_options_json");
+        }
+
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_piatto_categoria_id ON piatto(categoria_id)");
 
         if (columnExists("piatto", "categoria")) {
@@ -442,6 +447,14 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         if (!columnExists("customer_order_items", "source_dish_id")) {
             jdbcTemplate.execute("ALTER TABLE customer_order_items ADD COLUMN source_dish_id bigint");
             log.info("Added missing column customer_order_items.source_dish_id");
+        }
+        if (!columnExists("customer_order_items", "portion_key")) {
+            jdbcTemplate.execute("ALTER TABLE customer_order_items ADD COLUMN portion_key varchar(80)");
+            log.info("Added missing column customer_order_items.portion_key");
+        }
+        if (!columnExists("customer_order_items", "portion_label")) {
+            jdbcTemplate.execute("ALTER TABLE customer_order_items ADD COLUMN portion_label varchar(120)");
+            log.info("Added missing column customer_order_items.portion_label");
         }
 
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_order_items_source ON customer_order_items(source)");

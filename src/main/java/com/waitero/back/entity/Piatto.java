@@ -21,6 +21,9 @@ public class Piatto {
     private BigDecimal prezzo;
     private Boolean disponibile;
 
+    @Column(name = "portion_options_json", columnDefinition = "text")
+    private String portionOptionsJson;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "categoria_id", nullable = false)
     private MenuCategory categoria;

@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class CustomerDraftService {
 
-    private final Map<String, ConcurrentHashMap<Long, Integer>> draftsByTable = new ConcurrentHashMap<>();
+    private final Map<String, ConcurrentHashMap<String, DraftLine>> draftsByTable = new ConcurrentHashMap<>();
     private final OrderStreamService orderStreamService;
     private final TavoloService tavoloService;
 
@@ -35,11 +35,12 @@ public class CustomerDraftService {
         }
 
         String key = key(request.getRestaurantId(), request.getTableId());
-        ConcurrentHashMap<Long, Integer> draft = getDraftMap(key);
-        draft.compute(request.getDishId(), (dishId, quantity) -> {
-            int current = quantity == null ? 0 : quantity;
+        ConcurrentHashMap<String, DraftLine> draft = getDraftMap(key);
+        String lineKey = lineKey(request.getDishId(), request.getPortionKey());
+        draft.compute(lineKey, (ignored, existingLine) -> {
+            int current = existingLine == null ? 0 : existingLine.quantity();
             int next = current + request.getDelta();
-            return next <= 0 ? null : next;
+            return next <= 0 ? null : new DraftLine(request.getDishId(), normalizePortionKey(request.getPortionKey()), next);
         });
 
         if (draft.isEmpty()) {
@@ -71,18 +72,20 @@ public class CustomerDraftService {
         return restaurantId + ":" + tableId;
     }
 
-    private ConcurrentHashMap<Long, Integer> getDraftMap(String key) {
+    private ConcurrentHashMap<String, DraftLine> getDraftMap(String key) {
         return draftsByTable.computeIfAbsent(key, unused -> new ConcurrentHashMap<>());
     }
 
-    private CustomerDraftDTO toDTO(Long restaurantId, Integer tableId, Map<Long, Integer> draft) {
+    private CustomerDraftDTO toDTO(Long restaurantId, Integer tableId, Map<String, DraftLine> draft) {
         List<CustomerDraftItemDTO> items = new ArrayList<>();
         draft.entrySet().stream()
-                .filter(entry -> entry.getValue() != null && entry.getValue() > 0)
-                .sorted(Comparator.comparingLong(Map.Entry::getKey))
+                .filter(entry -> entry.getValue() != null && entry.getValue().quantity() > 0)
+                .sorted(Comparator.comparing(Map.Entry::getKey))
                 .forEach(entry -> items.add(CustomerDraftItemDTO.builder()
-                        .dishId(entry.getKey())
-                        .quantity(entry.getValue())
+                        .lineKey(entry.getKey())
+                        .dishId(entry.getValue().dishId())
+                        .portionKey(entry.getValue().portionKey())
+                        .quantity(entry.getValue().quantity())
                         .build()));
 
         return CustomerDraftDTO.builder()
@@ -90,5 +93,19 @@ public class CustomerDraftService {
                 .tableId(tableId)
                 .items(items)
                 .build();
+    }
+
+    private String lineKey(Long dishId, String portionKey) {
+        return dishId + "::" + normalizePortionKey(portionKey);
+    }
+
+    private String normalizePortionKey(String portionKey) {
+        if (portionKey == null || portionKey.isBlank()) {
+            return DishPortionService.DEFAULT_PORTION_KEY;
+        }
+        return portionKey.trim();
+    }
+
+    private record DraftLine(Long dishId, String portionKey, Integer quantity) {
     }
 }

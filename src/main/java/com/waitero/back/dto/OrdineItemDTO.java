@@ -12,6 +12,8 @@ public class OrdineItemDTO {
     private Long dishId;
     private String nome;
     private BigDecimal prezzoUnitario;
+    private String portionKey;
+    private String portionLabel;
     private Integer quantita;
     private Integer paidQuantity;
     private Integer remainingQuantity;

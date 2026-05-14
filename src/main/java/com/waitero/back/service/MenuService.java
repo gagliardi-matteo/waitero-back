@@ -2,6 +2,7 @@ package com.waitero.back.service;
 
 import com.waitero.back.dto.IngredienteDTO;
 import com.waitero.back.dto.PiattoDTO;
+import com.waitero.back.dto.PiattoPortionDTO;
 import com.waitero.back.entity.Ingrediente;
 import com.waitero.back.entity.Piatto;
 import com.waitero.back.entity.PiattoCanonicale;
@@ -49,6 +50,7 @@ public class MenuService {
     private final IngredienteRepository ingredienteRepository;
     private final AccessContextService accessContextService;
     private final MenuCategoryService menuCategoryService;
+    private final DishPortionService dishPortionService;
 
     private Ristoratore getRistoratoreAutenticato() {
         Long id = accessContextService.getActingRestaurantIdOrThrow();
@@ -119,7 +121,7 @@ public class MenuService {
         piatto.setRistoratore(ristoratore);
         piatto.setNome(nome);
         piatto.setDescrizione(normalizeText(dto.getDescrizione()));
-        piatto.setPrezzo(dto.getPrezzo());
+        applyPricing(piatto, dto);
         piatto.setCategoria(menuCategoryService.resolveCategory(ristoratore, dto));
         piatto.setIngredienti(normalizeText(dto.getIngredienti()));
         piatto.setAllergeni(normalizeText(dto.getAllergeni()));
@@ -159,7 +161,7 @@ public class MenuService {
         Ristoratore restaurant = entity.getRistoratore() != null ? entity.getRistoratore() : getRistoratoreAutenticato();
         entity.setNome(dto.getNome());
         entity.setDescrizione(dto.getDescrizione());
-        entity.setPrezzo(dto.getPrezzo());
+        applyPricing(entity, dto);
         entity.setCategoria(menuCategoryService.resolveCategory(restaurant, dto));
         entity.setIngredienti(normalizeText(dto.getIngredienti()));
         entity.setAllergeni(normalizeText(dto.getAllergeni()));
@@ -173,6 +175,7 @@ public class MenuService {
         esistente.setNome(nuovo.getNome());
         esistente.setDescrizione(nuovo.getDescrizione());
         esistente.setPrezzo(nuovo.getPrezzo());
+        esistente.setPortionOptionsJson(nuovo.getPortionOptionsJson());
         esistente.setCategoria(nuovo.getCategoria());
         esistente.setIngredienti(normalizeText(nuovo.getIngredienti()));
         esistente.setAllergeni(normalizeText(nuovo.getAllergeni()));
@@ -227,6 +230,7 @@ public class MenuService {
         dto.setNome(piatto.getNome());
         dto.setDescrizione(piatto.getDescrizione());
         dto.setPrezzo(piatto.getPrezzo());
+        dto.setPorzioni(dishPortionService.readConfiguredPortions(piatto));
         dto.setDisponibile(piatto.getDisponibile());
         dto.setCategoria(piatto.getCategoriaCode());
         dto.setCategoriaId(piatto.getCategoria() != null ? piatto.getCategoria().getId() : null);
@@ -252,7 +256,7 @@ public class MenuService {
         p.setId(dto.getId());
         p.setNome(dto.getNome());
         p.setDescrizione(dto.getDescrizione());
-        p.setPrezzo(dto.getPrezzo());
+        applyPricing(p, dto);
         p.setDisponibile(true);
         p.setCategoria(menuCategoryService.resolveCategory(restaurant, dto));
         p.setImageUrl(dto.getImageUrl());
@@ -260,6 +264,18 @@ public class MenuService {
         p.setAllergeni(normalizeText(dto.getAllergeni()));
         p.setConsigliato(false);
         return p;
+    }
+
+    private void applyPricing(Piatto piatto, PiattoDTO dto) {
+        List<PiattoPortionDTO> normalizedPortions = dishPortionService.normalizeConfiguredPortions(dto.getPorzioni());
+        if (!normalizedPortions.isEmpty()) {
+            piatto.setPortionOptionsJson(dishPortionService.serializeConfiguredPortions(normalizedPortions));
+            piatto.setPrezzo(normalizedPortions.get(0).getPrice());
+            return;
+        }
+
+        piatto.setPortionOptionsJson(null);
+        piatto.setPrezzo(dto.getPrezzo());
     }
 
     public void ensureRestaurantServiceOpen(Long restaurantId) {
@@ -284,8 +300,10 @@ public class MenuService {
         List<IngredienteDTO> requestedIngredients = hasText(ingredientiText)
                 ? parseIngredientText(ingredientiText)
                 : canonicalIngredientsForDish(piatto.getPiattoCanonicale());
+        requestedIngredients = deduplicateIngredients(requestedIngredients);
 
         piattoIngredienteRistoratoreRepository.deleteAllByPiattoId(piatto.getId());
+        piattoIngredienteRistoratoreRepository.flush();
         if (requestedIngredients.isEmpty()) {
             piatto.setIngredienti(null);
             return;
@@ -315,6 +333,29 @@ public class MenuService {
 
         piattoIngredienteRistoratoreRepository.saveAll(relations);
         piatto.setIngredienti(buildIngredientDisplay(toIngredienteDTOs(relations), ingredientiText));
+    }
+
+    private List<IngredienteDTO> deduplicateIngredients(List<IngredienteDTO> requestedIngredients) {
+        if (requestedIngredients == null || requestedIngredients.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, IngredienteDTO> deduped = new LinkedHashMap<>();
+        for (IngredienteDTO ingredient : requestedIngredients) {
+            if (ingredient == null) {
+                continue;
+            }
+            String normalizedName = normalizeText(ingredient.getNome());
+            if (normalizedName == null) {
+                continue;
+            }
+            deduped.putIfAbsent(normalizedName.toLowerCase(), IngredienteDTO.builder()
+                    .nome(normalizedName)
+                    .categoria(normalizeText(ingredient.getCategoria()))
+                    .grammi(ingredient.getGrammi())
+                    .build());
+        }
+        return new ArrayList<>(deduped.values());
     }
 
     private List<IngredienteDTO> resolveStructuredIngredients(

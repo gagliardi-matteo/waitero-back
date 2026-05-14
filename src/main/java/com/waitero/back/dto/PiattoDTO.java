@@ -36,4 +36,5 @@ public class PiattoDTO {
     private BigDecimal viewToOrderRate;
     private String performanceLabel;
     private List<IngredienteDTO> ingredientiStrutturati = new ArrayList<>();
+    private List<PiattoPortionDTO> porzioni = new ArrayList<>();
 }
