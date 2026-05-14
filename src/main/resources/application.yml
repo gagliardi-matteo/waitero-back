@@ -28,6 +28,13 @@ google:
   auth:
     client-ids: ${GOOGLE_AUTH_CLIENT_IDS:910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com}
 
+stripe:
+  billing:
+    secret-key: ${STRIPE_SECRET_KEY:}
+    publishable-key: ${STRIPE_PUBLISHABLE_KEY:}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    currency: ${STRIPE_BILLING_CURRENCY:eur}
+
 openai:
   api:
     key: ${OPENAI_API_KEY:}

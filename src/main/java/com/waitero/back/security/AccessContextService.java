@@ -6,19 +6,26 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class AccessContextService {
 
-    public BackofficePrincipal requirePrincipal() {
+    public Optional<BackofficePrincipal> findPrincipal() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
-            throw new RuntimeException("Contesto autenticazione mancante");
+            return Optional.empty();
         }
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof BackofficePrincipal backofficePrincipal)) {
-            throw new RuntimeException("Principal backoffice non disponibile");
+            return Optional.empty();
         }
-        return backofficePrincipal;
+        return Optional.of(backofficePrincipal);
+    }
+
+    public BackofficePrincipal requirePrincipal() {
+        return findPrincipal()
+                .orElseThrow(() -> new RuntimeException("Principal backoffice non disponibile"));
     }
 
     public Long getAuthenticatedUserId() {

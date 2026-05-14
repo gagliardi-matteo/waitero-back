@@ -31,7 +31,10 @@ public class AdminAuditService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(String action, Long restaurantId, String entityType, Object entityId, Map<String, Object> metadata) {
         try {
-            BackofficePrincipal principal = accessContextService.requirePrincipal();
+            BackofficePrincipal principal = accessContextService.findPrincipal().orElse(null);
+            if (principal == null) {
+                return;
+            }
             if (principal.role() != BackofficeRole.MASTER) {
                 return;
             }
@@ -52,7 +55,10 @@ public class AdminAuditService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordCurrentImpersonationMutation(String method, String uri, int status) {
         try {
-            BackofficePrincipal principal = accessContextService.requirePrincipal();
+            BackofficePrincipal principal = accessContextService.findPrincipal().orElse(null);
+            if (principal == null) {
+                return;
+            }
             if (principal.role() != BackofficeRole.MASTER || !principal.isImpersonating()) {
                 return;
             }

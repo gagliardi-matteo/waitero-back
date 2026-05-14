@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -98,5 +99,22 @@ public interface OrdineRepository extends JpaRepository<Ordine, Long> {
             @Param("status") String status,
             @Param("search") String search,
             Pageable pageable
+    );
+
+    @Query("""
+            select o
+            from Ordine o
+            where o.ristoratore.id = :restaurantId
+              and o.status = :status
+              and o.paidAt is not null
+              and o.paidAt >= :fromInclusive
+              and o.paidAt < :toExclusive
+            order by o.paidAt asc, o.id asc
+            """)
+    List<Ordine> findOrdersForBilling(
+            @Param("restaurantId") Long restaurantId,
+            @Param("status") OrderStatus status,
+            @Param("fromInclusive") LocalDateTime fromInclusive,
+            @Param("toExclusive") LocalDateTime toExclusive
     );
 }
