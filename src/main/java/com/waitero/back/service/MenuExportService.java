@@ -43,6 +43,17 @@ import java.util.zip.ZipOutputStream;
 @RequiredArgsConstructor
 public class MenuExportService {
 
+    private static final List<String> TEMPLATE_IMPORT_HEADERS = List.of(
+            "Nome",
+            "Categoria",
+            "Prezzo",
+            "Descrizione",
+            "Ingredienti",
+            "Allergeni",
+            "Consigliato",
+            "Disponibile",
+            "Immagine"
+    );
     private static final List<String> TEMPLATE_HEADERS = List.of(
             "Nome",
             "Categoria",
@@ -66,23 +77,21 @@ public class MenuExportService {
         try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Template menù");
             Row headerRow = sheet.createRow(0);
-            for (int i = 0; i < TEMPLATE_HEADERS.size(); i++) {
+            for (int i = 0; i < TEMPLATE_IMPORT_HEADERS.size(); i++) {
                 Cell cell = headerRow.createCell(i);
-                cell.setCellValue(TEMPLATE_HEADERS.get(i));
+                cell.setCellValue(TEMPLATE_IMPORT_HEADERS.get(i));
             }
 
             styleHeaderRow(workbook, headerRow);
             createCategoryValidation(workbook, sheet, menuCategoryService.getAuthenticatedCategories());
-            hideAdvancedTemplateColumns(sheet);
-
             Sheet instructionsSheet = workbook.createSheet("Istruzioni");
             instructionsSheet.createRow(0).createCell(0).setCellValue("Compila almeno Nome, Categoria e Prezzo.");
             instructionsSheet.createRow(1).createCell(0).setCellValue("Categoria usa una tendina con i valori ufficiali del locale.");
             instructionsSheet.createRow(2).createCell(0).setCellValue("Consigliato e Disponibile accettano si/no, true/false, 1/0.");
-            instructionsSheet.createRow(3).createCell(0).setCellValue("Le colonne tecniche nascoste non vanno modificate.");
+            instructionsSheet.createRow(3).createCell(0).setCellValue("Nel template non ci sono colonne tecniche di categoria: usa solo la tendina.");
             instructionsSheet.setColumnWidth(0, 100 * 256);
 
-            for (int i = 0; i < TEMPLATE_HEADERS.size(); i++) {
+            for (int i = 0; i < TEMPLATE_IMPORT_HEADERS.size(); i++) {
                 sheet.autoSizeColumn(i);
             }
 
@@ -117,12 +126,6 @@ public class MenuExportService {
         templateSheet.addValidationData(validation);
 
         workbook.setSheetVisibility(workbook.getSheetIndex(hiddenSheet), SheetVisibility.VERY_HIDDEN);
-    }
-
-    private void hideAdvancedTemplateColumns(Sheet sheet) {
-        sheet.setColumnHidden(2, true);
-        sheet.setColumnHidden(3, true);
-        sheet.setColumnHidden(10, true);
     }
 
     private void styleHeaderRow(XSSFWorkbook workbook, Row headerRow) {

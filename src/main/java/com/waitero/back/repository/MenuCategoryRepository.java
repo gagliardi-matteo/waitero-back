@@ -11,4 +11,5 @@ public interface MenuCategoryRepository extends JpaRepository<MenuCategory, Long
     List<MenuCategory> findAllByBusinessTypeAndActiveTrueOrderBySortOrderAscLabelAsc(BusinessType businessType);
     Optional<MenuCategory> findByIdAndBusinessTypeAndActiveTrue(Long id, BusinessType businessType);
     Optional<MenuCategory> findByBusinessTypeAndCodeIgnoreCaseAndActiveTrue(BusinessType businessType, String code);
+    Optional<MenuCategory> findByBusinessTypeAndLabelIgnoreCaseAndActiveTrue(BusinessType businessType, String label);
 }

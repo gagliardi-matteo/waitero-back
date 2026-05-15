@@ -130,6 +130,8 @@ public class MenuImportService {
         dto.setDisponibile(readBoolean(row, columns, formatter, evaluator, "disponibile", "available", "attivo"));
         dto.setPrezzo(prezzo);
         dto.setCategoria(categoria);
+        dto.setCategoriaCode(readText(row, columns, formatter, evaluator, "categoriacodice", "categoria code", "categorycode"));
+        dto.setCategoriaId(readLong(row, columns, formatter, evaluator, "categoriaid", "categoria id", "categoryid"));
         return dto;
     }
 

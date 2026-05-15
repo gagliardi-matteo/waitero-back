@@ -44,12 +44,12 @@ public class MenuCategoryService {
         if (code == null) {
             code = MenuCategoryRules.normalize(dto.getCategoria());
         }
-        if (code == null) {
-            throw new RuntimeException("Categoria obbligatoria");
+        if (code != null) {
+            return menuCategoryRepository.findByBusinessTypeAndCodeIgnoreCaseAndActiveTrue(businessType, code)
+                    .orElseGet(() -> resolveCategoryByLabel(businessType, dto.getCategoria()));
         }
 
-        return menuCategoryRepository.findByBusinessTypeAndCodeIgnoreCaseAndActiveTrue(businessType, code)
-                .orElseThrow(() -> new RuntimeException("Categoria non valida per il locale"));
+        return resolveCategoryByLabel(businessType, dto.getCategoria());
     }
 
     public List<MenuCategoryDTO> listByBusinessType(BusinessType businessType) {
@@ -70,6 +70,16 @@ public class MenuCategoryService {
         Long restaurantId = accessContextService.getActingRestaurantIdOrThrow();
         return ristoratoreRepository.findById(restaurantId)
                 .orElseThrow(() -> new RuntimeException("Locale non trovato"));
+    }
+
+    private MenuCategory resolveCategoryByLabel(BusinessType businessType, String label) {
+        String normalizedLabel = label == null ? null : label.trim();
+        if (normalizedLabel == null || normalizedLabel.isBlank()) {
+            throw new RuntimeException("Categoria obbligatoria");
+        }
+
+        return menuCategoryRepository.findByBusinessTypeAndLabelIgnoreCaseAndActiveTrue(businessType, normalizedLabel)
+                .orElseThrow(() -> new RuntimeException("Categoria non valida per il locale"));
     }
 
     private BusinessType resolveBusinessType(Ristoratore restaurant) {
