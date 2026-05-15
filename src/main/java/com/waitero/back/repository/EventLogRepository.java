@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public interface EventLogRepository extends JpaRepository<EventLog, UUID> {
     long countBySessionIdAndCreatedAtAfter(String sessionId, LocalDateTime createdAt);
+    long deleteByCreatedAtBefore(LocalDateTime createdAt);
 
     @Query("""
             select count(e) > 0

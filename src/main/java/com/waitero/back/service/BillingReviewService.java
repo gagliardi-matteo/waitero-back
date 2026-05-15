@@ -36,12 +36,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
 public class BillingReviewService {
 
     private static final Logger log = LoggerFactory.getLogger(BillingReviewService.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final BillingAccountRepository billingAccountRepository;
     private final BillingReviewRepository billingReviewRepository;
@@ -269,12 +272,17 @@ public class BillingReviewService {
                 .orElse(null);
         Invoice invoice = deserializedObject instanceof Invoice castedInvoice ? castedInvoice : null;
         String invoiceId = invoice == null ? null : invoice.getId();
+        String customerId = invoice == null ? null : invoice.getCustomer();
+        Long billingReviewId = extractBillingReviewId(invoice);
 
         stripeWebhookEventRepository.save(StripeWebhookEvent.builder()
                 .eventId(event.getId())
                 .eventType(event.getType())
                 .invoiceId(invoiceId)
-                .payload(payload)
+                .customerId(customerId)
+                .billingReviewId(billingReviewId)
+                .processingStatus("PROCESSED")
+                .payload(minimalWebhookPayload(event, invoice))
                 .build());
 
         if (invoiceId == null || invoiceId.isBlank()) {
@@ -384,6 +392,39 @@ public class BillingReviewService {
         return existing == null || existing.isBlank()
                 ? incoming.trim()
                 : existing + "\n" + incoming.trim();
+    }
+
+    private Long extractBillingReviewId(Invoice invoice) {
+        if (invoice == null || invoice.getMetadata() == null) {
+            return null;
+        }
+        String value = invoice.getMetadata().get("billingReviewId");
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private String minimalWebhookPayload(Event event, Invoice invoice) {
+        Map<String, Object> minimalPayload = new HashMap<>();
+        minimalPayload.put("eventId", event.getId());
+        minimalPayload.put("eventType", event.getType());
+        if (invoice != null) {
+            minimalPayload.put("invoiceId", invoice.getId());
+            minimalPayload.put("customerId", invoice.getCustomer());
+            minimalPayload.put("status", invoice.getStatus());
+            minimalPayload.put("billingReason", invoice.getBillingReason());
+            minimalPayload.put("metadata", invoice.getMetadata());
+        }
+        try {
+            return OBJECT_MAPPER.writeValueAsString(minimalPayload);
+        } catch (JsonProcessingException ex) {
+            return "{\"eventId\":\"" + event.getId() + "\",\"eventType\":\"" + event.getType() + "\"}";
+        }
     }
 
     record BillingPeriod(LocalDate startInclusive, LocalDate endInclusive) {

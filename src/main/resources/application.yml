@@ -18,9 +18,16 @@ spring:
     serialization:
       indent_output: true
 jwt:
-  secret: MySuperSecretKeyForJwt12345678901234567890123456789012
+  active-secret: ${JWT_ACTIVE_SECRET:WaiteroDevJwtSecretKey12345678901234567890}
+  legacy-secret: ${JWT_LEGACY_SECRET:}
   expiration-ms: 21600000      # 6 ore
   refresh-expiration-ms: 604800000  # 7 giorni
+
+qr:
+  token:
+    active-secret: ${QR_ACTIVE_SECRET:WaiteroDevQrSecretKey123456789012345678901}
+    legacy-secret: ${QR_LEGACY_SECRET:}
+    expiration: ${QR_TOKEN_EXPIRATION_MS:604800000}
 
 google:
   maps:
@@ -41,6 +48,14 @@ openai:
   model: ${OPENAI_MODEL:gpt-4.1-mini}
 
 app:
+  privacy:
+    hash-secret: ${PRIVACY_HASH_SECRET:WaiteroDevPrivacyHashSecret12345678901234}
+  retention:
+    table-access-log-days: ${RETENTION_TABLE_ACCESS_LOG_DAYS:90}
+    table-device-days: ${RETENTION_TABLE_DEVICE_DAYS:180}
+    event-log-days: ${RETENTION_EVENT_LOG_DAYS:180}
+    stripe-webhook-days: ${RETENTION_STRIPE_WEBHOOK_DAYS:90}
+    admin-audit-days: ${RETENTION_ADMIN_AUDIT_DAYS:730}
   cors:
     allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:https://waitero-front.vercel.app,https://localhost,http://localhost,http://localhost:4200,http://localhost:5173,http://localhost:3000,capacitor://localhost}
   master:

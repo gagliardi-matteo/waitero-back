@@ -29,6 +29,7 @@ public class TableAccessService {
     private final TableDeviceRepository tableDeviceRepository;
     private final TableAccessLogRepository tableAccessLogRepository;
     private final OrderStreamService orderStreamService;
+    private final PrivacyProtectionService privacyProtectionService;
 
     @Transactional
     public SecureTableAccessResponse validateAndRegister(SecureTableAccessRequest request) {
@@ -72,7 +73,7 @@ public class TableAccessService {
     private AccessRisk evaluateRisk(Tavolo tavolo, SecureTableAccessRequest request) {
         AccessRisk risk = new AccessRisk();
         Ristoratore restaurant = tavolo.getRistoratore();
-        String deviceId = normalize(request.getDeviceId());
+        String deviceId = privacyProtectionService.normalizeDeviceId(request.getDeviceId());
         String fingerprint = normalize(request.getFingerprint());
 
         if (deviceId == null) {
@@ -89,7 +90,10 @@ public class TableAccessService {
             risk.reasons.add("new_device_on_active_order");
         }
 
-        if (existingDevice != null && fingerprint != null && existingDevice.getFingerprint() != null && !fingerprint.equals(existingDevice.getFingerprint())) {
+        if (existingDevice != null
+                && fingerprint != null
+                && existingDevice.getFingerprint() != null
+                && !privacyProtectionService.fingerprintMatches(existingDevice.getFingerprint(), fingerprint)) {
             risk.score += 2;
             risk.reasons.add("fingerprint_mismatch");
         }
@@ -112,7 +116,7 @@ public class TableAccessService {
     }
 
     private void registerDevice(Tavolo tavolo, SecureTableAccessRequest request) {
-        String deviceId = normalize(request.getDeviceId());
+        String deviceId = privacyProtectionService.normalizeDeviceId(request.getDeviceId());
         if (deviceId == null) {
             return;
         }
@@ -125,7 +129,7 @@ public class TableAccessService {
                         .firstSeen(now)
                         .build());
 
-        device.setFingerprint(normalize(request.getFingerprint()));
+        device.setFingerprint(privacyProtectionService.fingerprintHash(request.getFingerprint()));
         device.setLastSeen(now);
         if (device.getFirstSeen() == null) {
             device.setFirstSeen(now);
@@ -134,13 +138,14 @@ public class TableAccessService {
     }
 
     private void logAccess(Tavolo tavolo, SecureTableAccessRequest request, int riskScore, String reason) {
+        String fingerprintHash = privacyProtectionService.fingerprintHash(request.getFingerprint());
         tableAccessLogRepository.save(TableAccessLog.builder()
                 .tavolo(tavolo)
-                .deviceId(normalize(request.getDeviceId()))
-                .fingerprint(normalize(request.getFingerprint()))
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
-                .accuracy(request.getAccuracy())
+                .deviceId(privacyProtectionService.normalizeDeviceId(request.getDeviceId()))
+                .fingerprint(fingerprintHash)
+                .latitude(null)
+                .longitude(null)
+                .accuracy(null)
                 .timestamp(java.time.LocalDateTime.now())
                 .riskScore(riskScore)
                 .reason(reason)

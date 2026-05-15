@@ -21,14 +21,16 @@ spring:
       static-locations: file:/app/uploads/
 
 jwt:
-  secret: MySuperSecretKeyForJwt12345678901234567890123456789012
+  active-secret: ${JWT_ACTIVE_SECRET}
+  legacy-secret: ${JWT_LEGACY_SECRET:}
   expiration-ms: 21600000
   refresh-expiration-ms: 604800000
 
 qr:
   token:
-    secret: E5zYwR1Xdpz8TqLnaU2cVsHxPvKqJGbf
-    expiration: 604800000
+    active-secret: ${QR_ACTIVE_SECRET}
+    legacy-secret: ${QR_LEGACY_SECRET:}
+    expiration: ${QR_TOKEN_EXPIRATION_MS:604800000}
 
 google:
   maps:
@@ -44,6 +46,14 @@ stripe:
     currency: ${STRIPE_BILLING_CURRENCY:eur}
 
 app:
+  privacy:
+    hash-secret: ${PRIVACY_HASH_SECRET:${JWT_ACTIVE_SECRET}}
+  retention:
+    table-access-log-days: ${RETENTION_TABLE_ACCESS_LOG_DAYS:90}
+    table-device-days: ${RETENTION_TABLE_DEVICE_DAYS:180}
+    event-log-days: ${RETENTION_EVENT_LOG_DAYS:180}
+    stripe-webhook-days: ${RETENTION_STRIPE_WEBHOOK_DAYS:90}
+    admin-audit-days: ${RETENTION_ADMIN_AUDIT_DAYS:730}
   cors:
     allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:https://waitero-front.vercel.app,https://localhost,http://localhost,capacitor://localhost}
   master:

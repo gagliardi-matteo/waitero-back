@@ -54,6 +54,7 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         ensureExperimentDecisionLogTable();
         ensureEventLogTable();
         ensureAdminAuditLogTable();
+        ensureTableSecurityTables();
         ensureUiFeatureConfigTable();
         ensureBillingTables();
         ensureBillingGlobalConfigTable();
@@ -594,6 +595,15 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_admin_audit_log_action_created_at ON admin_audit_log(action, created_at DESC)");
     }
 
+    private void ensureTableSecurityTables() {
+        if (tableExists("table_device")) {
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_table_device_last_seen ON table_device(last_seen)");
+        }
+        if (tableExists("table_access_log")) {
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_table_access_log_timestamp ON table_access_log(timestamp)");
+        }
+    }
+
     private void ensureUiFeatureConfigTable() {
         jdbcTemplate.execute(
                 """
@@ -734,13 +744,34 @@ public class SchemaMigrationRunner implements ApplicationRunner {
                     event_id varchar(128) PRIMARY KEY,
                     event_type varchar(96) NOT NULL,
                     invoice_id varchar(128),
-                    payload text NOT NULL,
+                    customer_id varchar(128),
+                    billing_review_id bigint,
+                    processing_status varchar(32) NOT NULL DEFAULT 'PROCESSED',
+                    error_summary varchar(512),
+                    payload text,
                     processed_at timestamp(6) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
         );
+        if (!columnExists("stripe_webhook_event", "customer_id")) {
+            jdbcTemplate.execute("ALTER TABLE stripe_webhook_event ADD COLUMN customer_id varchar(128)");
+        }
+        if (!columnExists("stripe_webhook_event", "billing_review_id")) {
+            jdbcTemplate.execute("ALTER TABLE stripe_webhook_event ADD COLUMN billing_review_id bigint");
+        }
+        if (!columnExists("stripe_webhook_event", "processing_status")) {
+            jdbcTemplate.execute("ALTER TABLE stripe_webhook_event ADD COLUMN processing_status varchar(32)");
+        }
+        if (!columnExists("stripe_webhook_event", "error_summary")) {
+            jdbcTemplate.execute("ALTER TABLE stripe_webhook_event ADD COLUMN error_summary varchar(512)");
+        }
+        jdbcTemplate.execute("UPDATE stripe_webhook_event SET processing_status = 'PROCESSED' WHERE processing_status IS NULL OR btrim(processing_status) = ''");
+        jdbcTemplate.execute("ALTER TABLE stripe_webhook_event ALTER COLUMN processing_status SET NOT NULL");
+        jdbcTemplate.execute("ALTER TABLE stripe_webhook_event ALTER COLUMN processing_status SET DEFAULT 'PROCESSED'");
+        jdbcTemplate.execute("ALTER TABLE stripe_webhook_event ALTER COLUMN payload DROP NOT NULL");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_stripe_webhook_event_invoice_id ON stripe_webhook_event(invoice_id)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_stripe_webhook_event_processed_at ON stripe_webhook_event(processed_at DESC)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_stripe_webhook_event_customer_id ON stripe_webhook_event(customer_id)");
     }
 
     private void ensureBillingGlobalConfigTable() {

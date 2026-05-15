@@ -45,6 +45,7 @@ public class TavoloService {
     private final JwtService jwtService;
     private final AccessContextService accessContextService;
     private final ServiceHourScheduleService serviceHourScheduleService;
+    private final PrivacyProtectionService privacyProtectionService;
 
     @Transactional
     public List<TavoloDTO> getAuthenticatedRestaurantTables() {
@@ -236,7 +237,7 @@ public class TavoloService {
                         if (fingerprint == null || fingerprint.isBlank() || device.getFingerprint() == null || device.getFingerprint().isBlank()) {
                             return true;
                         }
-                        return fingerprint.trim().equals(device.getFingerprint());
+                        return privacyProtectionService.fingerprintMatches(device.getFingerprint(), fingerprint);
                     })
                     .orElse(false);
         } catch (RuntimeException ex) {

@@ -32,7 +32,20 @@ public class StripeWebhookEvent {
     @Column(name = "invoice_id", length = 128)
     private String invoiceId;
 
-    @Column(name = "payload", nullable = false, columnDefinition = "text")
+    @Column(name = "customer_id", length = 128)
+    private String customerId;
+
+    @Column(name = "billing_review_id")
+    private Long billingReviewId;
+
+    @Column(name = "processing_status", nullable = false, length = 32)
+    @Builder.Default
+    private String processingStatus = "PROCESSED";
+
+    @Column(name = "error_summary", length = 512)
+    private String errorSummary;
+
+    @Column(name = "payload", columnDefinition = "text")
     private String payload;
 
     @Column(name = "processed_at", nullable = false)

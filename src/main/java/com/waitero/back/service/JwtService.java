@@ -3,23 +3,29 @@ package com.waitero.back.service;
 import com.waitero.back.entity.BackofficeRole;
 import com.waitero.back.entity.BackofficeUser;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
-import io.jsonwebtoken.JwtException;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    @Value("${jwt.active-secret:}")
+    private String activeJwtSecret;
+
+    @Value("${jwt.legacy-secret:}")
+    private String legacyJwtSecret;
 
     @Value("${jwt.expiration-ms}")
     private long jwtExpirationMs;
@@ -27,19 +33,33 @@ public class JwtService {
     @Value("${jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
 
-    @Value("${qr.token.secret}")
-    private String qrSecret;
+    @Value("${qr.token.active-secret:}")
+    private String activeQrSecret;
+
+    @Value("${qr.token.legacy-secret:}")
+    private String legacyQrSecret;
 
     @Value("${qr.token.expiration}")
     private long qrTokenExpirationMs;
 
-    private Key key;
-    private Key qrKey;
+    private final Environment environment;
+
+    private Key activeKey;
+    private Key activeQrKey;
+    private List<Key> validationKeys;
+    private List<Key> qrValidationKeys;
+
+    public JwtService(Environment environment) {
+        this.environment = environment;
+    }
 
     @PostConstruct
     public void init() {
-        key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-        qrKey = Keys.hmacShaKeyFor(qrSecret.getBytes(StandardCharsets.UTF_8));
+        ensureConfiguredSecrets();
+        activeKey = toKey(activeJwtSecret, "jwt.active-secret");
+        activeQrKey = toKey(activeQrSecret, "qr.token.active-secret");
+        validationKeys = buildValidationKeys(activeJwtSecret, legacyJwtSecret, "jwt");
+        qrValidationKeys = buildValidationKeys(activeQrSecret, legacyQrSecret, "qr");
     }
 
     public String generateAccessToken(BackofficeUser user) {
@@ -70,12 +90,12 @@ public class JwtService {
             builder.claim("actingRestaurantId", actingRestaurantId);
         }
 
-        return builder.signWith(key).compact();
+        return builder.signWith(activeKey).compact();
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            parseClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
@@ -114,8 +134,7 @@ public class JwtService {
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build()
-                .parseClaimsJws(token).getBody();
+        return parseClaimsWithKnownKeys(token, validationKeys);
     }
 
     public String generateQrToken(Long restaurantId, Integer tableId) {
@@ -125,17 +144,13 @@ public class JwtService {
                 .claim("type", "qr")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + qrTokenExpirationMs))
-                .signWith(qrKey)
+                .signWith(activeQrKey)
                 .compact();
     }
 
     public boolean validateQrToken(String token, String restaurantId, int tableId) {
         try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(qrKey)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+            Claims claims = parseClaimsWithKnownKeys(token, qrValidationKeys);
 
             Object rIdRaw = claims.get("restaurantId");
             Object tIdRaw = claims.get("tableId");
@@ -147,19 +162,60 @@ public class JwtService {
             return "qr".equals(type)
                     && rId == Integer.parseInt(restaurantId)
                     && tId == tableId;
-        } catch (ExpiredJwtException e) {
-            Claims claims = e.getClaims();
-            String rId = String.valueOf(claims.get("restaurantId", Integer.class));
-            Integer tId = claims.get("tableId", Integer.class);
-            String type = claims.get("type", String.class);
-
-            return "qr".equals(type)
-                    && rId.equals(restaurantId)
-                    && tId == tableId;
         } catch (Exception e) {
-            System.out.println("Errore validazione QR token");
-            e.printStackTrace();
             return false;
+        }
+    }
+
+    private Claims parseClaimsWithKnownKeys(String token, List<Key> keys) {
+        JwtException lastException = null;
+        for (Key candidateKey : keys) {
+            try {
+                return Jwts.parserBuilder()
+                        .setSigningKey(candidateKey)
+                        .build()
+                        .parseClaimsJws(token)
+                        .getBody();
+            } catch (JwtException ex) {
+                lastException = ex;
+            }
+        }
+        if (lastException != null) {
+            throw lastException;
+        }
+        throw new JwtException("Nessuna chiave valida disponibile");
+    }
+
+    private List<Key> buildValidationKeys(String activeSecret, String legacySecret, String label) {
+        List<Key> keys = new ArrayList<>();
+        keys.add(toKey(activeSecret, label + ".active"));
+        if (legacySecret != null && !legacySecret.isBlank() && !legacySecret.equals(activeSecret)) {
+            keys.add(toKey(legacySecret, label + ".legacy"));
+        }
+        return List.copyOf(keys);
+    }
+
+    private Key toKey(String secret, String label) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("Secret mancante per " + label);
+        }
+        if (secret.trim().length() < 32) {
+            throw new IllegalStateException("Secret troppo corto per " + label);
+        }
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void ensureConfiguredSecrets() {
+        boolean production = environment.acceptsProfiles(Profiles.of("prod"));
+        if (production) {
+            requireConfigured(activeJwtSecret, "JWT_ACTIVE_SECRET");
+            requireConfigured(activeQrSecret, "QR_ACTIVE_SECRET");
+        }
+    }
+
+    private void requireConfigured(String value, String envName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException(envName + " non configurata");
         }
     }
 }
