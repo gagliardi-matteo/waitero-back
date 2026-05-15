@@ -1,5 +1,6 @@
 package com.waitero.back.service;
 
+import com.waitero.back.dto.MenuCategoryDTO;
 import com.waitero.back.dto.PiattoDTO;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -8,9 +9,18 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataValidation;
+import org.apache.poi.ss.usermodel.DataValidationConstraint;
+import org.apache.poi.ss.usermodel.DataValidationHelper;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.SheetVisibility;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
@@ -46,11 +56,14 @@ public class MenuExportService {
             "Disponibile",
             "Immagine"
     );
+    private static final int TEMPLATE_FIRST_DATA_ROW = 1;
+    private static final int TEMPLATE_LAST_DATA_ROW = 500;
 
     private final MenuService menuService;
+    private final MenuCategoryService menuCategoryService;
 
     public byte[] buildTemplateWorkbook() {
-        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+        try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Template menù");
             Row headerRow = sheet.createRow(0);
             for (int i = 0; i < TEMPLATE_HEADERS.size(); i++) {
@@ -58,10 +71,16 @@ public class MenuExportService {
                 cell.setCellValue(TEMPLATE_HEADERS.get(i));
             }
 
-            Row instructionRow = sheet.createRow(1);
-            instructionRow.createCell(0).setCellValue("Compila almeno Nome, Categoria e Prezzo.");
-            instructionRow.createCell(1).setCellValue("Puoi usare Categoria, Categoria Codice o Categoria Id.");
-            instructionRow.createCell(2).setCellValue("Consigliato e Disponibile accettano si/no, true/false, 1/0.");
+            styleHeaderRow(workbook, headerRow);
+            createCategoryValidation(workbook, sheet, menuCategoryService.getAuthenticatedCategories());
+            hideAdvancedTemplateColumns(sheet);
+
+            Sheet instructionsSheet = workbook.createSheet("Istruzioni");
+            instructionsSheet.createRow(0).createCell(0).setCellValue("Compila almeno Nome, Categoria e Prezzo.");
+            instructionsSheet.createRow(1).createCell(0).setCellValue("Categoria usa una tendina con i valori ufficiali del locale.");
+            instructionsSheet.createRow(2).createCell(0).setCellValue("Consigliato e Disponibile accettano si/no, true/false, 1/0.");
+            instructionsSheet.createRow(3).createCell(0).setCellValue("Le colonne tecniche nascoste non vanno modificate.");
+            instructionsSheet.setColumnWidth(0, 100 * 256);
 
             for (int i = 0; i < TEMPLATE_HEADERS.size(); i++) {
                 sheet.autoSizeColumn(i);
@@ -71,6 +90,48 @@ public class MenuExportService {
             return output.toByteArray();
         } catch (IOException ex) {
             throw new RuntimeException("Impossibile generare il template Excel", ex);
+        }
+    }
+
+    private void createCategoryValidation(XSSFWorkbook workbook, Sheet templateSheet, List<MenuCategoryDTO> categories) {
+        Sheet hiddenSheet = workbook.createSheet("Categorie");
+        int rowIndex = 0;
+        for (MenuCategoryDTO category : categories) {
+            hiddenSheet.createRow(rowIndex).createCell(0).setCellValue(safe(category.getLabel()));
+            rowIndex++;
+        }
+        hiddenSheet.protectSheet("waitero-readonly");
+
+        String lastCell = "$A$" + Math.max(categories.size(), 1);
+        var categoryRangeName = workbook.createName();
+        categoryRangeName.setNameName("waitero_categories");
+        categoryRangeName.setRefersToFormula("'Categorie'!$A$1:" + lastCell);
+
+        DataValidationHelper helper = templateSheet.getDataValidationHelper();
+        DataValidationConstraint constraint = helper.createFormulaListConstraint("waitero_categories");
+        CellRangeAddressList addressList = new CellRangeAddressList(TEMPLATE_FIRST_DATA_ROW, TEMPLATE_LAST_DATA_ROW, 1, 1);
+        DataValidation validation = helper.createValidation(constraint, addressList);
+        validation.setShowErrorBox(true);
+        validation.setSuppressDropDownArrow(false);
+        validation.createErrorBox("Categoria non valida", "Seleziona una categoria dalla tendina del template.");
+        templateSheet.addValidationData(validation);
+
+        workbook.setSheetVisibility(workbook.getSheetIndex(hiddenSheet), SheetVisibility.VERY_HIDDEN);
+    }
+
+    private void hideAdvancedTemplateColumns(Sheet sheet) {
+        sheet.setColumnHidden(2, true);
+        sheet.setColumnHidden(3, true);
+        sheet.setColumnHidden(10, true);
+    }
+
+    private void styleHeaderRow(XSSFWorkbook workbook, Row headerRow) {
+        CellStyle headerStyle = workbook.createCellStyle();
+        headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+        for (Cell cell : headerRow) {
+            cell.setCellStyle(headerStyle);
         }
     }
 
