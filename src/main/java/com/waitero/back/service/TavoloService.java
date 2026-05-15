@@ -2,6 +2,7 @@ package com.waitero.back.service;
 
 import com.waitero.back.dto.TavoloDTO;
 import com.waitero.back.dto.TavoloRequest;
+import com.waitero.back.dto.BulkTableCreateRequest;
 import com.waitero.back.entity.OrderStatus;
 import com.waitero.back.entity.Ristoratore;
 import com.waitero.back.entity.ServiceHour;
@@ -43,6 +44,7 @@ public class TavoloService {
     private final ServiceHourRepository serviceHourRepository;
     private final JwtService jwtService;
     private final AccessContextService accessContextService;
+    private final ServiceHourScheduleService serviceHourScheduleService;
 
     @Transactional
     public List<TavoloDTO> getAuthenticatedRestaurantTables() {
@@ -75,6 +77,54 @@ public class TavoloService {
 
         tavolo.setQrToken(jwtService.generateQrToken(restaurantId, tavolo.getNumero()));
         return toDTO(tavoloRepository.save(tavolo));
+    }
+
+    @Transactional
+    public List<TavoloDTO> bulkCreateForAuthenticatedRestaurant(BulkTableCreateRequest request) {
+        Long restaurantId = getAuthenticatedRestaurantId();
+        validateBulkRequest(request);
+
+        Ristoratore ristoratore = ristoratoreRepository.findById(restaurantId)
+                .orElseThrow(() -> new RuntimeException("Locale non trovato"));
+
+        List<Tavolo> existingTables = tavoloRepository.findAllByRistoratoreIdOrderByNumeroAsc(restaurantId);
+        int nextNumber = request.getStartingNumber() != null
+                ? request.getStartingNumber()
+                : existingTables.stream()
+                .map(Tavolo::getNumero)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
+
+        String namePrefix = request.getNamePrefix() == null || request.getNamePrefix().trim().isBlank()
+                ? "T"
+                : request.getNamePrefix().trim();
+
+        List<TavoloDTO> created = new java.util.ArrayList<>();
+        for (int offset = 0; offset < request.getCount(); offset++) {
+            int tableNumber = nextNumber + offset;
+            TavoloRequest singleRequest = new TavoloRequest();
+            singleRequest.setNumero(tableNumber);
+            singleRequest.setNome(namePrefix + tableNumber);
+            singleRequest.setCoperti(request.getCoperti());
+            singleRequest.setAttivo(request.getAttivo());
+            validateRequest(singleRequest, restaurantId, null);
+
+            Tavolo tavolo = Tavolo.builder()
+                    .ristoratore(ristoratore)
+                    .tablePublicId(generateUniqueTablePublicId())
+                    .numero(tableNumber)
+                    .nome(normalizeName(singleRequest))
+                    .coperti(singleRequest.getCoperti())
+                    .attivo(isActive(singleRequest))
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+            tavolo.setQrToken(jwtService.generateQrToken(restaurantId, tavolo.getNumero()));
+            created.add(toDTO(tavoloRepository.save(tavolo)));
+        }
+
+        log.info("Bulk table generation completed for restaurantId={} count={} startingNumber={}", restaurantId, created.size(), nextNumber);
+        return created;
     }
 
     @Transactional
@@ -197,13 +247,8 @@ public class TavoloService {
     @Transactional(readOnly = true)
     public boolean isWithinServiceHours(Long restaurantId) {
         ZonedDateTime now = ZonedDateTime.now(SERVICE_ZONE);
-        List<ServiceHour> hours = serviceHourRepository.findAllByRistoratoreIdAndDayOfWeekOrderByStartTimeAsc(restaurantId, DayOfWeek.from(now));
-        if (hours.isEmpty()) {
-            return true;
-        }
-
-        LocalTime currentTime = now.toLocalTime();
-        return hours.stream().anyMatch(slot -> !currentTime.isBefore(slot.getStartTime()) && !currentTime.isAfter(slot.getEndTime()));
+        List<ServiceHour> hours = serviceHourRepository.findAllByRistoratoreIdOrderByDayOfWeekAscStartTimeAsc(restaurantId);
+        return serviceHourScheduleService.isOpenAt(hours, now);
     }
 
     @Transactional
@@ -257,6 +302,24 @@ public class TavoloService {
                 .ifPresent(existing -> {
                     throw new RuntimeException("Esiste gia un tavolo con questo numero");
                 });
+    }
+
+    private void validateBulkRequest(BulkTableCreateRequest request) {
+        if (request == null) {
+            throw new RuntimeException("Dati generazione tavoli mancanti");
+        }
+        if (request.getCount() == null || request.getCount() <= 0) {
+            throw new RuntimeException("Numero tavoli da generare non valido");
+        }
+        if (request.getCount() > 200) {
+            throw new RuntimeException("Puoi generare al massimo 200 tavoli per volta");
+        }
+        if (request.getCoperti() == null || request.getCoperti() <= 0) {
+            throw new RuntimeException("Numero coperti non valido");
+        }
+        if (request.getStartingNumber() != null && request.getStartingNumber() <= 0) {
+            throw new RuntimeException("Numero iniziale non valido");
+        }
     }
 
     private void ensurePersistentIdentifiers(Tavolo tavolo, Long restaurantId) {

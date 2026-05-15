@@ -51,6 +51,7 @@ public class MenuService {
     private final AccessContextService accessContextService;
     private final MenuCategoryService menuCategoryService;
     private final DishPortionService dishPortionService;
+    private final ServiceHourScheduleService serviceHourScheduleService;
 
     private Ristoratore getRistoratoreAutenticato() {
         Long id = accessContextService.getActingRestaurantIdOrThrow();
@@ -280,13 +281,8 @@ public class MenuService {
 
     public void ensureRestaurantServiceOpen(Long restaurantId) {
         ZonedDateTime now = ZonedDateTime.now(SERVICE_ZONE);
-        List<ServiceHour> hours = serviceHourRepository.findAllByRistoratoreIdAndDayOfWeekOrderByStartTimeAsc(restaurantId, DayOfWeek.from(now));
-        if (hours.isEmpty()) {
-            return;
-        }
-
-        LocalTime currentTime = now.toLocalTime();
-        boolean isOpen = hours.stream().anyMatch(slot -> !currentTime.isBefore(slot.getStartTime()) && !currentTime.isAfter(slot.getEndTime()));
+        List<ServiceHour> hours = serviceHourRepository.findAllByRistoratoreIdOrderByDayOfWeekAscStartTimeAsc(restaurantId);
+        boolean isOpen = serviceHourScheduleService.isOpenAt(hours, now);
         if (!isOpen) {
             throw new RuntimeException("Servizio non disponibile in questo orario");
         }

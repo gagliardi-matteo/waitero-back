@@ -2,6 +2,7 @@ package com.waitero.back.controller;
 
 import com.waitero.back.dto.TavoloDTO;
 import com.waitero.back.dto.TavoloRequest;
+import com.waitero.back.dto.BulkTableCreateRequest;
 import com.waitero.back.service.TavoloService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,11 @@ public class TavoloController {
     @PostMapping
     public ResponseEntity<TavoloDTO> createTable(@RequestBody TavoloRequest request) {
         return ResponseEntity.ok(tavoloService.createForAuthenticatedRestaurant(request));
+    }
+
+    @PostMapping("/bulk")
+    public ResponseEntity<List<TavoloDTO>> bulkCreateTables(@RequestBody BulkTableCreateRequest request) {
+        return ResponseEntity.ok(tavoloService.bulkCreateForAuthenticatedRestaurant(request));
     }
 
     @PutMapping("/{id}")

@@ -29,6 +29,7 @@ public class RistoratoreService {
     private final ServiceHourRepository serviceHourRepository;
     private final GeocodingService geocodingService;
     private final AccessContextService accessContextService;
+    private final ServiceHourScheduleService serviceHourScheduleService;
 
     public Optional<Ristoratore> findRistoratoreById(Long id) {
         return ristoratoreRepository.findById(id);
@@ -93,13 +94,13 @@ public class RistoratoreService {
             return List.of();
         }
 
-        return requests.stream()
+        List<ServiceHour> normalized = requests.stream()
                 .filter(item -> item.getDayOfWeek() != null && item.getStartTime() != null && item.getEndTime() != null)
                 .map(item -> {
                     DayOfWeek day = DayOfWeek.valueOf(item.getDayOfWeek().trim().toUpperCase());
                     LocalTime start = LocalTime.parse(item.getStartTime().trim());
                     LocalTime end = LocalTime.parse(item.getEndTime().trim());
-                    if (!end.isAfter(start)) {
+                    if (start.equals(end)) {
                         throw new RuntimeException("Fascia oraria non valida per " + day);
                     }
                     return ServiceHour.builder()
@@ -111,6 +112,9 @@ public class RistoratoreService {
                 })
                 .sorted(Comparator.comparing(ServiceHour::getDayOfWeek).thenComparing(ServiceHour::getStartTime))
                 .toList();
+
+        serviceHourScheduleService.validateNoOverlaps(normalized);
+        return normalized;
     }
 
     private RestaurantSettingsDTO toSettingsDto(Ristoratore restaurant, List<ServiceHour> serviceHours) {
