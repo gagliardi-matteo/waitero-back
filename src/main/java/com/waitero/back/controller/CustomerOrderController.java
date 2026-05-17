@@ -4,6 +4,7 @@ import com.waitero.back.dto.CustomerDraftDTO;
 import com.waitero.back.dto.CustomerDraftMutationRequest;
 import com.waitero.back.dto.CustomerOrderStateDTO;
 import com.waitero.back.dto.CustomerOrderRequest;
+import com.waitero.back.dto.CustomerWaiterCallRequest;
 import com.waitero.back.dto.OrdineDTO;
 import com.waitero.back.service.CustomerDraftService;
 import com.waitero.back.service.OrderStreamService;
@@ -58,6 +59,12 @@ public class CustomerOrderController {
     @PostMapping("/draft/items")
     public ResponseEntity<CustomerDraftDTO> mutateDraft(@RequestBody CustomerDraftMutationRequest request) {
         return ResponseEntity.ok(customerDraftService.mutate(request));
+    }
+
+    @PostMapping("/call-waiter")
+    public ResponseEntity<Map<String, String>> callWaiter(@RequestBody CustomerWaiterCallRequest request) {
+        ordineService.callWaiter(request);
+        return ResponseEntity.ok(Map.of("message", "Cameriere avvisato"));
     }
 
     @GetMapping("/state")

@@ -110,6 +110,16 @@ public class OrderStreamService {
         broadcastRestaurantEvent(restaurantId, "orders-updated", payload);
     }
 
+    public void publishWaiterCall(Long restaurantId, Integer tableId) {
+        OrderEventDTO payload = OrderEventDTO.builder()
+                .type("WAITER_CALLED")
+                .restaurantId(restaurantId)
+                .tableId(tableId)
+                .message("Il tavolo " + tableId + " ha chiamato il cameriere")
+                .build();
+        broadcastRestaurantEvent(restaurantId, "orders-updated", payload);
+    }
+
     @Scheduled(fixedDelay = 20000)
     public void publishHeartbeats() {
         broadcastHeartbeats(emittersByRestaurant);

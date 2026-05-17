@@ -52,6 +52,27 @@ public class OrdineService {
     }
 
     @Transactional
+    public void callWaiter(CustomerWaiterCallRequest request) {
+        if (request == null || request.getToken() == null || request.getRestaurantId() == null || request.getTableId() == null || request.getDeviceId() == null) {
+            throw new RuntimeException("Dati tavolo mancanti");
+        }
+
+        if (!tavoloService.validateCustomerAccess(
+                request.getToken(),
+                request.getRestaurantId(),
+                request.getTableId(),
+                request.getDeviceId(),
+                request.getFingerprint())
+        ) {
+            throw new RuntimeException("Accesso tavolo non autorizzato");
+        }
+
+        Long restaurantId = Long.parseLong(request.getRestaurantId());
+        tavoloService.requireActiveTable(restaurantId, request.getTableId());
+        orderStreamService.publishWaiterCall(restaurantId, request.getTableId());
+    }
+
+    @Transactional
     public OrdineDTO createOrAppendByRestaurant(RestaurantOrderRequest request) {
         Long restaurantId = getAuthenticatedRestaurantId();
         if (request == null || request.getTableId() == null) {
