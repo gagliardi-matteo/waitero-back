@@ -20,7 +20,7 @@ public class AnalyticsV2MetricsRepository {
                 select o.id
                 from customer_orders o
                 where o.ristoratore_id = :restaurantId
-                  and upper(coalesce(o.status, '')) in ('PAGATO', 'PAID', 'COMPLETED')
+                  and upper(coalesce(o.status, '')) <> 'ANNULLATO'
                   and o.created_at >= :dateFromInclusive
                   and o.created_at < :dateToExclusive
             )

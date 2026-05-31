@@ -59,7 +59,7 @@ public class AnalyticsService {
                 restaurantId
         );
         long orders = readCount(
-                "select count(*) from customer_orders where ristoratore_id = ?",
+                "select count(*) from customer_orders where ristoratore_id = ? and status <> 'ANNULLATO'",
                 restaurantId
         );
         long sessions = readCount(
@@ -75,12 +75,12 @@ public class AnalyticsService {
                 restaurantId
         );
         BigDecimal totalRevenue = jdbcTemplate.queryForObject(
-                "select coalesce(sum(totale), 0) from customer_orders where ristoratore_id = ?",
+                "select coalesce(sum(totale), 0) from customer_orders where ristoratore_id = ? and status <> 'ANNULLATO'",
                 BigDecimal.class,
                 restaurantId
         );
         BigDecimal averageOrderValue = jdbcTemplate.queryForObject(
-                "select coalesce(avg(totale), 0) from customer_orders where ristoratore_id = ?",
+                "select coalesce(avg(totale), 0) from customer_orders where ristoratore_id = ? and status <> 'ANNULLATO'",
                 BigDecimal.class,
                 restaurantId
         );
@@ -174,6 +174,7 @@ public class AnalyticsService {
                     from customer_order_items coi
                     join customer_orders co on co.id = coi.ordine_id
                     where co.ristoratore_id = ?
+                      and co.status <> 'ANNULLATO'
                     group by coi.piatto_id
                 ) ord on ord.dish_id = p.id
                 where p.ristoratore_id = ?
@@ -189,8 +190,9 @@ public class AnalyticsService {
                     long previousViews = rs.getLong("previous_views");
                     long recentOrderCount = rs.getLong("recent_order_count");
                     long previousOrderCount = rs.getLong("previous_order_count");
-                    BigDecimal viewToCartRate = ratio(addToCart, views);
-                    BigDecimal viewToOrderRate = ratio(orderCount, views);
+                    long engagement = engagementCount(views, impressions, addToCart, orderCount);
+                    BigDecimal viewToCartRate = ratio(addToCart, Math.max(engagement, addToCart));
+                    BigDecimal viewToOrderRate = ratio(orderCount, engagement);
                     BigDecimal recentViewToOrderRate = ratio(recentOrderCount, recentViews);
                     BigDecimal previousViewToOrderRate = ratio(previousOrderCount, previousViews);
                     BigDecimal trendDelta = recentViewToOrderRate.subtract(previousViewToOrderRate).setScale(4, RoundingMode.HALF_UP);
@@ -207,7 +209,7 @@ public class AnalyticsService {
                             .orderCount(orderCount)
                             .viewToCartRate(viewToCartRate)
                             .ctr(ratio(clicks, impressions))
-                            .revenuePerImpression(moneyRatio(rs.getBigDecimal("revenue"), impressions))
+                            .revenuePerImpression(moneyRatio(rs.getBigDecimal("revenue"), engagement))
                             .viewToOrderRate(viewToOrderRate)
                             .recentViews(recentViews)
                             .previousViews(previousViews)
@@ -217,7 +219,7 @@ public class AnalyticsService {
                             .previousViewToOrderRate(previousViewToOrderRate)
                             .trendDelta(trendDelta)
                             .trendDirection(resolveTrendDirection(recentViews, previousViews, trendDelta))
-                            .performanceLabel(performanceLabelResolver.resolve(views, addToCart, orderCount))
+                            .performanceLabel(performanceLabelResolver.resolve(engagement, addToCart, orderCount))
                             .build();
                 },
                 restaurantId,
@@ -264,6 +266,7 @@ public class AnalyticsService {
                     from customer_order_items coi
                     join customer_orders co on co.id = coi.ordine_id
                     where co.ristoratore_id = ?
+                      and co.status <> 'ANNULLATO'
                     group by coi.piatto_id
                 ) ord on ord.dish_id = p.id
                 where p.ristoratore_id = ?
@@ -277,10 +280,11 @@ public class AnalyticsService {
                     long quantity = rs.getLong("quantity");
                     double revenue = safeDouble(rs.getBigDecimal("revenue"));
                     double price = safeDouble(rs.getBigDecimal("price"));
+                    long engagement = engagementCount(views, impressions, addToCart, orders);
 
                     double ctr = impressions < 5 ? 0.0d : safeDivide(clicks, impressions);
-                    double orderRate = views < 5 ? 0.0d : safeDivide(orders, views);
-                    double cartRate = views < 5 ? 0.0d : safeDivide(addToCart, views);
+                    double orderRate = engagement < 5 ? 0.0d : safeDivide(orders, engagement);
+                    double cartRate = engagement < 5 ? 0.0d : safeDivide(addToCart, engagement);
                     double alpha = 5.0d;
                     double beta = 10.0d;
                     double rpi = safeDivide(revenue + alpha, impressions + beta);
@@ -338,6 +342,7 @@ public class AnalyticsService {
                     from customer_orders co
                     left join customer_order_items coi on coi.ordine_id = co.id
                     where co.ristoratore_id = ?
+                      and co.status <> 'ANNULLATO'
                     group by co.id
                 ), totals as (
                     select
@@ -414,6 +419,7 @@ public class AnalyticsService {
                     from customer_orders co
                     left join customer_order_items coi on coi.ordine_id = co.id
                     where co.ristoratore_id = ?
+                      and co.status <> 'ANNULLATO'
                     group by co.id, co.variant, co.totale, co.item_count
                 )
                 select
@@ -768,6 +774,10 @@ public class AnalyticsService {
         }
         return BigDecimal.valueOf(numerator)
                 .divide(BigDecimal.valueOf(denominator), 4, RoundingMode.HALF_UP);
+    }
+
+    private long engagementCount(long views, long impressions, long addToCart, long orderCount) {
+        return Math.max(Math.max(views, impressions), Math.max(addToCart, orderCount));
     }
 
     private String resolveTrendDirection(long recentViews, long previousViews, BigDecimal trendDelta) {
