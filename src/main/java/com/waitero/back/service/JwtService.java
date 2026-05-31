@@ -3,6 +3,7 @@ package com.waitero.back.service;
 import com.waitero.back.entity.BackofficeRole;
 import com.waitero.back.entity.BackofficeUser;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.security.Keys;
@@ -38,9 +39,6 @@ public class JwtService {
 
     @Value("${qr.token.legacy-secret:}")
     private String legacyQrSecret;
-
-    @Value("${qr.token.expiration}")
-    private long qrTokenExpirationMs;
 
     private final Environment environment;
 
@@ -143,31 +141,38 @@ public class JwtService {
                 .claim("tableId", tableId)
                 .claim("type", "qr")
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + qrTokenExpirationMs))
                 .signWith(activeQrKey)
                 .compact();
     }
 
     public boolean validateQrToken(String token, String restaurantId, int tableId) {
         try {
-            Claims claims = parseClaimsWithKnownKeys(token, qrValidationKeys);
+            Claims claims = parseQrClaims(token);
 
             Object rIdRaw = claims.get("restaurantId");
             Object tIdRaw = claims.get("tableId");
             String type = claims.get("type", String.class);
 
-            int rId = (rIdRaw instanceof Integer) ? (Integer) rIdRaw : Integer.parseInt(rIdRaw.toString());
+            long rId = (rIdRaw instanceof Number numberValue) ? numberValue.longValue() : Long.parseLong(rIdRaw.toString());
             int tId = (tIdRaw instanceof Integer) ? (Integer) tIdRaw : Integer.parseInt(tIdRaw.toString());
 
             return "qr".equals(type)
-                    && rId == Integer.parseInt(restaurantId)
+                    && rId == Long.parseLong(restaurantId)
                     && tId == tableId;
         } catch (Exception e) {
             return false;
         }
     }
 
+    private Claims parseQrClaims(String token) {
+        return parseClaimsWithKnownKeys(token, qrValidationKeys, true);
+    }
+
     private Claims parseClaimsWithKnownKeys(String token, List<Key> keys) {
+        return parseClaimsWithKnownKeys(token, keys, false);
+    }
+
+    private Claims parseClaimsWithKnownKeys(String token, List<Key> keys, boolean allowExpired) {
         JwtException lastException = null;
         for (Key candidateKey : keys) {
             try {
@@ -176,6 +181,11 @@ public class JwtService {
                         .build()
                         .parseClaimsJws(token)
                         .getBody();
+            } catch (ExpiredJwtException ex) {
+                if (allowExpired) {
+                    return ex.getClaims();
+                }
+                lastException = ex;
             } catch (JwtException ex) {
                 lastException = ex;
             }
