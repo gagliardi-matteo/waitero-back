@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Waitero - Disclaimer Allergeni</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #171717;
+        --muted: #57534e;
+        --paper: #fffdf8;
+        --panel: #ffffff;
+        --line: #ded7cc;
+        --accent: #7c2d12;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        color: var(--ink);
+        background: var(--paper);
+      }
+
+      main {
+        width: min(820px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0;
+      }
+
+      article {
+        padding: clamp(28px, 5vw, 56px);
+        border: 1px solid var(--line);
+        background: var(--panel);
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        font-family: Arial, sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 4vw, 2.7rem);
+        line-height: 1.12;
+        font-weight: 700;
+      }
+
+      .notice {
+        margin-top: 28px;
+        padding: 20px 22px;
+        border-left: 4px solid var(--accent);
+        background: #fff7ed;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 1.08rem;
+        line-height: 1.75;
+      }
+
+      strong { color: var(--ink); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <article>
+        <p class="eyebrow">Waitero</p>
+        <h1>Disclaimer allergeni</h1>
+
+        <section class="notice" aria-label="Avviso allergeni">
+          <p>
+            <strong>Le informazioni relative ad allergeni e ingredienti sono fornite dal ristorante.</strong>
+            In caso di allergie, intolleranze o esigenze alimentari specifiche, verifica sempre direttamente
+            con il personale del locale prima dell'ordine.
+          </p>
+        </section>
+      </article>
+    </main>
+  </body>
+</html>

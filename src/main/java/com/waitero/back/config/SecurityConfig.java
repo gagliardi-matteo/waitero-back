@@ -43,6 +43,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/local-login", "/api/auth/refresh-token").permitAll()
                         .requestMatchers("/api/auth/me", "/api/auth/userID", "/api/auth/profile", "/api/auth/password").authenticated()
+                        .requestMatchers("/api/legal/config", "/api/legal/customer/**").permitAll()
+                        .requestMatchers("/api/legal/backoffice/**").authenticated()
                         .requestMatchers("/api/image/**").permitAll()
                         .requestMatchers("/api/customer/**").permitAll()
                         .requestMatchers("/api/events").permitAll()

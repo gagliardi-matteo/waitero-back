@@ -42,6 +42,7 @@ public class OrdineService {
     private final ExperimentService experimentService;
     private final AccessContextService accessContextService;
     private final DishPortionService dishPortionService;
+    private final OrderPrintService orderPrintService;
 
     @Transactional
     public OrdineDTO createOrAppend(CustomerOrderRequest request) {
@@ -585,6 +586,7 @@ public class OrdineService {
                 saved.getTotale(),
                 saved.getItems().stream().mapToInt(OrdineItem::getQuantity).sum()
         );
+        orderPrintService.printOrder(saved.getId());
         orderStreamService.publishOrderUpdate(saved.getRistoratore().getId(), "ORDER_UPDATED", saved.getId(), saved.getStatus().name());
         orderStreamService.publishCustomerTableUpdate(saved.getRistoratore().getId(), saved.getTableId(), "ORDER_UPDATED");
         return toDTO(saved);

@@ -47,6 +47,17 @@ openai:
     key: ${OPENAI_API_KEY:}
   model: ${OPENAI_MODEL:gpt-4.1-mini}
 
+waitero:
+  legal:
+    contract-version: ${WAITERO_LEGAL_CONTRACT_VERSION:1.0}
+    privacy-version: ${WAITERO_LEGAL_PRIVACY_VERSION:1.0}
+    terms-version: ${WAITERO_LEGAL_TERMS_VERSION:1.0}
+    allergen-disclaimer-version: ${WAITERO_LEGAL_ALLERGEN_DISCLAIMER_VERSION:1.0}
+    contract-url: ${WAITERO_LEGAL_CONTRACT_URL:/legal/terms-client-v1.0.html}
+    privacy-url: ${WAITERO_LEGAL_PRIVACY_URL:/legal/privacy-client-v1.0.html}
+    terms-url: ${WAITERO_LEGAL_TERMS_URL:/legal/terms-client-v1.0.html}
+    allergen-disclaimer-url: ${WAITERO_LEGAL_ALLERGEN_DISCLAIMER_URL:/legal/disclaimer-allergeni-v1.0.html}
+
 app:
   privacy:
     hash-secret: ${PRIVACY_HASH_SECRET:WaiteroDevPrivacyHashSecret12345678901234}
