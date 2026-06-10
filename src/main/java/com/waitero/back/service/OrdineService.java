@@ -69,8 +69,8 @@ public class OrdineService {
         }
 
         Long restaurantId = Long.parseLong(request.getRestaurantId());
-        tavoloService.requireActiveTable(restaurantId, request.getTableId());
-        orderStreamService.publishWaiterCall(restaurantId, request.getTableId());
+        Tavolo tavolo = tavoloService.requireActiveTable(restaurantId, request.getTableId());
+        orderStreamService.publishWaiterCall(restaurantId, tavolo.getNumero());
     }
 
     @Transactional

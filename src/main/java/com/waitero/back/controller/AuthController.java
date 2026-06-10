@@ -15,6 +15,7 @@ import com.waitero.back.service.BackofficeAccountService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -38,7 +40,7 @@ public class AuthController {
     private final AccessContextService accessContextService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody IdTokenRequest request) throws GeneralSecurityException, IOException {
+    public ResponseEntity<?> login(@RequestBody IdTokenRequest request) {
         int tokenLength = request != null && request.getIdToken() != null ? request.getIdToken().length() : 0;
         log.info("AuthController /login received google auth request tokenLength={}", tokenLength);
         try {
@@ -47,10 +49,12 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (GeneralSecurityException | IOException ex) {
             log.error("AuthController /login google auth technical failure tokenLength={}", tokenLength, ex);
-            throw ex;
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(Map.of("message", "Verifica Google temporaneamente non disponibile. Riprova tra poco."));
         } catch (RuntimeException ex) {
             log.warn("AuthController /login google auth rejected tokenLength={} message={}", tokenLength, ex.getMessage());
-            throw ex;
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", ex.getMessage() != null ? ex.getMessage() : "Login Google non autorizzato."));
         }
     }
 
