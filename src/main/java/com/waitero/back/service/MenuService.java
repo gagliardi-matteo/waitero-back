@@ -79,6 +79,10 @@ public class MenuService {
 
     public List<Piatto> getPublicPiattiByRistoratore(Long id) {
         ensureRestaurantServiceOpen(id);
+        return getAvailablePiattiByRistoratore(id);
+    }
+
+    public List<Piatto> getAvailablePiattiByRistoratore(Long id) {
         return getPiattiByRistoratore(id).stream()
                 .filter(this::isAvailable)
                 .toList();

@@ -9,6 +9,7 @@ import com.waitero.back.service.TavoloService;
 import com.waitero.back.service.UpsellService;
 import com.waitero.back.util.QrTokenRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/customer")
 @RequiredArgsConstructor
+@Slf4j
 public class MenuPublicController {
 
     private final MenuService menuService;
@@ -30,10 +32,9 @@ public class MenuPublicController {
 
     @GetMapping("/menu/piatti/{id}")
     public List<PiattoDTO> getPiatti(@PathVariable Long id, @RequestParam(required = false) String sessionId, @RequestParam(required = false) Integer tableId) {
-        // La lista pubblica viene ordinata dal motore revenue-aware e arricchita con i segnali analytics.
-        Map<Long, MenuIntelligenceService.DishSignal> signals = menuIntelligenceService.getDishSignals(id);
-        menuService.ensureRestaurantServiceOpen(id);
-        return menuService.toDTOList(menuIntelligenceService.rankDishesByRevenue(id, sessionId, tableId))
+        List<Piatto> dishes = loadRankedPublicMenu(id, sessionId, tableId);
+        Map<Long, MenuIntelligenceService.DishSignal> signals = loadDishSignals(id);
+        return menuService.toDTOList(dishes)
                 .stream()
                 .filter(dto -> Boolean.TRUE.equals(dto.getDisponibile()))
                 .map(dto -> enrichWithSignal(dto, signals.get(dto.getId())))
@@ -100,6 +101,24 @@ public class MenuPublicController {
         dto.setViewToOrderRate(signal.viewToOrderRate());
         dto.setPerformanceLabel(signal.performanceLabel());
         return dto;
+    }
+
+    private List<Piatto> loadRankedPublicMenu(Long restaurantId, String sessionId, Integer tableId) {
+        try {
+            return menuIntelligenceService.rankDishesByRevenue(restaurantId, sessionId, tableId);
+        } catch (Exception ex) {
+            log.warn("Falling back to available public menu restaurantId={}", restaurantId, ex);
+            return menuService.getAvailablePiattiByRistoratore(restaurantId);
+        }
+    }
+
+    private Map<Long, MenuIntelligenceService.DishSignal> loadDishSignals(Long restaurantId) {
+        try {
+            return menuIntelligenceService.getDishSignals(restaurantId);
+        } catch (Exception ex) {
+            log.warn("Public menu dish signals unavailable restaurantId={}", restaurantId, ex);
+            return Map.of();
+        }
     }
 }
 
