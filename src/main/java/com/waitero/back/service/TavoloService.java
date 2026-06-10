@@ -178,6 +178,13 @@ public class TavoloService {
     }
 
     @Transactional(readOnly = true)
+    public Tavolo requireActiveTableByNumberOrId(Long restaurantId, Integer tableNumberOrId) {
+        return tavoloRepository.findByRistoratoreIdAndNumeroAndAttivoTrue(restaurantId, tableNumberOrId)
+                .or(() -> tavoloRepository.findByIdAndRistoratoreIdAndAttivoTrue(Long.valueOf(tableNumberOrId), restaurantId))
+                .orElseThrow(() -> new RuntimeException("Tavolo non trovato o non attivo"));
+    }
+
+    @Transactional(readOnly = true)
     public Tavolo requireActiveTableByPublicId(String tablePublicId) {
         Tavolo tavolo = tavoloRepository.findByTablePublicId(tablePublicId)
                 .orElseThrow(() -> new RuntimeException("Tavolo non trovato"));

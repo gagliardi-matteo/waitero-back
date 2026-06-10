@@ -12,12 +12,10 @@ import com.waitero.back.service.MenuService;
 import com.waitero.back.service.RistoratoreService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -95,7 +93,6 @@ public class MenuController {
     @PutMapping("/piatti/{id}")
     public PiattoDTO aggiornaPiatto(@PathVariable Long id, @RequestBody PiattoDTO dto) {
         Piatto piatto = menuService.getPiattoById(id);
-        rejectDecisionFieldWriteIfRequested(piatto, dto);
         menuService.updateFromDTO(piatto, dto);
         return menuService.toDTO(menuService.aggiornaPiatto(id, piatto));
     }
@@ -107,7 +104,6 @@ public class MenuController {
             @RequestPart(value = "file", required = false) MultipartFile file
     ) {
         Piatto piatto = menuService.getPiattoById(id);
-        rejectDecisionFieldWriteIfRequested(piatto, dto);
         menuService.updateFromDTO(piatto, dto);
 
         if (file != null && !file.isEmpty()) {
@@ -158,15 +154,6 @@ public class MenuController {
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .contentType(MediaType.parseMediaType("application/zip"))
                 .body(bytes);
-    }
-
-    private void rejectDecisionFieldWriteIfRequested(Piatto existing, PiattoDTO incoming) {
-        if (menuService.isDecisionFieldUpdateRequested(existing, incoming)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "consigliato e disponibile sono gestiti da Dish Intelligence"
-            );
-        }
     }
 
     private String attachment(String filename) {

@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface TavoloRepository extends JpaRepository<Tavolo, Long> {
     List<Tavolo> findAllByRistoratoreIdOrderByNumeroAsc(Long ristoratoreId);
+    Optional<Tavolo> findByIdAndRistoratoreIdAndAttivoTrue(Long id, Long ristoratoreId);
     Optional<Tavolo> findByRistoratoreIdAndNumero(Long ristoratoreId, Integer numero);
     Optional<Tavolo> findByRistoratoreIdAndNumeroAndAttivoTrue(Long ristoratoreId, Integer numero);
     Optional<Tavolo> findByTablePublicId(String tablePublicId);

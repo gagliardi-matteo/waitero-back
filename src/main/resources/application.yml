@@ -33,7 +33,7 @@ google:
   maps:
     api-key: ${GOOGLE_MAPS_API_KEY:}
   auth:
-    client-ids: ${GOOGLE_AUTH_CLIENT_IDS:910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com}
+    client-ids: ${GOOGLE_AUTH_CLIENT_IDS:910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com,910347869788-vh6osb5nv386a6cgc9hpl1vjeq4u9s6v.apps.googleusercontent.com}
 
 stripe:
   billing:

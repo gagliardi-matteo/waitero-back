@@ -74,14 +74,14 @@ public class MenuService {
     }
 
     public List<Piatto> getPiattiByRistoratore(Long id) {
-        return piattoRepo.findAllByRistoratoreIdWithCanonical(id).stream()
-                .filter(this::isAvailable)
-                .toList();
+        return piattoRepo.findAllByRistoratoreIdWithCanonical(id);
     }
 
     public List<Piatto> getPublicPiattiByRistoratore(Long id) {
         ensureRestaurantServiceOpen(id);
-        return getPiattiByRistoratore(id);
+        return getPiattiByRistoratore(id).stream()
+                .filter(this::isAvailable)
+                .toList();
     }
 
     public Piatto getPublicPiattoById(Long id) {
@@ -166,6 +166,12 @@ public class MenuService {
         entity.setCategoria(menuCategoryService.resolveCategory(restaurant, dto));
         entity.setIngredienti(normalizeText(dto.getIngredienti()));
         entity.setAllergeni(normalizeText(dto.getAllergeni()));
+        if (dto.getDisponibile() != null) {
+            entity.setDisponibile(dto.getDisponibile());
+        }
+        if (dto.getConsigliato() != null) {
+            entity.setConsigliato(dto.getConsigliato());
+        }
     }
 
     @Transactional
@@ -180,6 +186,12 @@ public class MenuService {
         esistente.setCategoria(nuovo.getCategoria());
         esistente.setIngredienti(normalizeText(nuovo.getIngredienti()));
         esistente.setAllergeni(normalizeText(nuovo.getAllergeni()));
+        if (nuovo.getDisponibile() != null) {
+            esistente.setDisponibile(nuovo.getDisponibile());
+        }
+        if (nuovo.getConsigliato() != null) {
+            esistente.setConsigliato(nuovo.getConsigliato());
+        }
         syncDishIngredients(esistente, esistente.getIngredienti());
         return piattoRepo.save(esistente);
     }

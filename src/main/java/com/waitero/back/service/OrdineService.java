@@ -82,8 +82,8 @@ public class OrdineService {
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new RuntimeException("Ordine vuoto");
         }
-        tavoloService.requireActiveTable(restaurantId, request.getTableId());
-        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), null, null, ExperimentService.VARIANT_HOLDOUT);
+        Tavolo tavolo = tavoloService.requireActiveTableByNumberOrId(restaurantId, request.getTableId());
+        return createOrAppendInternal(restaurantId, tavolo.getNumero(), request.getItems(), null, null, ExperimentService.VARIANT_HOLDOUT);
     }
 
     @Transactional(readOnly = true)
