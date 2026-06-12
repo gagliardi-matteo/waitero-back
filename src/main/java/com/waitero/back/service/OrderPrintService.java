@@ -13,8 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -29,11 +31,16 @@ public class OrderPrintService {
 
     @Transactional(readOnly = true)
     public void printOrder(Long ordineId) {
+        printOrder(ordineId, Map.of());
+    }
+
+    @Transactional(readOnly = true)
+    public void printOrder(Long ordineId, Map<String, Integer> newQuantitiesByLineKey) {
         Ordine ordine = ordineRepository.findById(ordineId)
                 .orElseThrow(() -> new RuntimeException("Ordine non trovato"));
         Long ristoranteId = ordine.getRistoratore().getId();
         List<Stampante> stampanti = stampanteRepository.findByRistoranteIdAndAbilitataTrue(ristoranteId);
-        String ticket = formatKitchenTicket(ordine);
+        String ticket = formatKitchenTicket(ordine, newQuantitiesByLineKey == null ? Map.of() : newQuantitiesByLineKey);
 
         log.info("[PRINT] Ordine {} pronto per POS Sunmi locale via evento SSE", ordine.getId());
 
@@ -58,7 +65,7 @@ public class OrderPrintService {
                 .orElseThrow(() -> new RuntimeException("Modello stampante non supportato: " + stampante.getModello()));
     }
 
-    private String formatKitchenTicket(Ordine ordine) {
+    private String formatKitchenTicket(Ordine ordine, Map<String, Integer> newQuantitiesByLineKey) {
         StringBuilder builder = new StringBuilder()
                 .append("========================\n")
                 .append("WAITERO\n")
@@ -69,8 +76,34 @@ public class OrderPrintService {
                 .append("Ora: ").append(ordine.getCreatedAt() != null ? TIME_FORMATTER.format(ordine.getCreatedAt()) : "-").append("\n\n")
                 .append("------------------------\n\n");
 
+        List<TicketLine> newLines = new ArrayList<>();
+        List<TicketLine> printedLines = new ArrayList<>();
         for (OrdineItem item : ordine.getItems()) {
-            builder.append(item.getQuantity()).append("x ").append(formatItemName(item)).append("\n");
+            int quantity = item.getQuantity() != null ? item.getQuantity() : 0;
+            int newQuantity = Math.min(newQuantitiesByLineKey.getOrDefault(orderLineKey(item), quantity), quantity);
+            int printedQuantity = Math.max(quantity - newQuantity, 0);
+            String itemName = formatItemName(item);
+
+            if (newQuantity > 0) {
+                newLines.add(new TicketLine(newQuantity, itemName));
+            }
+            if (printedQuantity > 0) {
+                printedLines.add(new TicketLine(printedQuantity, itemName));
+            }
+        }
+
+        if (!printedLines.isEmpty()) {
+            builder.append("NUOVI PIATTI\n\n");
+        }
+        for (TicketLine line : newLines) {
+            builder.append(line.quantity()).append("x ").append(line.name()).append("\n");
+        }
+
+        if (!printedLines.isEmpty()) {
+            builder.append("\nGIA STAMPATI\n\n");
+            for (TicketLine line : printedLines) {
+                builder.append(line.quantity()).append("x ").append(line.name()).append("\n");
+            }
         }
 
         if (ordine.getNoteCucina() != null && !ordine.getNoteCucina().isBlank()) {
@@ -97,6 +130,13 @@ public class OrderPrintService {
             return item.getNome();
         }
         return item.getNome() + " - " + item.getPortionLabel();
+    }
+
+    private String orderLineKey(OrdineItem item) {
+        String portionKey = item.getPortionKey() == null || item.getPortionKey().isBlank()
+                ? DishPortionService.DEFAULT_PORTION_KEY
+                : item.getPortionKey().trim();
+        return item.getPiatto().getId() + "::" + portionKey;
     }
 
     private String wrap(String value, int width) {
@@ -136,5 +176,8 @@ public class OrderPrintService {
             return stampante.getTipoConnessione().name();
         }
         return stampante.getIpAddress() + ":" + stampante.getPorta();
+    }
+
+    private record TicketLine(int quantity, String name) {
     }
 }

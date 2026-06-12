@@ -520,6 +520,7 @@ public class OrdineService {
             existingItemsByLineKey.put(orderLineKey(item.getPiatto().getId(), item.getPortionKey()), item);
         }
 
+        Map<String, Integer> newPrintQuantitiesByLineKey = new LinkedHashMap<>();
         for (CustomerOrderItemRequest itemRequest : itemsRequest) {
             if (itemRequest.getDishId() == null || itemRequest.getQuantity() == null || itemRequest.getQuantity() <= 0) {
                 continue;
@@ -538,6 +539,7 @@ public class OrdineService {
 
             PiattoPortionDTO selectedPortion = dishPortionService.resolvePortion(piatto, itemRequest.getPortionKey());
             String orderLineKey = orderLineKey(piatto.getId(), selectedPortion.getKey());
+            newPrintQuantitiesByLineKey.merge(orderLineKey, itemRequest.getQuantity(), Integer::sum);
 
             OrdineItem existing = existingItemsByLineKey.get(orderLineKey);
             if (existing != null) {
@@ -586,7 +588,7 @@ public class OrdineService {
                 saved.getTotale(),
                 saved.getItems().stream().mapToInt(OrdineItem::getQuantity).sum()
         );
-        orderPrintService.printOrder(saved.getId());
+        orderPrintService.printOrder(saved.getId(), newPrintQuantitiesByLineKey);
         orderStreamService.publishOrderUpdate(saved.getRistoratore().getId(), "ORDER_UPDATED", saved.getId(), saved.getStatus().name());
         orderStreamService.publishCustomerTableUpdate(saved.getRistoratore().getId(), saved.getTableId(), "ORDER_UPDATED");
         return toDTO(saved);
