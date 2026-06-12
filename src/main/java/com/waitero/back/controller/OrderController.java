@@ -75,6 +75,12 @@ public class OrderController {
         return ResponseEntity.ok(ordineService.payOrder(id, request));
     }
 
+    @PostMapping("/{id}/reprint")
+    public ResponseEntity<Void> reprintOrder(@PathVariable Long id) {
+        ordineService.reprintOrderForAuthenticatedRestaurant(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/stream")
     public SseEmitter stream(@RequestParam String token) {
         if (!jwtService.validateToken(token)) {

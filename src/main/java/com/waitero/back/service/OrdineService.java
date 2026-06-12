@@ -174,6 +174,25 @@ public class OrdineService {
     }
 
     @Transactional
+    public void reprintOrderForAuthenticatedRestaurant(Long orderId) {
+        Long ristoratoreId = getAuthenticatedRestaurantId();
+        Ordine ordine = ordineRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Ordine non trovato"));
+
+        if (!ordine.getRistoratore().getId().equals(ristoratoreId)) {
+            throw new RuntimeException("Ordine non accessibile");
+        }
+
+        orderPrintService.printOrder(ordine.getId());
+        orderStreamService.publishOrderUpdate(
+                ordine.getRistoratore().getId(),
+                "ORDER_REPRINT_REQUESTED",
+                ordine.getId(),
+                ordine.getStatus().name()
+        );
+    }
+
+    @Transactional
     public OrdineDTO payOrder(Long orderId, PaymentRequest request) {
         Long ristoratoreId = getAuthenticatedRestaurantId();
         Ordine ordine = ordineRepository.findById(orderId)
