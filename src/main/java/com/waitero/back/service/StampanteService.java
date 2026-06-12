@@ -5,6 +5,7 @@ import com.waitero.back.dto.StampanteResponse;
 import com.waitero.back.entity.Ristoratore;
 import com.waitero.back.entity.Stampante;
 import com.waitero.back.entity.TipoConnessione;
+import com.waitero.back.printer.PrinterAdapter;
 import com.waitero.back.repository.RistoratoreRepository;
 import com.waitero.back.repository.StampanteRepository;
 import com.waitero.back.security.AccessContextService;
@@ -26,6 +27,7 @@ public class StampanteService {
     private final StampanteRepository stampanteRepository;
     private final RistoratoreRepository ristoratoreRepository;
     private final AccessContextService accessContextService;
+    private final List<PrinterAdapter> printerAdapters;
 
     @Transactional
     public StampanteResponse create(StampanteRequest request) {
@@ -97,21 +99,23 @@ public class StampanteService {
     @Transactional(readOnly = true)
     public void testPrint(Long id) {
         Stampante stampante = getOwnedStampante(id);
-        log.info("""
-                [TEST PRINT]
+        String ticket = """
+                ========================
+                WAITERO
+                STAMPA DI PROVA
+                ========================
 
-                Stampante esterna: {}
-                Modello: {}
-                Connessione: {}
-                Endpoint: {}
+                Stampante: %s
+                Modello: %s
+                Endpoint: %s
 
-                Stampa reale non ancora implementata.
-                """,
-                stampante.getNome(),
-                stampante.getModello(),
-                stampante.getTipoConnessione(),
-                formatEndpoint(stampante)
-        );
+                Se leggi questo testo,
+                la stampante e configurata.
+
+                ========================
+                """.formatted(stampante.getNome(), stampante.getModello(), formatEndpoint(stampante));
+        resolveAdapter(stampante).print(stampante, ticket);
+        log.info("[TEST PRINT] Stampa di prova inviata a {} ({})", stampante.getNome(), formatEndpoint(stampante));
     }
 
     public StampanteResponse toResponse(Stampante stampante) {
@@ -179,6 +183,13 @@ public class StampanteService {
     private String normalizeNullableText(String value) {
         String normalized = normalizeText(value);
         return normalized.isBlank() ? null : normalized;
+    }
+
+    private PrinterAdapter resolveAdapter(Stampante stampante) {
+        return printerAdapters.stream()
+                .filter(adapter -> adapter.supports(stampante.getModello()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Modello stampante non supportato: " + stampante.getModello()));
     }
 
     private String formatEndpoint(Stampante stampante) {

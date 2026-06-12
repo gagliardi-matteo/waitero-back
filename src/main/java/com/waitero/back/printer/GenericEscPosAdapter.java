@@ -1,10 +1,15 @@
 package com.waitero.back.printer;
 
 import com.waitero.back.entity.ModelloStampante;
+import com.waitero.back.entity.Stampante;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class GenericEscPosAdapter implements PrinterAdapter {
+
+    private final TcpEscPosPrinterClient tcpClient;
 
     @Override
     public boolean supports(ModelloStampante modello) {
@@ -15,13 +20,7 @@ public class GenericEscPosAdapter implements PrinterAdapter {
     }
 
     @Override
-    public void print(String contenuto) {
-        // TODO stampa reale TCP/IP.
-        // TODO stampa ESC/POS.
-        // TODO stampa Bluetooth.
-        // TODO gestione piu stampanti contemporaneamente.
-        // TODO routing per reparto: cucina, bar, pizzeria.
-        // TODO associazione categorie piatti -> stampanti.
-        // TODO gestione errori e retry di stampa.
+    public void print(Stampante stampante, String contenuto) {
+        tcpClient.print(stampante, contenuto);
     }
 }
