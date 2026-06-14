@@ -46,6 +46,12 @@ public class Tavolo {
     @Column(nullable = false)
     private Boolean attivo;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean waiterCallPending = false;
+
+    private LocalDateTime waiterCalledAt;
+
     @Column(nullable = false, length = 1024)
     private String qrToken;
 

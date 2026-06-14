@@ -72,6 +72,7 @@ public class TavoloService {
                 .nome(normalizeName(request))
                 .coperti(request.getCoperti())
                 .attivo(isActive(request))
+                .waiterCallPending(false)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -117,6 +118,7 @@ public class TavoloService {
                     .nome(normalizeName(singleRequest))
                     .coperti(singleRequest.getCoperti())
                     .attivo(isActive(singleRequest))
+                    .waiterCallPending(false)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
@@ -265,6 +267,25 @@ public class TavoloService {
                 .ifPresent(table -> tableDeviceRepository.deleteAllByTavoloId(table.getId()));
     }
 
+    @Transactional
+    public void markWaiterCall(Long restaurantId, Integer tableNumber) {
+        Tavolo tavolo = requireActiveTable(restaurantId, tableNumber);
+        tavolo.setWaiterCallPending(true);
+        tavolo.setWaiterCalledAt(LocalDateTime.now());
+        tavolo.setUpdatedAt(LocalDateTime.now());
+        tavoloRepository.save(tavolo);
+    }
+
+    @Transactional
+    public void clearWaiterCallForAuthenticatedRestaurant(Long tableId) {
+        Long restaurantId = getAuthenticatedRestaurantId();
+        Tavolo tavolo = getOwnedTable(tableId, restaurantId);
+        tavolo.setWaiterCallPending(false);
+        tavolo.setWaiterCalledAt(null);
+        tavolo.setUpdatedAt(LocalDateTime.now());
+        tavoloRepository.save(tavolo);
+    }
+
     public TavoloDTO toDTO(Tavolo tavolo) {
         return TavoloDTO.builder()
                 .id(tavolo.getId())
@@ -274,6 +295,8 @@ public class TavoloService {
                 .nome(tavolo.getNome())
                 .coperti(tavolo.getCoperti())
                 .attivo(tavolo.getAttivo())
+                .waiterCallPending(Boolean.TRUE.equals(tavolo.getWaiterCallPending()))
+                .waiterCalledAt(tavolo.getWaiterCalledAt())
                 .qrToken(tavolo.getQrToken())
                 .createdAt(tavolo.getCreatedAt())
                 .updatedAt(tavolo.getUpdatedAt())

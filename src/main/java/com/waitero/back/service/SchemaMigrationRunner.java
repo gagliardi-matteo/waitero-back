@@ -44,6 +44,7 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         ensureMenuCategoryTable();
         ensureBackofficeUserTable();
         ensureTablePublicIdColumn();
+        ensureTableWaiterCallColumns();
         ensureDishColumns();
         ensureCustomerOrderColumns();
         ensureCustomerOrderItemColumns();
@@ -301,6 +302,24 @@ public class SchemaMigrationRunner implements ApplicationRunner {
                 """
         );
         jdbcTemplate.execute("ALTER TABLE tavoli ALTER COLUMN table_public_id SET NOT NULL");
+    }
+
+    private void ensureTableWaiterCallColumns() {
+        if (!tableExists("tavoli")) {
+            return;
+        }
+
+        if (!columnExists("tavoli", "waiter_call_pending")) {
+            jdbcTemplate.execute("ALTER TABLE tavoli ADD COLUMN waiter_call_pending boolean NOT NULL DEFAULT false");
+            log.info("Added missing column tavoli.waiter_call_pending");
+        }
+        if (!columnExists("tavoli", "waiter_called_at")) {
+            jdbcTemplate.execute("ALTER TABLE tavoli ADD COLUMN waiter_called_at timestamp(6) without time zone");
+            log.info("Added missing column tavoli.waiter_called_at");
+        }
+        jdbcTemplate.execute("UPDATE tavoli SET waiter_call_pending = false WHERE waiter_call_pending IS NULL");
+        jdbcTemplate.execute("ALTER TABLE tavoli ALTER COLUMN waiter_call_pending SET NOT NULL");
+        jdbcTemplate.execute("ALTER TABLE tavoli ALTER COLUMN waiter_call_pending SET DEFAULT false");
     }
 
     private void ensureDishColumns() {

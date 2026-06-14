@@ -15,6 +15,8 @@ public class TavoloDTO {
     private String nome;
     private Integer coperti;
     private Boolean attivo;
+    private Boolean waiterCallPending;
+    private LocalDateTime waiterCalledAt;
     private String qrToken;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

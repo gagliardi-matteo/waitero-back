@@ -44,6 +44,12 @@ public class TavoloController {
         return ResponseEntity.ok(tavoloService.regenerateQrTokenForAuthenticatedRestaurant(id));
     }
 
+    @PostMapping("/{id}/clear-waiter-call")
+    public ResponseEntity<Void> clearWaiterCall(@PathVariable Long id) {
+        tavoloService.clearWaiterCallForAuthenticatedRestaurant(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTable(@PathVariable Long id) {
         tavoloService.deleteForAuthenticatedRestaurant(id);

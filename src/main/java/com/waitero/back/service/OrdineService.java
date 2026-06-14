@@ -70,6 +70,7 @@ public class OrdineService {
 
         Long restaurantId = Long.parseLong(request.getRestaurantId());
         Tavolo tavolo = tavoloService.requireActiveTable(restaurantId, request.getTableId());
+        tavoloService.markWaiterCall(restaurantId, tavolo.getNumero());
         orderStreamService.publishWaiterCall(restaurantId, tavolo.getNumero());
     }
 
