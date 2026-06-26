@@ -241,7 +241,7 @@ public class TavoloService {
             }
 
             Tavolo tavolo = requireActiveTable(parsedRestaurantId, tableId);
-            return tableDeviceRepository.findByTavoloIdAndDeviceId(tavolo.getId(), deviceId.trim())
+            return tableDeviceRepository.findFirstByTavoloIdAndDeviceIdOrderByLastSeenDescIdDesc(tavolo.getId(), deviceId.trim())
                     .map(device -> {
                         if (fingerprint == null || fingerprint.isBlank() || device.getFingerprint() == null || device.getFingerprint().isBlank()) {
                             return true;

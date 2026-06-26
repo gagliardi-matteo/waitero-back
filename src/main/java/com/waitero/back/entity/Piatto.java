@@ -17,6 +17,7 @@ public class Piatto {
     private Long id;
 
     private String nome;
+    @Column(columnDefinition = "text")
     private String descrizione;
     private BigDecimal prezzo;
     private Boolean disponibile;

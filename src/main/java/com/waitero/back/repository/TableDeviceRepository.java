@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface TableDeviceRepository extends JpaRepository<TableDevice, Long> {
-    Optional<TableDevice> findByTavoloIdAndDeviceId(Long tableId, String deviceId);
+    Optional<TableDevice> findFirstByTavoloIdAndDeviceIdOrderByLastSeenDescIdDesc(Long tableId, String deviceId);
     boolean existsByTavoloIdAndDeviceId(Long tableId, String deviceId);
     void deleteAllByTavoloId(Long tableId);
     long deleteByLastSeenBefore(LocalDateTime cutoff);

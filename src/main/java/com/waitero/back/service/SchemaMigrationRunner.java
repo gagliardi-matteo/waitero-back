@@ -327,6 +327,10 @@ public class SchemaMigrationRunner implements ApplicationRunner {
             return;
         }
 
+        if (columnExists("piatto", "descrizione")) {
+            jdbcTemplate.execute("ALTER TABLE piatto ALTER COLUMN descrizione TYPE text");
+        }
+
         if (!columnExists("piatto", "ingredienti")) {
             jdbcTemplate.execute("ALTER TABLE piatto ADD COLUMN ingredienti varchar(512)");
             log.info("Added missing column piatto.ingredienti");

@@ -44,7 +44,6 @@ public class MenuService {
     private final PiattoRepository piattoRepo;
     private final RistoratoreRepository ristoratoreRepo;
     private final ServiceHourRepository serviceHourRepository;
-    private final DishNormalizationService dishNormalizationService;
     private final PiattoIngredienteRepository piattoIngredienteRepository;
     private final PiattoIngredienteRistoratoreRepository piattoIngredienteRistoratoreRepository;
     private final IngredienteRepository ingredienteRepository;
@@ -102,7 +101,6 @@ public class MenuService {
     public Piatto creaPiatto(Piatto piatto) {
         Ristoratore ristoratore = getRistoratoreAutenticato();
         piatto.setRistoratore(ristoratore);
-        piatto.setPiattoCanonicale(dishNormalizationService.normalizeDish(piatto.getNome()));
         if (piatto.getConsigliato() == null) {
             piatto.setConsigliato(false);
         }
@@ -143,9 +141,6 @@ public class MenuService {
             piatto.setConsigliato(dto.getConsigliato());
         } else if (isNew || piatto.getConsigliato() == null) {
             piatto.setConsigliato(false);
-        }
-        if (isNew) {
-            piatto.setPiattoCanonicale(dishNormalizationService.normalizeDish(piatto.getNome()));
         }
 
         Piatto saved = piattoRepo.save(piatto);

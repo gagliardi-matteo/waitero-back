@@ -11,11 +11,14 @@ import com.waitero.back.repository.OrdineRepository;
 import com.waitero.back.repository.TableAccessLogRepository;
 import com.waitero.back.repository.TableDeviceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.CRC32;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class TableAccessService {
     private final TableAccessLogRepository tableAccessLogRepository;
     private final OrderStreamService orderStreamService;
     private final PrivacyProtectionService privacyProtectionService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Transactional
     public SecureTableAccessResponse validateAndRegister(SecureTableAccessRequest request) {
@@ -83,7 +87,7 @@ public class TableAccessService {
         }
 
         boolean hasActiveOrder = ordineRepository.existsByRistoratoreIdAndTableIdAndStatusIn(restaurant.getId(), tavolo.getNumero(), ACTIVE_STATUSES);
-        TableDevice existingDevice = tableDeviceRepository.findByTavoloIdAndDeviceId(tavolo.getId(), deviceId).orElse(null);
+        TableDevice existingDevice = tableDeviceRepository.findFirstByTavoloIdAndDeviceIdOrderByLastSeenDescIdDesc(tavolo.getId(), deviceId).orElse(null);
 
         if (existingDevice == null && hasActiveOrder) {
             risk.score += 3;
@@ -122,7 +126,8 @@ public class TableAccessService {
         }
 
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        TableDevice device = tableDeviceRepository.findByTavoloIdAndDeviceId(tavolo.getId(), deviceId)
+        lockTableDeviceRegistration(tavolo.getId(), deviceId);
+        TableDevice device = tableDeviceRepository.findFirstByTavoloIdAndDeviceIdOrderByLastSeenDescIdDesc(tavolo.getId(), deviceId)
                 .orElseGet(() -> TableDevice.builder()
                         .tavolo(tavolo)
                         .deviceId(deviceId)
@@ -135,6 +140,17 @@ public class TableAccessService {
             device.setFirstSeen(now);
         }
         tableDeviceRepository.save(device);
+    }
+
+    private void lockTableDeviceRegistration(Long tableId, String deviceId) {
+        long lockKey = tableDeviceLockKey(tableId, deviceId);
+        jdbcTemplate.query("SELECT pg_advisory_xact_lock(?)", rs -> null, lockKey);
+    }
+
+    private long tableDeviceLockKey(Long tableId, String deviceId) {
+        CRC32 crc32 = new CRC32();
+        crc32.update((tableId + ":" + deviceId).getBytes(StandardCharsets.UTF_8));
+        return crc32.getValue();
     }
 
     private void logAccess(Tavolo tavolo, SecureTableAccessRequest request, int riskScore, String reason) {
