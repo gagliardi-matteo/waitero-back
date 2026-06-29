@@ -454,9 +454,12 @@ public class SchemaMigrationRunner implements ApplicationRunner {
             log.info("Added missing column customer_orders.session_id");
         }
         if (!columnExists("customer_orders", "location_unverified")) {
-            jdbcTemplate.execute("ALTER TABLE customer_orders ADD COLUMN location_unverified boolean NOT NULL DEFAULT false");
+            jdbcTemplate.execute("ALTER TABLE customer_orders ADD COLUMN location_unverified boolean DEFAULT false");
             log.info("Added missing column customer_orders.location_unverified");
         }
+        jdbcTemplate.execute("UPDATE customer_orders SET location_unverified = false WHERE location_unverified IS NULL");
+        jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN location_unverified SET DEFAULT false");
+        jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN location_unverified SET NOT NULL");
         jdbcTemplate.execute("UPDATE customer_orders SET variant = 'A' WHERE variant IS NULL OR btrim(variant) = ''");
         jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN variant SET NOT NULL");
         jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN variant TYPE varchar(20)");
@@ -625,7 +628,15 @@ public class SchemaMigrationRunner implements ApplicationRunner {
 
     private void ensureTableSecurityTables() {
         if (tableExists("table_device")) {
+            if (!columnExists("table_device", "location_unverified")) {
+                jdbcTemplate.execute("ALTER TABLE table_device ADD COLUMN location_unverified boolean DEFAULT false");
+                log.info("Added missing column table_device.location_unverified");
+            }
+            jdbcTemplate.execute("UPDATE table_device SET location_unverified = false WHERE location_unverified IS NULL");
+            jdbcTemplate.execute("ALTER TABLE table_device ALTER COLUMN location_unverified SET DEFAULT false");
+            jdbcTemplate.execute("ALTER TABLE table_device ALTER COLUMN location_unverified SET NOT NULL");
             jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_table_device_last_seen ON table_device(last_seen)");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_table_device_location_unverified ON table_device(table_id, device_id, location_unverified) WHERE location_unverified = true");
         }
         if (tableExists("table_access_log")) {
             jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_table_access_log_timestamp ON table_access_log(timestamp)");

@@ -35,4 +35,8 @@ public class TableDevice {
 
     @Column(name = "last_seen", nullable = false)
     private LocalDateTime lastSeen;
+
+    @Column(name = "location_unverified")
+    @Builder.Default
+    private Boolean locationUnverified = false;
 }

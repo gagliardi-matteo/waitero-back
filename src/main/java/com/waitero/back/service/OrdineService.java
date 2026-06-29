@@ -9,6 +9,7 @@ import com.waitero.back.repository.OrdineRepository;
 import com.waitero.back.repository.PiattoRepository;
 import com.waitero.back.repository.RistoratoreRepository;
 import com.waitero.back.repository.TableAccessLogRepository;
+import com.waitero.back.repository.TableDeviceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -47,6 +48,7 @@ public class OrdineService {
     private final DishPortionService dishPortionService;
     private final OrderPrintService orderPrintService;
     private final TableAccessLogRepository tableAccessLogRepository;
+    private final TableDeviceRepository tableDeviceRepository;
 
     @Transactional
     public OrdineDTO createOrAppend(CustomerOrderRequest request) {
@@ -532,11 +534,24 @@ public class OrdineService {
             return false;
         }
 
+        String normalizedDeviceId = deviceId.trim();
+        boolean currentDeviceLocationUnverified = tableDeviceRepository
+                .findFirstByTavoloRistoratoreIdAndTavoloNumeroAndDeviceIdOrderByLastSeenDescIdDesc(
+                        restaurantId,
+                        tableId,
+                        normalizedDeviceId
+                )
+                .map(device -> Boolean.TRUE.equals(device.getLocationUnverified()))
+                .orElse(false);
+        if (currentDeviceLocationUnverified) {
+            return true;
+        }
+
         return tableAccessLogRepository
                 .findFirstByTavoloRistoratoreIdAndTavoloNumeroAndDeviceIdOrderByTimestampDescIdDesc(
                         restaurantId,
                         tableId,
-                        deviceId.trim()
+                        normalizedDeviceId
                 )
                 .map(log -> log.getReason() != null && log.getReason().contains("location_unverified"))
                 .orElse(false);

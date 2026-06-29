@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface TableDeviceRepository extends JpaRepository<TableDevice, Long> {
     Optional<TableDevice> findFirstByTavoloIdAndDeviceIdOrderByLastSeenDescIdDesc(Long tableId, String deviceId);
+    Optional<TableDevice> findFirstByTavoloRistoratoreIdAndTavoloNumeroAndDeviceIdOrderByLastSeenDescIdDesc(Long restaurantId, Integer tableId, String deviceId);
     boolean existsByTavoloIdAndDeviceId(Long tableId, String deviceId);
     void deleteAllByTavoloId(Long tableId);
     long deleteByLastSeenBefore(LocalDateTime cutoff);

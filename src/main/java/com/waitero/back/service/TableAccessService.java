@@ -57,7 +57,7 @@ public class TableAccessService {
             return denied("ACCESS_DENIED_DISTANCE", "Accesso negato: dispositivo troppo distante dal locale", tavolo, risk.score);
         }
 
-        registerDevice(tavolo, request);
+        registerDevice(tavolo, request, risk.locationUnverified);
         logAccess(tavolo, request, risk.score, risk.reasonString());
         maybePublishAlert(restaurantId, tableId, risk);
 
@@ -122,7 +122,7 @@ public class TableAccessService {
         return risk;
     }
 
-    private void registerDevice(Tavolo tavolo, SecureTableAccessRequest request) {
+    private void registerDevice(Tavolo tavolo, SecureTableAccessRequest request, boolean locationUnverified) {
         String deviceId = privacyProtectionService.normalizeDeviceId(request.getDeviceId());
         if (deviceId == null) {
             return;
@@ -139,6 +139,7 @@ public class TableAccessService {
 
         device.setFingerprint(privacyProtectionService.fingerprintHash(request.getFingerprint()));
         device.setLastSeen(now);
+        device.setLocationUnverified(locationUnverified);
         if (device.getFirstSeen() == null) {
             device.setFirstSeen(now);
         }
