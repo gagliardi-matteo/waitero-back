@@ -8,6 +8,7 @@ import com.waitero.back.repository.OrdinePagamentoRepository;
 import com.waitero.back.repository.OrdineRepository;
 import com.waitero.back.repository.PiattoRepository;
 import com.waitero.back.repository.RistoratoreRepository;
+import com.waitero.back.repository.TableAccessLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -45,13 +46,20 @@ public class OrdineService {
     private final AccessContextService accessContextService;
     private final DishPortionService dishPortionService;
     private final OrderPrintService orderPrintService;
+    private final TableAccessLogRepository tableAccessLogRepository;
 
     @Transactional
     public OrdineDTO createOrAppend(CustomerOrderRequest request) {
         validateCustomerRequest(request);
         Long restaurantId = Long.parseLong(request.getRestaurantId());
         String variant = experimentService.getVariant(request.getSessionId(), restaurantId, request.getTableId());
-        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), request.getNoteCucina(), request.getSessionId(), variant, Boolean.TRUE.equals(request.getLocationUnverified()));
+        boolean locationUnverified = resolveLocationUnverified(
+                restaurantId,
+                request.getTableId(),
+                request.getDeviceId(),
+                request.getLocationUnverified()
+        );
+        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), request.getNoteCucina(), request.getSessionId(), variant, locationUnverified);
     }
 
     @Transactional
@@ -513,6 +521,25 @@ public class OrdineService {
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new RuntimeException("Ordine vuoto");
         }
+    }
+
+    private boolean resolveLocationUnverified(Long restaurantId, Integer tableId, String deviceId, Boolean requestLocationUnverified) {
+        if (Boolean.TRUE.equals(requestLocationUnverified)) {
+            return true;
+        }
+
+        if (restaurantId == null || tableId == null || deviceId == null || deviceId.isBlank()) {
+            return false;
+        }
+
+        return tableAccessLogRepository
+                .findFirstByTavoloRistoratoreIdAndTavoloNumeroAndDeviceIdOrderByTimestampDescIdDesc(
+                        restaurantId,
+                        tableId,
+                        deviceId.trim()
+                )
+                .map(log -> log.getReason() != null && log.getReason().contains("location_unverified"))
+                .orElse(false);
     }
 
     private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina, String sessionId, String experimentVariant, boolean locationUnverified) {
