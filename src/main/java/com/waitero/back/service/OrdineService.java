@@ -13,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import com.waitero.back.security.AccessContextService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -603,6 +605,7 @@ public class OrdineService {
         reconcileOrderStatusAfterMutation(ordine);
         ordine.setUpdatedAt(LocalDateTime.now());
         Ordine saved = ordineRepository.save(ordine);
+        ordineRepository.flush();
         upsellService.refreshAggregatesForRestaurant(saved.getRistoratore().getId());
         if (saved.getStatus() == OrderStatus.PAGATO) {
             tavoloService.clearRegisteredDevices(saved.getRistoratore().getId(), saved.getTableId());
@@ -618,9 +621,27 @@ public class OrdineService {
                 saved.getItems().stream().mapToInt(OrdineItem::getQuantity).sum()
         );
         orderPrintService.printOrder(saved.getId(), newPrintQuantitiesByLineKey);
-        orderStreamService.publishOrderUpdate(saved.getRistoratore().getId(), "ORDER_UPDATED", saved.getId(), saved.getStatus().name());
-        orderStreamService.publishCustomerTableUpdate(saved.getRistoratore().getId(), saved.getTableId(), "ORDER_UPDATED");
+        publishOrderUpdatedAfterCommit(saved);
         return toDTO(saved);
+    }
+
+    private void publishOrderUpdatedAfterCommit(Ordine saved) {
+        Runnable publish = () -> {
+            orderStreamService.publishOrderUpdate(saved.getRistoratore().getId(), "ORDER_UPDATED", saved.getId(), saved.getStatus().name());
+            orderStreamService.publishCustomerTableUpdate(saved.getRistoratore().getId(), saved.getTableId(), "ORDER_UPDATED");
+        };
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            publish.run();
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                publish.run();
+            }
+        });
     }
 
 
