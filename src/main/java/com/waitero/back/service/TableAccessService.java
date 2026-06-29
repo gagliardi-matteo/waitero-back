@@ -37,6 +37,13 @@ public class TableAccessService {
 
     @Transactional
     public SecureTableAccessResponse validateAndRegister(SecureTableAccessRequest request) {
+        /*DEBUG*/
+        System.out.println("========== TABLE ACCESS ==========");
+        System.out.println("locationUnavailable request = " + request.getLocationUnavailable());
+        System.out.println("latitude = " + request.getLatitude());
+        System.out.println("longitude = " + request.getLongitude());
+        /*DEBUG*/
+
         Tavolo tavolo = tavoloService.resolveActiveTableForAccess(request.getTablePublicId(), request.getRestaurantId(), request.getTableId());
         Long restaurantId = tavolo.getRistoratore().getId();
         Integer tableId = tavolo.getNumero();
@@ -51,6 +58,11 @@ public class TableAccessService {
         }
 
         AccessRisk risk = evaluateRisk(tavolo, request);
+        /*DEBUG*/
+        System.out.println("risk.locationUnverified = " + risk.locationUnverified);
+        System.out.println("risk.score = " + risk.score);
+        System.out.println("risk.reasons = " + risk.reasonString());
+        /*DEBUG*/
         if (risk.distanceDenied) {
             logAccess(tavolo, request, risk.score, risk.reasonString());
             maybePublishAlert(restaurantId, tableId, risk);
@@ -61,7 +73,7 @@ public class TableAccessService {
         logAccess(tavolo, request, risk.score, risk.reasonString());
         maybePublishAlert(restaurantId, tableId, risk);
 
-        return SecureTableAccessResponse.builder()
+        SecureTableAccessResponse response = SecureTableAccessResponse.builder()
                 .allowed(true)
                 .status("OK")
                 .message("Accesso consentito")
@@ -73,6 +85,13 @@ public class TableAccessService {
                 .riskScore(risk.score)
                 .locationUnverified(risk.locationUnverified)
                 .build();
+
+        /*DEBUG*/
+        System.out.println("response.locationUnverified = " + response.getLocationUnverified());
+        System.out.println("response = " + response);
+        /*DEBUG*/
+
+        return response;
     }
 
     private AccessRisk evaluateRisk(Tavolo tavolo, SecureTableAccessRequest request) {
@@ -104,6 +123,10 @@ public class TableAccessService {
         }
 
         if (request.getLatitude() == null || request.getLongitude() == null || Boolean.TRUE.equals(request.getLocationUnavailable())) {
+
+            /*DEBUG*/
+            System.out.println(">>> LOCATION UNVERIFIED <<<");
+            /*DEBUG*/
             risk.locationUnverified = true;
             risk.reasons.add("location_unverified");
         } else if (restaurant.getLatitude() != null && restaurant.getLongitude() != null && restaurant.getAllowedRadiusMeters() != null) {
