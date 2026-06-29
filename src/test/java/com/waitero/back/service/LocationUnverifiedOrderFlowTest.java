@@ -22,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -123,5 +125,42 @@ class LocationUnverifiedOrderFlowTest {
         );
 
         assertThat(result).isTrue();
+    }
+
+    @Test
+    void tableAccessBlocksWhenLocationIsProvidedButOutsideAllowedRadius() {
+        Ristoratore restaurant = Ristoratore.builder()
+                .id(10L)
+                .latitude(45.0)
+                .longitude(9.0)
+                .allowedRadiusMeters(100)
+                .build();
+        Tavolo table = Tavolo.builder()
+                .id(20L)
+                .numero(7)
+                .tablePublicId("table-public")
+                .qrToken("qr-token")
+                .ristoratore(restaurant)
+                .build();
+        SecureTableAccessRequest request = new SecureTableAccessRequest();
+        request.setTablePublicId("table-public");
+        request.setQrToken("qr-token");
+        request.setDeviceId("device-1");
+        request.setLatitude(0.0);
+        request.setLongitude(0.0);
+        request.setLocationUnavailable(false);
+
+        when(tavoloService.resolveActiveTableForAccess("table-public", null, null)).thenReturn(table);
+        when(tavoloService.validateQrAccess("qr-token", "10", 7)).thenReturn(true);
+        when(tavoloService.isWithinServiceHours(10L)).thenReturn(true);
+        when(privacyProtectionService.normalizeDeviceId("device-1")).thenReturn("device-1");
+        when(tableDeviceRepository.findFirstByTavoloIdAndDeviceIdOrderByLastSeenDescIdDesc(20L, "device-1")).thenReturn(Optional.empty());
+        when(ordineRepository.existsByRistoratoreIdAndTableIdAndStatusIn(eq(10L), eq(7), anyList())).thenReturn(false);
+
+        var response = tableAccessService.validateAndRegister(request);
+
+        assertThat(response.isAllowed()).isFalse();
+        assertThat(response.getStatus()).isEqualTo("ACCESS_DENIED_DISTANCE");
+        verify(tableDeviceRepository, never()).save(any());
     }
 }

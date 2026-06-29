@@ -25,7 +25,6 @@ import java.util.zip.CRC32;
 public class TableAccessService {
 
     private static final List<OrderStatus> ACTIVE_STATUSES = List.of(OrderStatus.APERTO, OrderStatus.PARZIALMENTE_PAGATO);
-    private static final double MAX_ACCURACY_TOLERANCE_METERS = 250.0;
 
     private final TavoloService tavoloService;
     private final OrdineRepository ordineRepository;
@@ -37,13 +36,6 @@ public class TableAccessService {
 
     @Transactional
     public SecureTableAccessResponse validateAndRegister(SecureTableAccessRequest request) {
-        /*DEBUG*/
-        System.out.println("========== TABLE ACCESS ==========");
-        System.out.println("locationUnavailable request = " + request.getLocationUnavailable());
-        System.out.println("latitude = " + request.getLatitude());
-        System.out.println("longitude = " + request.getLongitude());
-        /*DEBUG*/
-
         Tavolo tavolo = tavoloService.resolveActiveTableForAccess(request.getTablePublicId(), request.getRestaurantId(), request.getTableId());
         Long restaurantId = tavolo.getRistoratore().getId();
         Integer tableId = tavolo.getNumero();
@@ -58,11 +50,6 @@ public class TableAccessService {
         }
 
         AccessRisk risk = evaluateRisk(tavolo, request);
-        /*DEBUG*/
-        System.out.println("risk.locationUnverified = " + risk.locationUnverified);
-        System.out.println("risk.score = " + risk.score);
-        System.out.println("risk.reasons = " + risk.reasonString());
-        /*DEBUG*/
         if (risk.distanceDenied) {
             logAccess(tavolo, request, risk.score, risk.reasonString());
             maybePublishAlert(restaurantId, tableId, risk);
@@ -85,11 +72,6 @@ public class TableAccessService {
                 .riskScore(risk.score)
                 .locationUnverified(risk.locationUnverified)
                 .build();
-
-        /*DEBUG*/
-        System.out.println("response.locationUnverified = " + response.getLocationUnverified());
-        System.out.println("response = " + response);
-        /*DEBUG*/
 
         return response;
     }
@@ -123,22 +105,14 @@ public class TableAccessService {
         }
 
         if (request.getLatitude() == null || request.getLongitude() == null || Boolean.TRUE.equals(request.getLocationUnavailable())) {
-
-            /*DEBUG*/
-            System.out.println(">>> LOCATION UNVERIFIED <<<");
-            /*DEBUG*/
             risk.locationUnverified = true;
             risk.reasons.add("location_unverified");
         } else if (restaurant.getLatitude() != null && restaurant.getLongitude() != null && restaurant.getAllowedRadiusMeters() != null) {
             double distance = haversineMeters(restaurant.getLatitude(), restaurant.getLongitude(), request.getLatitude(), request.getLongitude());
-            double accuracyTolerance = normalizedAccuracyTolerance(request.getAccuracy());
-            if (distance > restaurant.getAllowedRadiusMeters() + accuracyTolerance) {
+            if (distance > restaurant.getAllowedRadiusMeters()) {
                 risk.score += 5;
                 risk.distanceDenied = true;
                 risk.reasons.add("distance_outside_radius");
-            } else if (distance > restaurant.getAllowedRadiusMeters()) {
-                risk.score += 1;
-                risk.reasons.add("distance_near_radius_with_accuracy_tolerance");
             }
         }
 
@@ -215,13 +189,6 @@ public class TableAccessService {
                 .riskScore(riskScore)
                 .locationUnverified(false)
                 .build();
-    }
-
-    private double normalizedAccuracyTolerance(Double accuracy) {
-        if (accuracy == null || accuracy.isNaN() || accuracy <= 0) {
-            return 0.0;
-        }
-        return Math.min(accuracy, MAX_ACCURACY_TOLERANCE_METERS);
     }
 
     private String normalize(String value) {
