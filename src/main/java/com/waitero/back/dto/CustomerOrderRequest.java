@@ -13,5 +13,6 @@ public class CustomerOrderRequest {
     private String fingerprint;
     private String sessionId;
     private String noteCucina;
+    private Boolean locationUnverified;
     private List<CustomerOrderItemRequest> items;
 }

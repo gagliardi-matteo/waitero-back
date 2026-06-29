@@ -22,6 +22,7 @@ public class OrdineDTO {
     private BigDecimal totale;
     private BigDecimal paidAmount;
     private BigDecimal remainingAmount;
+    private Boolean locationUnverified;
     private List<OrdineItemDTO> items;
     private List<OrdinePaymentDTO> payments;
 }

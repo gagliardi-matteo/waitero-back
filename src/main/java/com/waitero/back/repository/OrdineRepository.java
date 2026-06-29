@@ -27,12 +27,13 @@ public interface OrdineRepository extends JpaRepository<Ordine, Long> {
                 o.created_at as createdAt,
                 o.updated_at as updatedAt,
                 o.totale as totale,
+                o.location_unverified as locationUnverified,
                 coalesce(sum(oi.quantity), 0) as itemCount
             from customer_orders o
             left join customer_order_items oi on oi.ordine_id = o.id
             where o.ristoratore_id = :restaurantId
               and o.status in (:statuses)
-            group by o.id, o.table_id, o.status, o.paid_at, o.created_at, o.updated_at, o.totale
+            group by o.id, o.table_id, o.status, o.paid_at, o.created_at, o.updated_at, o.totale, o.location_unverified
             order by o.updated_at desc, o.id desc
             """, nativeQuery = true)
     List<OrderSummaryProjection> findOrderSummariesByRestaurantAndStatuses(
@@ -49,11 +50,12 @@ public interface OrdineRepository extends JpaRepository<Ordine, Long> {
                 o.created_at as createdAt,
                 o.updated_at as updatedAt,
                 o.totale as totale,
+                o.location_unverified as locationUnverified,
                 coalesce(sum(oi.quantity), 0) as itemCount
             from customer_orders o
             left join customer_order_items oi on oi.ordine_id = o.id
             where o.ristoratore_id = :restaurantId
-            group by o.id, o.table_id, o.status, o.paid_at, o.created_at, o.updated_at, o.totale
+            group by o.id, o.table_id, o.status, o.paid_at, o.created_at, o.updated_at, o.totale, o.location_unverified
             order by coalesce(o.paid_at, o.updated_at) desc, o.id desc
             """, nativeQuery = true)
     List<OrderSummaryProjection> findAllOrderSummariesByRestaurant(@Param("restaurantId") Long restaurantId);
@@ -67,6 +69,7 @@ public interface OrdineRepository extends JpaRepository<Ordine, Long> {
                 o.created_at as createdAt,
                 o.updated_at as updatedAt,
                 o.totale as totale,
+                o.location_unverified as locationUnverified,
                 coalesce(sum(oi.quantity), 0) as itemCount
             from customer_orders o
             left join customer_order_items oi on oi.ordine_id = o.id
@@ -78,7 +81,7 @@ public interface OrdineRepository extends JpaRepository<Ordine, Long> {
                 or cast(o.table_id as text) ilike concat('%', :search, '%')
                 or lower(o.status) like lower(concat('%', :search, '%'))
               )
-            group by o.id, o.table_id, o.status, o.paid_at, o.created_at, o.updated_at, o.totale
+            group by o.id, o.table_id, o.status, o.paid_at, o.created_at, o.updated_at, o.totale, o.location_unverified
             order by coalesce(o.paid_at, o.updated_at) desc, o.id desc
             """,
             countQuery = """

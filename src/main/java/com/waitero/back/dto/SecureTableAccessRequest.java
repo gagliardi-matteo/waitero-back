@@ -13,4 +13,5 @@ public class SecureTableAccessRequest {
     private Double latitude;
     private Double longitude;
     private Double accuracy;
+    private Boolean locationUnavailable;
 }

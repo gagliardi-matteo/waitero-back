@@ -53,6 +53,10 @@ public class Ordine {
     @Column(name = "session_id", length = 128)
     private String sessionId;
 
+    @Column(name = "location_unverified", nullable = false)
+    @Builder.Default
+    private Boolean locationUnverified = false;
+
     @Column(name = "item_count")
     private Integer itemCount;
 

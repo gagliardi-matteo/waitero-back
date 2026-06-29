@@ -71,6 +71,7 @@ public class TableAccessService {
                 .tableName(tavolo.getNome())
                 .qrToken(tavolo.getQrToken())
                 .riskScore(risk.score)
+                .locationUnverified(risk.locationUnverified)
                 .build();
     }
 
@@ -102,8 +103,10 @@ public class TableAccessService {
             risk.reasons.add("fingerprint_mismatch");
         }
 
-        if (restaurant.getLatitude() != null && restaurant.getLongitude() != null && restaurant.getAllowedRadiusMeters() != null
-                && request.getLatitude() != null && request.getLongitude() != null) {
+        if (request.getLatitude() == null || request.getLongitude() == null || Boolean.TRUE.equals(request.getLocationUnavailable())) {
+            risk.locationUnverified = true;
+            risk.reasons.add("location_unverified");
+        } else if (restaurant.getLatitude() != null && restaurant.getLongitude() != null && restaurant.getAllowedRadiusMeters() != null) {
             double distance = haversineMeters(restaurant.getLatitude(), restaurant.getLongitude(), request.getLatitude(), request.getLongitude());
             double accuracyTolerance = normalizedAccuracyTolerance(request.getAccuracy());
             if (distance > restaurant.getAllowedRadiusMeters() + accuracyTolerance) {
@@ -186,6 +189,7 @@ public class TableAccessService {
                 .tableName(tavolo.getNome())
                 .qrToken(tavolo.getQrToken())
                 .riskScore(riskScore)
+                .locationUnverified(false)
                 .build();
     }
 
@@ -217,6 +221,7 @@ public class TableAccessService {
     private static class AccessRisk {
         private int score;
         private boolean distanceDenied;
+        private boolean locationUnverified;
         private final List<String> reasons = new ArrayList<>();
 
         private String reasonString() {

@@ -12,4 +12,5 @@ public interface OrderSummaryProjection {
     LocalDateTime getUpdatedAt();
     BigDecimal getTotale();
     Integer getItemCount();
+    Boolean getLocationUnverified();
 }

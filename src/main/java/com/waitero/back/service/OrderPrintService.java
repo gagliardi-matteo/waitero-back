@@ -24,6 +24,7 @@ public class OrderPrintService {
 
     private static final Logger log = LoggerFactory.getLogger(OrderPrintService.class);
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm", Locale.ITALY);
+    private static final String LOCATION_UNVERIFIED_WARNING = "Posizione non verificata. Controllare la presenza al tavolo";
 
     private final OrdineRepository ordineRepository;
     private final StampanteRepository stampanteRepository;
@@ -73,8 +74,15 @@ public class OrderPrintService {
                 .append("========================\n\n")
                 .append("Tavolo: ").append(ordine.getTableId()).append("\n")
                 .append("Ordine: #").append(ordine.getId()).append("\n")
-                .append("Ora: ").append(ordine.getCreatedAt() != null ? TIME_FORMATTER.format(ordine.getCreatedAt()) : "-").append("\n\n")
-                .append("------------------------\n\n");
+                .append("Ora: ").append(ordine.getCreatedAt() != null ? TIME_FORMATTER.format(ordine.getCreatedAt()) : "-").append("\n\n");
+
+        if (Boolean.TRUE.equals(ordine.getLocationUnverified())) {
+            builder.append("ATTENZIONE:\n")
+                    .append(wrap(LOCATION_UNVERIFIED_WARNING, 32))
+                    .append("\n\n");
+        }
+
+        builder.append("------------------------\n\n");
 
         List<TicketLine> newLines = new ArrayList<>();
         List<TicketLine> printedLines = new ArrayList<>();

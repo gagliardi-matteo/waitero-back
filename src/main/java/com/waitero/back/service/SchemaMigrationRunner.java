@@ -453,11 +453,16 @@ public class SchemaMigrationRunner implements ApplicationRunner {
             jdbcTemplate.execute("ALTER TABLE customer_orders ADD COLUMN session_id varchar(128)");
             log.info("Added missing column customer_orders.session_id");
         }
+        if (!columnExists("customer_orders", "location_unverified")) {
+            jdbcTemplate.execute("ALTER TABLE customer_orders ADD COLUMN location_unverified boolean NOT NULL DEFAULT false");
+            log.info("Added missing column customer_orders.location_unverified");
+        }
         jdbcTemplate.execute("UPDATE customer_orders SET variant = 'A' WHERE variant IS NULL OR btrim(variant) = ''");
         jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN variant SET NOT NULL");
         jdbcTemplate.execute("ALTER TABLE customer_orders ALTER COLUMN variant TYPE varchar(20)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_orders_variant ON customer_orders(ristoratore_id, variant)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_orders_experiment_window ON customer_orders(ristoratore_id, created_at, variant, session_id)");
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_orders_location_unverified ON customer_orders(ristoratore_id, location_unverified) WHERE location_unverified = true");
     }
 
     private void ensureCustomerOrderItemColumns() {

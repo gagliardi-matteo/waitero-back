@@ -15,4 +15,5 @@ public class SecureTableAccessResponse {
     private String tableName;
     private String qrToken;
     private Integer riskScore;
+    private Boolean locationUnverified;
 }

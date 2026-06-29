@@ -17,4 +17,5 @@ public class OrderSummaryDTO {
     private LocalDateTime updatedAt;
     private BigDecimal totale;
     private Integer itemCount;
+    private Boolean locationUnverified;
 }

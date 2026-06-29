@@ -49,7 +49,7 @@ public class OrdineService {
         validateCustomerRequest(request);
         Long restaurantId = Long.parseLong(request.getRestaurantId());
         String variant = experimentService.getVariant(request.getSessionId(), restaurantId, request.getTableId());
-        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), request.getNoteCucina(), request.getSessionId(), variant);
+        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), request.getNoteCucina(), request.getSessionId(), variant, Boolean.TRUE.equals(request.getLocationUnverified()));
     }
 
     @Transactional
@@ -84,7 +84,7 @@ public class OrdineService {
             throw new RuntimeException("Ordine vuoto");
         }
         Tavolo tavolo = tavoloService.requireActiveTableByNumberOrId(restaurantId, request.getTableId());
-        return createOrAppendInternal(restaurantId, tavolo.getNumero(), request.getItems(), null, null, ExperimentService.VARIANT_HOLDOUT);
+        return createOrAppendInternal(restaurantId, tavolo.getNumero(), request.getItems(), null, null, ExperimentService.VARIANT_HOLDOUT, false);
     }
 
     @Transactional(readOnly = true)
@@ -325,6 +325,7 @@ public class OrdineService {
                 .totale(financials.total())
                 .paidAmount(financials.paidAmount())
                 .remainingAmount(financials.remainingAmount())
+                .locationUnverified(Boolean.TRUE.equals(ordine.getLocationUnverified()))
                 .items(items)
                 .payments(payments)
                 .build();
@@ -459,6 +460,7 @@ public class OrdineService {
                 .totale(total)
                 .paidAmount(paidAmount)
                 .remainingAmount(remainingAmount)
+                .locationUnverified(Boolean.TRUE.equals(ordine.getLocationUnverified()))
                 .items(itemDtos)
                 .payments(paymentDtos)
                 .build();
@@ -474,6 +476,7 @@ public class OrdineService {
                 .updatedAt(projection.getUpdatedAt())
                 .totale(projection.getTotale() != null ? normalizeCurrency(projection.getTotale()) : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP))
                 .itemCount(projection.getItemCount() != null ? projection.getItemCount() : 0)
+                .locationUnverified(Boolean.TRUE.equals(projection.getLocationUnverified()))
                 .build();
     }
 
@@ -510,7 +513,7 @@ public class OrdineService {
         }
     }
 
-    private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina, String sessionId, String experimentVariant) {
+    private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina, String sessionId, String experimentVariant, boolean locationUnverified) {
         tavoloService.requireActiveTable(restaurantId, tableId);
         Ristoratore ristoratore = ristoratoreRepository.findById(restaurantId)
                 .orElseThrow(() -> new RuntimeException("Locale non trovato"));
@@ -526,6 +529,7 @@ public class OrdineService {
                         .totale(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP))
                         .variant((experimentVariant == null || experimentVariant.isBlank()) ? ExperimentService.VARIANT_HOLDOUT : experimentVariant)
                         .sessionId(normalizeSessionId(sessionId))
+                        .locationUnverified(locationUnverified)
                         .itemCount(0)
                         .items(new ArrayList<>())
                         .payments(new ArrayList<>())
@@ -533,6 +537,11 @@ public class OrdineService {
 
         if (ordine.getSessionId() == null) {
             ordine.setSessionId(normalizeSessionId(sessionId));
+        }
+        if (locationUnverified) {
+            ordine.setLocationUnverified(true);
+        } else if (ordine.getLocationUnverified() == null) {
+            ordine.setLocationUnverified(false);
         }
 
         Map<String, OrdineItem> existingItemsByLineKey = new LinkedHashMap<>();
