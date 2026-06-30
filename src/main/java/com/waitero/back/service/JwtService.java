@@ -34,6 +34,9 @@ public class JwtService {
     @Value("${jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
 
+    @Value("${jwt.device-trust-expiration-ms:31536000000}")
+    private long deviceTrustExpirationMs;
+
     @Value("${qr.token.active-secret:}")
     private String activeQrSecret;
 
@@ -70,6 +73,17 @@ public class JwtService {
 
     public String generateImpersonationAccessToken(BackofficeUser user, Long actingRestaurantId) {
         return buildBackofficeToken(user, actingRestaurantId, jwtExpirationMs);
+    }
+
+    public String generateDeviceTrustToken(BackofficeUser user, String deviceId) {
+        return Jwts.builder()
+                .setSubject(user.getId().toString())
+                .claim("type", "device_trust")
+                .claim("deviceId", deviceId)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + deviceTrustExpirationMs))
+                .signWith(activeKey)
+                .compact();
     }
 
     private String buildBackofficeToken(BackofficeUser user, Long actingRestaurantId, long expirationMs) {
@@ -115,6 +129,18 @@ public class JwtService {
 
     public Long extractActingRestaurantId(String token) {
         return extractLongClaim(parseClaims(token), "actingRestaurantId");
+    }
+
+    public String extractDeviceId(String token) {
+        return parseClaims(token).get("deviceId", String.class);
+    }
+
+    public boolean isDeviceTrustToken(String token) {
+        try {
+            return "device_trust".equals(parseClaims(token).get("type", String.class));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private Long extractLongClaim(Claims claims, String claimName) {

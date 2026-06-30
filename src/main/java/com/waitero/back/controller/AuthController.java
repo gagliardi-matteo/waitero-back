@@ -2,6 +2,7 @@ package com.waitero.back.controller;
 
 import com.waitero.back.dto.AuthMeResponse;
 import com.waitero.back.dto.AuthResponse;
+import com.waitero.back.dto.DeviceTrustLoginRequest;
 import com.waitero.back.dto.BackofficeProfileDTO;
 import com.waitero.back.dto.ChangePasswordRequest;
 import com.waitero.back.dto.IdTokenRequest;
@@ -67,6 +68,19 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (RuntimeException ex) {
             log.warn("AuthController /local-login local auth rejected email={} message={}", request != null ? request.getEmail() : null, ex.getMessage());
+            throw ex;
+        }
+    }
+
+    @PostMapping("/device-login")
+    public ResponseEntity<AuthResponse> deviceLogin(@RequestBody DeviceTrustLoginRequest request) {
+        log.info("AuthController /device-login received device trust auth request deviceId={}", request != null ? request.getDeviceId() : null);
+        try {
+            AuthResponse response = authService.loginWithDeviceTrust(request);
+            log.info("AuthController /device-login device trust auth success deviceId={}", request != null ? request.getDeviceId() : null);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException ex) {
+            log.warn("AuthController /device-login device trust auth rejected deviceId={} message={}", request != null ? request.getDeviceId() : null, ex.getMessage());
             throw ex;
         }
     }

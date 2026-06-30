@@ -5,8 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class LocalLoginRequest {
-    private String email;
-    private String password;
+public class DeviceTrustLoginRequest {
     private String deviceId;
+    private String deviceTrustToken;
 }

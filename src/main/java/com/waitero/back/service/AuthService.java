@@ -5,6 +5,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.waitero.back.dto.AuthResponse;
+import com.waitero.back.dto.DeviceTrustLoginRequest;
 import com.waitero.back.dto.LocalLoginRequest;
 import com.waitero.back.entity.BackofficeRole;
 import com.waitero.back.entity.BackofficeUser;
@@ -99,7 +100,35 @@ public class AuthService {
             throw new RuntimeException("Account locale non associato a un locale");
         }
 
-        return buildResponse(user);
+        return buildResponse(user, normalize(request.getDeviceId()));
+    }
+
+    @Transactional(readOnly = true)
+    public AuthResponse loginWithDeviceTrust(DeviceTrustLoginRequest request) {
+        if (request == null || request.getDeviceId() == null || request.getDeviceTrustToken() == null) {
+            throw new RuntimeException("Token dispositivo obbligatorio");
+        }
+
+        String deviceId = normalize(request.getDeviceId());
+        String trustToken = request.getDeviceTrustToken().trim();
+        if (!jwtService.validateToken(trustToken) || !jwtService.isDeviceTrustToken(trustToken)) {
+            throw new RuntimeException("Token dispositivo non valido");
+        }
+
+        String tokenDeviceId = normalize(jwtService.extractDeviceId(trustToken));
+        if (tokenDeviceId == null || !tokenDeviceId.equals(deviceId)) {
+            throw new RuntimeException("Token dispositivo non valido");
+        }
+
+        Long userId = jwtService.extractUserId(trustToken);
+        BackofficeUser user = backofficeUserRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+
+        if (user.getRole() != BackofficeRole.RISTORATORE || user.getRestaurantId() == null) {
+            throw new RuntimeException("Account locale non associato a un locale");
+        }
+
+        return buildResponse(user, deviceId);
     }
 
     public AuthResponse refreshAccessToken(String refreshToken) {
@@ -111,7 +140,7 @@ public class AuthService {
         BackofficeUser user = backofficeUserRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utente non trovato"));
 
-        return buildResponse(user);
+        return buildResponse(user, null);
     }
 
     private void linkGoogleAccountIfNeeded(BackofficeUser user, String providerId, String name) {
@@ -128,10 +157,15 @@ public class AuthService {
         backofficeUserRepository.save(user);
     }
 
-    private AuthResponse buildResponse(BackofficeUser user) {
+    private AuthResponse buildResponse(BackofficeUser user, String deviceId) {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
-        return new AuthResponse(accessToken, refreshToken);
+        String deviceTrustToken = deviceId == null ? null : jwtService.generateDeviceTrustToken(user, deviceId);
+        return new AuthResponse(accessToken, refreshToken, deviceTrustToken);
+    }
+
+    private AuthResponse buildResponse(BackofficeUser user) {
+        return buildResponse(user, null);
     }
 
     private String summarizeUser(Optional<BackofficeUser> user) {
@@ -142,6 +176,14 @@ public class AuthService {
                         + ",providerId=" + value.getProviderId()
                         + "}")
                 .orElse("none");
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isBlank() ? null : trimmed;
     }
 
     private List<String> getGoogleAuthClientIds() {
