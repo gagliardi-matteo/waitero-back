@@ -47,7 +47,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/legal/backoffice/**").authenticated()
                         .requestMatchers("/api/image/**").permitAll()
                         .requestMatchers("/api/customer/**").permitAll()
-                        .requestMatchers("/api/events").permitAll()
+                        .requestMatchers("/api/events", "/api/contact/demo").permitAll()
                         .requestMatchers("/api/webhooks/stripe").permitAll()
                         .requestMatchers("/api/table/access").permitAll()
                         .requestMatchers("/api/orders/stream").permitAll()
