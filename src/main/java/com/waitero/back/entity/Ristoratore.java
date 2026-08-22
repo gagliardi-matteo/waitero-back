@@ -50,4 +50,8 @@ public class Ristoratore {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "is_demo", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean demo = false;
 }

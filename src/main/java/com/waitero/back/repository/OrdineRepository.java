@@ -12,11 +12,16 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface OrdineRepository extends JpaRepository<Ordine, Long> {
     Optional<Ordine> findFirstByRistoratoreIdAndTableIdAndStatusInOrderByCreatedAtDesc(Long ristoratoreId, Integer tableId, Collection<OrderStatus> statuses);
     List<Ordine> findAllByRistoratoreIdAndStatusInOrderByCreatedAtDesc(Long ristoratoreId, Collection<OrderStatus> statuses);
     boolean existsByRistoratoreIdAndTableIdAndStatusIn(Long ristoratoreId, Integer tableId, Collection<OrderStatus> statuses);
+    List<Ordine> findAllByDemoSessionIdAndStatusInOrderByCreatedAtDesc(UUID demoSessionId, Collection<OrderStatus> statuses);
+    List<Ordine> findAllByDemoSessionIdOrderByCreatedAtDesc(UUID demoSessionId);
+    Optional<Ordine> findByIdAndDemoSessionId(Long id, UUID demoSessionId);
+    long countByDemoSessionId(UUID demoSessionId);
 
     @Query(value = """
             select

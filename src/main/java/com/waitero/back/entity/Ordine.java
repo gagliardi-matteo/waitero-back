@@ -67,4 +67,12 @@ public class Ordine {
     @OneToMany(mappedBy = "ordine", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrdinePagamento> payments = new ArrayList<>();
+
+    @Column(name = "is_demo", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean demo = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "demo_session_id")
+    private DemoSession demoSession;
 }
