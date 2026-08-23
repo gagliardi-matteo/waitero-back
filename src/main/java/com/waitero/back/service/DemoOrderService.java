@@ -75,6 +75,48 @@ public class DemoOrderService {
     public OrdineDTO get(String token, Long id) { DemoSession s=sessionService.require(token); return dto(orders.findByIdAndDemoSessionId(id,s.getId()).orElseThrow(this::notFound)); }
 
     @Transactional
+    public OrdineDTO pay(String token, Long id, PaymentRequest request) {
+        DemoSession session = sessionService.require(token);
+        Ordine order = orders.findByIdAndDemoSessionId(id, session.getId()).orElseThrow(this::notFound);
+        if (!ACTIVE.contains(order.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ordine demo già chiuso");
+        }
+
+        if (order.getPayments() == null) order.setPayments(new ArrayList<>());
+        BigDecimal paid = paidAmount(order);
+        BigDecimal remaining = order.getTotale().subtract(paid).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal amount = request == null || request.getAmount() == null
+                ? remaining
+                : request.getAmount().setScale(2, RoundingMode.HALF_UP);
+        if (amount.compareTo(BigDecimal.ZERO) <= 0)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Importo pagamento non valido");
+        if (amount.compareTo(remaining) > 0)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Importo superiore al residuo");
+
+        String mode = request == null || request.getPaymentMode() == null || request.getPaymentMode().isBlank()
+                ? "FULL"
+                : request.getPaymentMode().trim().toUpperCase();
+        String participant = request == null || request.getParticipantName() == null || request.getParticipantName().isBlank()
+                ? null
+                : request.getParticipantName().trim().substring(0, Math.min(100, request.getParticipantName().trim().length()));
+        order.getPayments().add(OrdinePagamento.builder().ordine(order).amount(amount).paymentMode(mode)
+                .participantName(participant).createdAt(LocalDateTime.now()).allocations(new ArrayList<>()).build());
+        BigDecimal newRemaining = remaining.subtract(amount).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+        order.setPaymentMode(mode);
+        order.setUpdatedAt(LocalDateTime.now());
+        if (newRemaining.compareTo(BigDecimal.ZERO) == 0) {
+            order.setStatus(OrderStatus.PAGATO);
+            order.setPaidAt(LocalDateTime.now());
+        } else {
+            order.setStatus(OrderStatus.PARZIALMENTE_PAGATO);
+            order.setPaidAt(null);
+        }
+        Ordine saved = orders.saveAndFlush(order);
+        streams.publish(session.getId(), saved.getId(), saved.getStatus().name());
+        return dto(saved);
+    }
+
+    @Transactional
     public OrdineDTO complete(String token, Long id) {
         DemoSession s=sessionService.require(token); Ordine order=orders.findByIdAndDemoSessionId(id,s.getId()).orElseThrow(this::notFound);
         order.setStatus(OrderStatus.PAGATO); order.setPaidAt(LocalDateTime.now()); order.setUpdatedAt(LocalDateTime.now());
@@ -91,7 +133,8 @@ public class DemoOrderService {
     private void recalculate(Ordine o) { BigDecimal total=o.getItems().stream().map(i->i.getPrezzoUnitario().multiply(BigDecimal.valueOf(i.getQuantity()))).reduce(BigDecimal.ZERO,BigDecimal::add).setScale(2,RoundingMode.HALF_UP); o.setTotale(total); o.setItemCount(o.getItems().stream().mapToInt(OrdineItem::getQuantity).sum()); }
     private String normalizeNote(String n){if(n==null||n.isBlank())return null;return n.trim().substring(0,Math.min(500,n.trim().length()));}
     private List<OrdineDTO> map(List<Ordine> values){return values.stream().map(this::dto).toList();}
-    private OrdineDTO dto(Ordine o){List<OrdineItemDTO> items=o.getItems().stream().map(i->OrdineItemDTO.builder().id(i.getId()).dishId(i.getPiatto().getId()).nome(i.getNome()).prezzoUnitario(i.getPrezzoUnitario()).portionKey(i.getPortionKey()).portionLabel(i.getPortionLabel()).quantita(i.getQuantity()).paidQuantity(0).remainingQuantity(i.getQuantity()).subtotale(i.getPrezzoUnitario().multiply(BigDecimal.valueOf(i.getQuantity()))).imageUrl(i.getImageUrl()).build()).toList(); return OrdineDTO.builder().id(o.getId()).restaurantId(o.getRistoratore().getId()).tableId(o.getTableId()).status(o.getStatus().name()).noteCucina(o.getNoteCucina()).paidAt(o.getPaidAt()).createdAt(o.getCreatedAt()).updatedAt(o.getUpdatedAt()).totale(o.getTotale()).paidAmount(BigDecimal.ZERO).remainingAmount(o.getStatus()==OrderStatus.PAGATO?BigDecimal.ZERO:o.getTotale()).locationUnverified(false).items(items).payments(List.of()).build();}
+    private BigDecimal paidAmount(Ordine o){return Optional.ofNullable(o.getPayments()).orElse(List.of()).stream().map(OrdinePagamento::getAmount).reduce(BigDecimal.ZERO,BigDecimal::add).setScale(2,RoundingMode.HALF_UP);}
+    private OrdineDTO dto(Ordine o){List<OrdineItemDTO> items=o.getItems().stream().map(i->OrdineItemDTO.builder().id(i.getId()).dishId(i.getPiatto().getId()).nome(i.getNome()).prezzoUnitario(i.getPrezzoUnitario()).portionKey(i.getPortionKey()).portionLabel(i.getPortionLabel()).quantita(i.getQuantity()).paidQuantity(0).remainingQuantity(i.getQuantity()).subtotale(i.getPrezzoUnitario().multiply(BigDecimal.valueOf(i.getQuantity()))).imageUrl(i.getImageUrl()).build()).toList(); BigDecimal paid=paidAmount(o); List<OrdinePaymentDTO> payments=Optional.ofNullable(o.getPayments()).orElse(List.of()).stream().map(p->OrdinePaymentDTO.builder().id(p.getId()).amount(p.getAmount()).paymentMode(p.getPaymentMode()).participantName(p.getParticipantName()).createdAt(p.getCreatedAt()).allocations(List.of()).build()).toList(); return OrdineDTO.builder().id(o.getId()).restaurantId(o.getRistoratore().getId()).tableId(o.getTableId()).status(o.getStatus().name()).paymentMode(o.getPaymentMode()).noteCucina(o.getNoteCucina()).paidAt(o.getPaidAt()).createdAt(o.getCreatedAt()).updatedAt(o.getUpdatedAt()).totale(o.getTotale()).paidAmount(paid).remainingAmount(o.getTotale().subtract(paid).max(BigDecimal.ZERO).setScale(2,RoundingMode.HALF_UP)).locationUnverified(false).items(items).payments(payments).build();}
     private OrderSummaryDTO summary(OrdineDTO o){return OrderSummaryDTO.builder().id(o.getId()).tableId(o.getTableId()).status(o.getStatus()).paidAt(o.getPaidAt()).createdAt(o.getCreatedAt()).updatedAt(o.getUpdatedAt()).totale(o.getTotale()).itemCount(o.getItems().stream().mapToInt(OrdineItemDTO::getQuantita).sum()).locationUnverified(false).build();}
     private ResponseStatusException limit(String m){return new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,m);}
     private ResponseStatusException notFound(){return new ResponseStatusException(HttpStatus.NOT_FOUND,"Ordine demo non trovato");}

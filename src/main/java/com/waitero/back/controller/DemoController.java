@@ -46,6 +46,7 @@ public class DemoController {
     @GetMapping("/orders/active-summary") public List<OrderSummaryDTO> summaries(@RequestParam String token) { return orders.activeSummaries(token); }
     @GetMapping("/orders/history") public List<OrdineDTO> history(@RequestParam String token) { return orders.history(token); }
     @GetMapping("/orders/{id}") public OrdineDTO order(@RequestParam String token,@PathVariable Long id) { return orders.get(token,id); }
+    @PostMapping("/orders/{id}/pay") public OrdineDTO pay(@RequestParam String token,@PathVariable Long id,@RequestBody PaymentRequest request) { return orders.pay(token,id,request); }
     @PostMapping("/orders/{id}/complete") public OrdineDTO complete(@RequestParam String token,@PathVariable Long id) { return orders.complete(token,id); }
     @GetMapping(value="/stream",produces=MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(@RequestParam String token) { DemoSession session=sessions.require(token); return streams.subscribe(session.getId()); }
