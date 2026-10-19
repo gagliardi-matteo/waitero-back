@@ -57,8 +57,8 @@ class ProductionSafetyEnvironmentPostProcessorTest {
             var env = context.getEnvironment();
             assertEquals("validate", env.getProperty("spring.jpa.hibernate.ddl-auto"));
             assertEquals("false", env.getProperty("spring.jpa.show-sql"));
-            assertEquals("10", env.getProperty("spring.datasource.hikari.maximum-pool-size"));
-            assertEquals("DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION", env.getProperty("spring.jpa.properties.hibernate.connection.handling_mode"));
+            assertNull(env.getProperty("spring.datasource.hikari.connection-timeout"));
+            assertNull(env.getProperty("spring.jpa.properties.hibernate.connection.handling_mode"));
             assertEquals("never", env.getProperty("server.error.include-stacktrace"));
         }
     }

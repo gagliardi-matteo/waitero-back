@@ -27,8 +27,6 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        connection:
-          handling_mode: DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION
         format_sql: true
   jackson:
     serialization:
