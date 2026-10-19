@@ -102,6 +102,8 @@ public class DemoOrderService {
     @Transactional
     public OrdineDTO pay(String token, Long id, PaymentRequest request) {
         DemoSession session = sessionService.require(token);
+        jdbcTemplate.query("select pg_advisory_xact_lock(hashtextextended(?, 0))", rs -> null,
+                "demo-payment:" + session.getId() + ":" + id);
         Ordine order = orders.findByIdAndDemoSessionId(id, session.getId()).orElseThrow(this::notFound);
         if (!ACTIVE.contains(order.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ordine demo già chiuso");
@@ -110,7 +112,15 @@ public class DemoOrderService {
         if (order.getPayments() == null) order.setPayments(new ArrayList<>());
         BigDecimal paid = paidAmount(order);
         BigDecimal remaining = order.getTotale().subtract(paid).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal amount = request == null || request.getAmount() == null
+        String mode = request == null || request.getPaymentMode() == null || request.getPaymentMode().isBlank()
+                ? "FULL" : request.getPaymentMode().trim().toUpperCase(Locale.ROOT);
+        List<OrdinePagamentoAllocazione> allocations = buildAllocations(order, request);
+        if ("SPLIT_ITEMS".equals(mode) && allocations.isEmpty())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Seleziona almeno un piatto");
+        BigDecimal amount = !allocations.isEmpty()
+                ? allocations.stream().map(a -> a.getUnitPrice().multiply(BigDecimal.valueOf(a.getQuantity())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP)
+                : request == null || request.getAmount() == null
                 ? remaining
                 : request.getAmount().setScale(2, RoundingMode.HALF_UP);
         if (amount.compareTo(BigDecimal.ZERO) <= 0)
@@ -118,14 +128,16 @@ public class DemoOrderService {
         if (amount.compareTo(remaining) > 0)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Importo superiore al residuo");
 
-        String mode = request == null || request.getPaymentMode() == null || request.getPaymentMode().isBlank()
-                ? "FULL"
-                : request.getPaymentMode().trim().toUpperCase();
         String participant = request == null || request.getParticipantName() == null || request.getParticipantName().isBlank()
                 ? null
                 : request.getParticipantName().trim().substring(0, Math.min(100, request.getParticipantName().trim().length()));
-        order.getPayments().add(OrdinePagamento.builder().ordine(order).amount(amount).paymentMode(mode)
-                .participantName(participant).createdAt(LocalDateTime.now()).allocations(new ArrayList<>()).build());
+        OrdinePagamento payment = OrdinePagamento.builder().ordine(order).amount(amount).paymentMode(mode)
+                .participantName(participant).createdAt(LocalDateTime.now()).allocations(new ArrayList<>()).build();
+        for (OrdinePagamentoAllocazione allocation : allocations) {
+            allocation.setPayment(payment);
+            payment.getAllocations().add(allocation);
+        }
+        order.getPayments().add(payment);
         BigDecimal newRemaining = remaining.subtract(amount).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
         order.setPaymentMode(mode);
         order.setUpdatedAt(LocalDateTime.now());
@@ -151,6 +163,63 @@ public class DemoOrderService {
     private void lockActiveOrderMutation(Long restaurantId, Integer tableId) {
         String resourceKey = "active-order:" + restaurantId + ":" + tableId;
         jdbcTemplate.query("select pg_advisory_xact_lock(hashtextextended(?, 0))", rs -> null, resourceKey);
+    }
+
+    public record WaiterCallState(boolean pending, LocalDateTime calledAt) {}
+
+    @Transactional(readOnly = true)
+    public WaiterCallState waiterCallState(String token) {
+        Tavolo table = sessionService.require(token).getTavolo();
+        return new WaiterCallState(Boolean.TRUE.equals(table.getWaiterCallPending()), table.getWaiterCalledAt());
+    }
+
+    @Transactional
+    public void callWaiter(String token) {
+        DemoSession session = sessionService.require(token);
+        Tavolo table = session.getTavolo();
+        table.setWaiterCallPending(true);
+        table.setWaiterCalledAt(LocalDateTime.now());
+        streams.publishWaiterCall(session.getId(), session.getRistoratore().getId(), table.getNumero(), true);
+    }
+
+    @Transactional
+    public void clearWaiterCall(String token) {
+        DemoSession session = sessionService.require(token);
+        session.getTavolo().setWaiterCallPending(false);
+        session.getTavolo().setWaiterCalledAt(null);
+        streams.publishWaiterCall(session.getId(), session.getRistoratore().getId(), session.getTavolo().getNumero(), false);
+    }
+
+    private Map<Long, Integer> paidQuantities(Ordine order) {
+        Map<Long, Integer> result = new HashMap<>();
+        for (OrdinePagamento payment : Optional.ofNullable(order.getPayments()).orElse(List.of())) {
+            for (OrdinePagamentoAllocazione allocation : Optional.ofNullable(payment.getAllocations()).orElse(List.of())) {
+                result.merge(allocation.getOrderItem().getId(), allocation.getQuantity(), Integer::sum);
+            }
+        }
+        return result;
+    }
+
+    private List<OrdinePagamentoAllocazione> buildAllocations(Ordine order, PaymentRequest request) {
+        if (request == null || request.getAllocations() == null) return List.of();
+        Map<Long, Integer> paid = paidQuantities(order);
+        Map<Long, Integer> selected = new HashMap<>();
+        Map<Long, OrdineItem> items = new HashMap<>();
+        order.getItems().forEach(item -> items.put(item.getId(), item));
+        List<OrdinePagamentoAllocazione> result = new ArrayList<>();
+        for (PaymentAllocationRequest entry : request.getAllocations()) {
+            if (entry == null || entry.getOrderItemId() == null || entry.getQuantity() == null || entry.getQuantity() <= 0)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Allocazione pagamento non valida");
+            OrdineItem item = items.get(entry.getOrderItemId());
+            if (item == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Riga ordine non trovata");
+            long quantity = (long) selected.getOrDefault(item.getId(), 0) + entry.getQuantity();
+            if (quantity > item.getQuantity() - paid.getOrDefault(item.getId(), 0))
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantita selezionata superiore al residuo");
+            selected.put(item.getId(), (int) quantity);
+            result.add(OrdinePagamentoAllocazione.builder().orderItem(item).quantity(entry.getQuantity())
+                    .unitPrice(item.getPrezzoUnitario()).build());
+        }
+        return result;
     }
     private String normalizeRequestId(String requestId) {
         if (requestId == null || requestId.isBlank()) throw new IllegalArgumentException("requestId obbligatorio");
@@ -190,7 +259,30 @@ public class DemoOrderService {
     private String normalizeNote(String n){if(n==null||n.isBlank())return null;return n.trim().substring(0,Math.min(500,n.trim().length()));}
     private List<OrdineDTO> map(List<Ordine> values){return values.stream().map(this::dto).toList();}
     private BigDecimal paidAmount(Ordine o){return Optional.ofNullable(o.getPayments()).orElse(List.of()).stream().map(OrdinePagamento::getAmount).reduce(BigDecimal.ZERO,BigDecimal::add).setScale(2,RoundingMode.HALF_UP);}
-    private OrdineDTO dto(Ordine o){List<OrdineItemDTO> items=o.getItems().stream().map(i->OrdineItemDTO.builder().id(i.getId()).dishId(i.getPiatto().getId()).nome(i.getNome()).prezzoUnitario(i.getPrezzoUnitario()).portionKey(i.getPortionKey()).portionLabel(i.getPortionLabel()).quantita(i.getQuantity()).paidQuantity(0).remainingQuantity(i.getQuantity()).subtotale(i.getPrezzoUnitario().multiply(BigDecimal.valueOf(i.getQuantity()))).imageUrl(i.getImageUrl()).build()).toList(); BigDecimal paid=paidAmount(o); List<OrdinePaymentDTO> payments=Optional.ofNullable(o.getPayments()).orElse(List.of()).stream().map(p->OrdinePaymentDTO.builder().id(p.getId()).amount(p.getAmount()).paymentMode(p.getPaymentMode()).participantName(p.getParticipantName()).createdAt(p.getCreatedAt()).allocations(List.of()).build()).toList(); return OrdineDTO.builder().id(o.getId()).restaurantId(o.getRistoratore().getId()).tableId(o.getTableId()).status(o.getStatus().name()).paymentMode(o.getPaymentMode()).noteCucina(o.getNoteCucina()).paidAt(o.getPaidAt()).createdAt(o.getCreatedAt()).updatedAt(o.getUpdatedAt()).totale(o.getTotale()).paidAmount(paid).remainingAmount(o.getTotale().subtract(paid).max(BigDecimal.ZERO).setScale(2,RoundingMode.HALF_UP)).locationUnverified(false).items(items).payments(payments).build();}
+    private OrdineDTO dto(Ordine order) {
+        Map<Long, Integer> quantities = paidQuantities(order);
+        List<OrdineItemDTO> items = order.getItems().stream().map(item -> OrdineItemDTO.builder()
+                .id(item.getId()).dishId(item.getPiatto().getId()).nome(item.getNome())
+                .prezzoUnitario(item.getPrezzoUnitario()).portionKey(item.getPortionKey()).portionLabel(item.getPortionLabel())
+                .quantita(item.getQuantity()).paidQuantity(quantities.getOrDefault(item.getId(), 0))
+                .remainingQuantity(Math.max(0, item.getQuantity() - quantities.getOrDefault(item.getId(), 0)))
+                .subtotale(item.getPrezzoUnitario().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .imageUrl(item.getImageUrl()).build()).toList();
+        BigDecimal paid = paidAmount(order);
+        List<OrdinePaymentDTO> payments = Optional.ofNullable(order.getPayments()).orElse(List.of()).stream()
+                .map(payment -> OrdinePaymentDTO.builder().id(payment.getId()).amount(payment.getAmount())
+                        .paymentMode(payment.getPaymentMode()).participantName(payment.getParticipantName()).createdAt(payment.getCreatedAt())
+                        .allocations(Optional.ofNullable(payment.getAllocations()).orElse(List.of()).stream()
+                                .map(a -> OrdinePaymentAllocationDTO.builder().id(a.getId()).orderItemId(a.getOrderItem().getId())
+                                        .itemName(a.getOrderItem().getNome()).quantity(a.getQuantity()).unitPrice(a.getUnitPrice())
+                                        .subtotal(a.getUnitPrice().multiply(BigDecimal.valueOf(a.getQuantity()))).build()).toList())
+                        .build()).toList();
+        return OrdineDTO.builder().id(order.getId()).restaurantId(order.getRistoratore().getId()).tableId(order.getTableId())
+                .status(order.getStatus().name()).paymentMode(order.getPaymentMode()).noteCucina(order.getNoteCucina())
+                .paidAt(order.getPaidAt()).createdAt(order.getCreatedAt()).updatedAt(order.getUpdatedAt()).totale(order.getTotale())
+                .paidAmount(paid).remainingAmount(order.getTotale().subtract(paid).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP))
+                .locationUnverified(false).items(items).payments(payments).build();
+    }
     private OrderSummaryDTO summary(OrdineDTO o){return OrderSummaryDTO.builder().id(o.getId()).tableId(o.getTableId()).status(o.getStatus()).paidAt(o.getPaidAt()).createdAt(o.getCreatedAt()).updatedAt(o.getUpdatedAt()).totale(o.getTotale()).itemCount(o.getItems().stream().mapToInt(OrdineItemDTO::getQuantita).sum()).locationUnverified(false).build();}
     private ResponseStatusException limit(String m){return new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,m);}
     private ResponseStatusException notFound(){return new ResponseStatusException(HttpStatus.NOT_FOUND,"Ordine demo non trovato");}

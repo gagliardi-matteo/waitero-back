@@ -29,6 +29,16 @@ public class DemoStreamService {
         AfterCommitEvents.publish(() -> publishCommitted(sessionId, orderId, status));
     }
 
+    public void publishWaiterCall(UUID sessionId, Long restaurantId, Integer tableId, boolean pending) {
+        OrderEventDTO event = OrderEventDTO.builder().type(pending ? "WAITER_CALLED" : "WAITER_CALL_CLEARED")
+                .restaurantId(restaurantId).tableId(tableId).build();
+        AfterCommitEvents.publish(() -> {
+            for (SseEmitter emitter : emitters.getOrDefault(sessionId, new CopyOnWriteArrayList<>())) {
+                send(emitter, "orders-updated", event, () -> remove(sessionId, emitter));
+            }
+        });
+    }
+
     private void publishCommitted(UUID sessionId, Long orderId, String status) {
         OrderEventDTO event = OrderEventDTO.builder().type("ORDER_UPDATED").orderId(orderId).status(status).build();
         for (SseEmitter emitter : emitters.getOrDefault(sessionId, new CopyOnWriteArrayList<>())) {

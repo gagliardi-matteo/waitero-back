@@ -48,6 +48,12 @@ public class DemoController {
     @GetMapping("/orders/{id}") public OrdineDTO order(@RequestParam String token,@PathVariable Long id) { return orders.get(token,id); }
     @PostMapping("/orders/{id}/pay") public OrdineDTO pay(@RequestParam String token,@PathVariable Long id,@RequestBody PaymentRequest request) { return orders.pay(token,id,request); }
     @PostMapping("/orders/{id}/complete") public OrdineDTO complete(@RequestParam String token,@PathVariable Long id) { return orders.complete(token,id); }
+    @GetMapping("/waiter-call") public DemoOrderService.WaiterCallState waiterCall(@RequestParam String token) { return orders.waiterCallState(token); }
+    @PostMapping("/call-waiter") public Map<String, String> callWaiter(@RequestParam String token) {
+        orders.callWaiter(token);
+        return Map.of("message", "Il personale è stato avvisato.");
+    }
+    @PostMapping("/clear-waiter-call") public void clearWaiterCall(@RequestParam String token) { orders.clearWaiterCall(token); }
     @GetMapping(value="/stream",produces=MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(@RequestParam String token) { DemoSession session=sessions.require(token); return streams.subscribe(session.getId()); }
 
