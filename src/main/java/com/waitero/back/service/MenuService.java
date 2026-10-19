@@ -69,12 +69,20 @@ public class MenuService {
         Long restaurantId = accessContextService.getActingRestaurantIdOrThrow();
         return piattoRepo.findByIdAndRistoratoreId(id, restaurantId)
                 .flatMap(ignored -> piattoRepo.findByIdWithCanonical(id))
-                .orElseThrow(() -> new RuntimeException("Piatto non trovato"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Piatto non trovato"));
     }
 
     public List<Piatto> getPiattiByRistoratore(Long id) {
         return piattoRepo.findAllByRistoratoreIdWithCanonical(id);
     }
+    public List<Piatto> getPiattiForAuthenticatedRestaurant(Long requestedRestaurantId) {
+        Long authenticatedRestaurantId = accessContextService.getActingRestaurantIdOrThrow();
+        if (!Objects.equals(authenticatedRestaurantId, requestedRestaurantId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ristorante non accessibile");
+        }
+        return getPiattiByRistoratore(authenticatedRestaurantId);
+    }
+
 
     public List<Piatto> getPublicPiattiByRistoratore(Long id) {
         ensureRestaurantServiceOpen(id);
@@ -177,7 +185,7 @@ public class MenuService {
     public Piatto aggiornaPiatto(Long id, Piatto nuovo) {
         Long restaurantId = accessContextService.getActingRestaurantIdOrThrow();
         Piatto esistente = piattoRepo.findByIdAndRistoratoreId(id, restaurantId)
-                .orElseThrow(() -> new RuntimeException("Piatto non trovato"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Piatto non trovato"));
         esistente.setNome(nuovo.getNome());
         esistente.setDescrizione(nuovo.getDescrizione());
         esistente.setPrezzo(nuovo.getPrezzo());
@@ -210,7 +218,7 @@ public class MenuService {
     public void eliminaPiatto(Long id) {
         Ristoratore ristoratore = getRistoratoreAutenticato();
         Piatto piatto = piattoRepo.findByIdAndRistoratoreId(id, ristoratore.getId())
-                .orElseThrow(() -> new RuntimeException("Piatto non trovato o non associato al ristoratore autenticato"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Piatto non trovato"));
         piattoIngredienteRistoratoreRepository.deleteAllByPiattoId(piatto.getId());
         piattoRepo.delete(piatto);
     }

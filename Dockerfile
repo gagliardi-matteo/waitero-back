@@ -15,6 +15,9 @@ WORKDIR /app
 
 COPY --from=build /app/target/back-0.0.1-SNAPSHOT.jar app.jar
 
+# Deployment defaults to the guarded production profile; local Compose overrides explicitly.
+ENV SPRING_PROFILES_ACTIVE=prod
+
 # Assicurati che uploads/ esista nel container
 RUN mkdir -p /app/uploads
 

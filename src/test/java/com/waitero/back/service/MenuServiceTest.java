@@ -4,6 +4,7 @@ import com.waitero.back.dto.PiattoDTO;
 import com.waitero.back.entity.BusinessType;
 import com.waitero.back.entity.MenuCategory;
 import com.waitero.back.entity.Piatto;
+import com.waitero.back.entity.Ristoratore;
 import com.waitero.back.repository.IngredienteRepository;
 import com.waitero.back.repository.PiattoIngredienteRepository;
 import com.waitero.back.repository.PiattoIngredienteRistoratoreRepository;
@@ -11,6 +12,7 @@ import com.waitero.back.repository.PiattoRepository;
 import com.waitero.back.repository.RistoratoreRepository;
 import com.waitero.back.repository.ServiceHourRepository;
 import com.waitero.back.security.AccessContextService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,11 +55,26 @@ class MenuServiceTest {
     @Mock
     private MenuCategoryService menuCategoryService;
 
+    @Mock
+    private DishPortionService dishPortionService;
+
+    @Mock
+    private ServiceHourScheduleService serviceHourScheduleService;
+
     @InjectMocks
     private MenuService menuService;
 
+    private Ristoratore restaurant;
+
+    @BeforeEach
+    void setUpAuthenticatedRestaurant() {
+        restaurant = Ristoratore.builder().id(7L).build();
+        org.mockito.Mockito.when(dishPortionService.normalizeConfiguredPortions(org.mockito.ArgumentMatchers.nullable(java.util.List.class)))
+                .thenReturn(java.util.List.of());
+    }
+
     @Test
-    void shouldPreserveDecisionOwnedFieldsWhenUpdatingDishData() {
+    void shouldUpdateExplicitlyRequestedDecisionFields() {
         MenuCategory primoCategory = category(1L, "PRIMO", "Primi");
         Piatto entity = Piatto.builder()
                 .id(10L)
@@ -66,6 +84,7 @@ class MenuServiceTest {
                 .categoria(primoCategory)
                 .disponibile(true)
                 .consigliato(false)
+                .ristoratore(restaurant)
                 .build();
 
         PiattoDTO incoming = new PiattoDTO();
@@ -83,12 +102,14 @@ class MenuServiceTest {
 
         menuService.updateFromDTO(entity, incoming);
 
-        assertTrue(entity.getDisponibile());
-        assertFalse(entity.getConsigliato());
+        assertFalse(entity.getDisponibile());
+        assertTrue(entity.getConsigliato());
     }
 
     @Test
     void shouldForceNeutralDecisionStateWhenCreatingDishFromDto() {
+        org.mockito.Mockito.when(accessContextService.getActingRestaurantIdOrThrow()).thenReturn(7L);
+        org.mockito.Mockito.when(ristoratoreRepo.findById(7L)).thenReturn(Optional.of(restaurant));
         MenuCategory secondoCategory = category(2L, "SECONDO", "Secondi");
         PiattoDTO incoming = new PiattoDTO();
         incoming.setId(99L);

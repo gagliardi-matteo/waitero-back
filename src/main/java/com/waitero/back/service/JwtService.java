@@ -18,6 +18,7 @@ import java.security.Key;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -64,15 +65,15 @@ public class JwtService {
     }
 
     public String generateAccessToken(BackofficeUser user) {
-        return buildBackofficeToken(user, null, jwtExpirationMs);
+        return buildBackofficeToken(user, null, jwtExpirationMs, "access");
     }
 
     public String generateRefreshToken(BackofficeUser user) {
-        return buildBackofficeToken(user, null, refreshExpirationMs);
+        return buildBackofficeToken(user, null, refreshExpirationMs, "refresh");
     }
 
     public String generateImpersonationAccessToken(BackofficeUser user, Long actingRestaurantId) {
-        return buildBackofficeToken(user, actingRestaurantId, jwtExpirationMs);
+        return buildBackofficeToken(user, actingRestaurantId, jwtExpirationMs, "access");
     }
 
     public String generateDeviceTrustToken(BackofficeUser user, String deviceId) {
@@ -86,12 +87,13 @@ public class JwtService {
                 .compact();
     }
 
-    private String buildBackofficeToken(BackofficeUser user, Long actingRestaurantId, long expirationMs) {
+    private String buildBackofficeToken(BackofficeUser user, Long actingRestaurantId, long expirationMs, String tokenType) {
         var builder = Jwts.builder()
                 .setSubject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("provider", user.getProvider())
                 .claim("role", user.getRole().name())
+                .claim("type", tokenType)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs));
 
@@ -106,9 +108,16 @@ public class JwtService {
     }
 
     public boolean validateToken(String token) {
+        return validateTokenType(token, "access");
+    }
+
+    public boolean validateRefreshToken(String token) {
+        return validateTokenType(token, "refresh");
+    }
+
+    private boolean validateTokenType(String token, String expectedType) {
         try {
-            parseClaims(token);
-            return true;
+            return expectedType.equals(parseClaims(token).get("type", String.class));
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
@@ -166,6 +175,7 @@ public class JwtService {
                 .claim("restaurantId", restaurantId)
                 .claim("tableId", tableId)
                 .claim("type", "qr")
+                .setId(UUID.randomUUID().toString())
                 .setIssuedAt(new Date())
                 .signWith(activeQrKey)
                 .compact();

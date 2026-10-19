@@ -16,8 +16,10 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.waitero.back.security.AccessContextService;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
 import java.time.DayOfWeek;
@@ -305,14 +307,18 @@ public class TavoloService {
 
     private Tavolo getOwnedTable(Long tableId, Long restaurantId) {
         Tavolo tavolo = tavoloRepository.findById(tableId)
-                .orElseThrow(() -> new RuntimeException("Tavolo non trovato"));
+                .orElseThrow(() -> tableNotFound());
 
         if (!tavolo.getRistoratore().getId().equals(restaurantId)) {
-            throw new RuntimeException("Tavolo non accessibile");
+            throw tableNotFound();
         }
 
         return tavolo;
     }
+    private ResponseStatusException tableNotFound() {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND, "Tavolo non trovato");
+    }
+
 
     private void validateRequest(TavoloRequest request, Long restaurantId, Long currentTableId) {
         if (request == null) {

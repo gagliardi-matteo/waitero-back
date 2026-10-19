@@ -48,6 +48,7 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         ensureDishColumns();
         ensureCustomerOrderColumns();
         ensureCustomerOrderItemColumns();
+        ensureCustomerOrderSubmissionTable();
         ensureDishCooccurrenceTable();
         ensureExperimentAssignmentTable();
         ensureExperimentConfigTable();
@@ -466,6 +467,28 @@ public class SchemaMigrationRunner implements ApplicationRunner {
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_orders_variant ON customer_orders(ristoratore_id, variant)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_orders_experiment_window ON customer_orders(ristoratore_id, created_at, variant, session_id)");
         jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_customer_orders_location_unverified ON customer_orders(ristoratore_id, location_unverified) WHERE location_unverified = true");
+    }
+
+    private void ensureCustomerOrderSubmissionTable() {
+        jdbcTemplate.execute(
+                """
+                CREATE TABLE IF NOT EXISTS customer_order_submission (
+                    id BIGSERIAL PRIMARY KEY,
+                    ristoratore_id bigint NOT NULL REFERENCES ristoratore(id),
+                    table_id integer NOT NULL,
+                    request_id varchar(36) NOT NULL,
+                    payload_hash varchar(64) NOT NULL,
+                    ordine_id bigint NOT NULL REFERENCES customer_orders(id) ON DELETE CASCADE,
+                    created_at timestamp(6) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT uk_customer_order_submission_intent
+                        UNIQUE (ristoratore_id, table_id, request_id)
+                )
+                """
+        );
+        jdbcTemplate.execute(
+                "CREATE INDEX IF NOT EXISTS idx_customer_order_submission_created_at " +
+                        "ON customer_order_submission(created_at)"
+        );
     }
 
     private void ensureCustomerOrderItemColumns() {

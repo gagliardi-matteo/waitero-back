@@ -2,6 +2,7 @@ package com.waitero.back.service;
 
 import com.waitero.back.dto.*;
 import com.waitero.back.entity.*;
+import com.waitero.back.repository.CustomerOrderSubmissionRepository;
 import com.waitero.back.repository.OrdineItemRepository;
 import com.waitero.back.repository.OrdinePagamentoAllocazioneRepository;
 import com.waitero.back.repository.OrdinePagamentoRepository;
@@ -14,13 +15,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import com.waitero.back.security.AccessContextService;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -29,7 +33,9 @@ import java.util.*;
 public class OrdineService {
 
     private static final List<OrderStatus> ACTIVE_STATUSES = List.of(OrderStatus.APERTO, OrderStatus.PARZIALMENTE_PAGATO);
+    private static final BigDecimal MAX_PERSISTABLE_ORDER_TOTAL = new BigDecimal("99999999.99");
     private static final List<OrderStatus> HISTORY_STATUSES = List.of(OrderStatus.PAGATO, OrderStatus.ANNULLATO);
+    private final CustomerOrderSubmissionRepository customerOrderSubmissionRepository;
 
     private final OrdineRepository ordineRepository;
     private final OrdineItemRepository ordineItemRepository;
@@ -49,6 +55,7 @@ public class OrdineService {
     private final OrderPrintService orderPrintService;
     private final TableAccessLogRepository tableAccessLogRepository;
     private final TableDeviceRepository tableDeviceRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Transactional
     public OrdineDTO createOrAppend(CustomerOrderRequest request) {
@@ -61,7 +68,12 @@ public class OrdineService {
                 request.getDeviceId(),
                 request.getLocationUnverified()
         );
-        return createOrAppendInternal(restaurantId, request.getTableId(), request.getItems(), request.getNoteCucina(), request.getSessionId(), variant, locationUnverified);
+        String requestId = normalizeRequestId(request.getRequestId());
+        return createOrAppendInternal(
+                restaurantId, request.getTableId(), request.getItems(),
+                request.getNoteCucina(), request.getSessionId(), variant,
+                locationUnverified, requestId, hashSubmitPayload(request)
+        );
     }
 
     @Transactional
@@ -77,7 +89,7 @@ public class OrdineService {
                 request.getDeviceId(),
                 request.getFingerprint())
         ) {
-            throw new RuntimeException("Accesso tavolo non autorizzato");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accesso tavolo non autorizzato");
         }
 
         Long restaurantId = Long.parseLong(request.getRestaurantId());
@@ -96,7 +108,7 @@ public class OrdineService {
             throw new RuntimeException("Ordine vuoto");
         }
         Tavolo tavolo = tavoloService.requireActiveTableByNumberOrId(restaurantId, request.getTableId());
-        return createOrAppendInternal(restaurantId, tavolo.getNumero(), request.getItems(), null, null, ExperimentService.VARIANT_HOLDOUT, false);
+        return createOrAppendInternal(restaurantId, tavolo.getNumero(), request.getItems(), null, null, ExperimentService.VARIANT_HOLDOUT, false, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -106,7 +118,7 @@ public class OrdineService {
         }
 
         if (!tavoloService.validateCustomerAccess(token, restaurantId, tableId, deviceId, fingerprint)) {
-            throw new RuntimeException("Token QR non valido");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accesso tavolo non autorizzato");
         }
 
         Long rid = Long.parseLong(restaurantId);
@@ -177,10 +189,10 @@ public class OrdineService {
     public OrdineDTO getOrderForAuthenticatedRestaurant(Long orderId) {
         Long ristoratoreId = getAuthenticatedRestaurantId();
         Ordine ordine = ordineRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Ordine non trovato"));
+                .orElseThrow(() -> orderNotFound());
 
         if (!ordine.getRistoratore().getId().equals(ristoratoreId)) {
-            throw new RuntimeException("Ordine non accessibile");
+            throw orderNotFound();
         }
 
         return toOptimizedDTO(ordine);
@@ -190,10 +202,10 @@ public class OrdineService {
     public void reprintOrderForAuthenticatedRestaurant(Long orderId) {
         Long ristoratoreId = getAuthenticatedRestaurantId();
         Ordine ordine = ordineRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Ordine non trovato"));
+                .orElseThrow(() -> orderNotFound());
 
         if (!ordine.getRistoratore().getId().equals(ristoratoreId)) {
-            throw new RuntimeException("Ordine non accessibile");
+            throw orderNotFound();
         }
 
         orderPrintService.printOrder(ordine.getId());
@@ -208,11 +220,17 @@ public class OrdineService {
     @Transactional
     public OrdineDTO payOrder(Long orderId, PaymentRequest request) {
         Long ristoratoreId = getAuthenticatedRestaurantId();
+        List<Integer> tableNumbers = jdbcTemplate.query(
+                "select table_id from customer_orders where id = ? and ristoratore_id = ?",
+                (rs, row) -> rs.getInt("table_id"), orderId, ristoratoreId);
+        if (tableNumbers.isEmpty()) throw orderNotFound();
+        // Share the submit lock and load financial state only after acquiring it.
+        lockActiveOrderMutation(ristoratoreId, tableNumbers.getFirst());
         Ordine ordine = ordineRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Ordine non trovato"));
+                .orElseThrow(() -> orderNotFound());
 
         if (!ordine.getRistoratore().getId().equals(ristoratoreId)) {
-            throw new RuntimeException("Ordine non accessibile");
+            throw orderNotFound();
         }
 
         OrderFinancialSnapshot initialFinancials = refreshFinancials(ordine);
@@ -222,6 +240,7 @@ public class OrdineService {
             if (ordine.getPaidAt() == null) {
                 ordine.setPaidAt(LocalDateTime.now());
             }
+            tavoloService.clearRegisteredDevices(ordine.getRistoratore().getId(), ordine.getTableId());
             return toDTO(ordine);
         }
 
@@ -235,11 +254,11 @@ public class OrdineService {
                     .setScale(2, RoundingMode.HALF_UP);
 
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("Importo pagamento non valido");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Importo pagamento non valido");
         }
 
         if (amount.compareTo(residuo) > 0) {
-            throw new RuntimeException("Importo superiore al residuo");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Importo superiore al residuo");
         }
 
         OrdinePagamento payment = OrdinePagamento.builder()
@@ -517,7 +536,7 @@ public class OrdineService {
         }
 
         if (!tavoloService.validateCustomerAccess(request.getToken(), request.getRestaurantId(), request.getTableId(), request.getDeviceId(), request.getFingerprint())) {
-            throw new RuntimeException("Token QR non valido");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accesso tavolo non autorizzato");
         }
 
         if (request.getItems() == null || request.getItems().isEmpty()) {
@@ -557,8 +576,21 @@ public class OrdineService {
                 .orElse(false);
     }
 
-    private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina, String sessionId, String experimentVariant, boolean locationUnverified) {
+    private OrdineDTO createOrAppendInternal(Long restaurantId, Integer tableId, List<CustomerOrderItemRequest> itemsRequest, String noteCucina, String sessionId, String experimentVariant, boolean locationUnverified, String requestId, String payloadHash) {
         tavoloService.requireActiveTable(restaurantId, tableId);
+        validateOrderItems(itemsRequest);
+        lockActiveOrderMutation(restaurantId, tableId);
+        if (requestId != null) {
+            Optional<CustomerOrderSubmission> prior = customerOrderSubmissionRepository.findByRestaurantIdAndTableIdAndRequestId(restaurantId, tableId, requestId);
+            if (prior.isPresent()) {
+                if (!MessageDigest.isEqual(
+                        prior.get().getPayloadHash().getBytes(StandardCharsets.US_ASCII),
+                        payloadHash.getBytes(StandardCharsets.US_ASCII))) {
+                    throw new IllegalArgumentException("requestId già usato con un payload differente");
+                }
+                return toDTO(prior.get().getOrder());
+            }
+        }
         Ristoratore ristoratore = ristoratoreRepository.findById(restaurantId)
                 .orElseThrow(() -> new RuntimeException("Locale non trovato"));
 
@@ -595,9 +627,6 @@ public class OrdineService {
 
         Map<String, Integer> newPrintQuantitiesByLineKey = new LinkedHashMap<>();
         for (CustomerOrderItemRequest itemRequest : itemsRequest) {
-            if (itemRequest.getDishId() == null || itemRequest.getQuantity() == null || itemRequest.getQuantity() <= 0) {
-                continue;
-            }
 
             Piatto piatto = piattoRepository.findById(itemRequest.getDishId())
                     .orElseThrow(() -> new RuntimeException("Piatto non trovato: " + itemRequest.getDishId()));
@@ -612,11 +641,11 @@ public class OrdineService {
 
             PiattoPortionDTO selectedPortion = dishPortionService.resolvePortion(piatto, itemRequest.getPortionKey());
             String orderLineKey = orderLineKey(piatto.getId(), selectedPortion.getKey());
-            newPrintQuantitiesByLineKey.merge(orderLineKey, itemRequest.getQuantity(), Integer::sum);
+            newPrintQuantitiesByLineKey.merge(orderLineKey, itemRequest.getQuantity(), Math::addExact);
 
             OrdineItem existing = existingItemsByLineKey.get(orderLineKey);
             if (existing != null) {
-                existing.setQuantity(existing.getQuantity() + itemRequest.getQuantity());
+                existing.setQuantity(Math.addExact(existing.getQuantity(), itemRequest.getQuantity()));
                 applyAttribution(existing, itemRequest);
                 continue;
             }
@@ -649,6 +678,16 @@ public class OrdineService {
         Ordine saved = ordineRepository.save(ordine);
         ordineRepository.flush();
         upsellService.refreshAggregatesForRestaurant(saved.getRistoratore().getId());
+        if (requestId != null) {
+            customerOrderSubmissionRepository.saveAndFlush(CustomerOrderSubmission.builder()
+                    .restaurantId(restaurantId)
+                    .tableId(tableId)
+                    .requestId(requestId)
+                    .payloadHash(payloadHash)
+                    .order(saved)
+                    .createdAt(LocalDateTime.now())
+                    .build());
+        }
         if (saved.getStatus() == OrderStatus.PAGATO) {
             tavoloService.clearRegisteredDevices(saved.getRistoratore().getId(), saved.getTableId());
         }
@@ -666,24 +705,72 @@ public class OrdineService {
         publishOrderUpdatedAfterCommit(saved);
         return toDTO(saved);
     }
+    private void validateOrderItems(List<CustomerOrderItemRequest> items) {
+        if (items == null || items.isEmpty()) {
+            throw new RuntimeException("Ordine vuoto");
+        }
+        for (CustomerOrderItemRequest item : items) {
+            if (item == null || item.getDishId() == null) {
+                throw new RuntimeException("Identificativo piatto mancante");
+            }
+            if (item.getQuantity() == null || item.getQuantity() <= 0) {
+                throw new RuntimeException("Quantità piatto non valida");
+            }
+        }
+    }
+
+    private void lockActiveOrderMutation(Long restaurantId, Integer tableId) {
+        String resourceKey = "active-order:" + restaurantId + ":" + tableId;
+        jdbcTemplate.query("select pg_advisory_xact_lock(hashtextextended(?, 0))", rs -> null, resourceKey);
+    }
+
+    private ResponseStatusException orderNotFound() {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND, "Ordine non trovato");
+    }
+
+
+    private String normalizeRequestId(String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            throw new IllegalArgumentException("requestId obbligatorio");
+        }
+        try {
+            return UUID.fromString(requestId.trim()).toString();
+        } catch (IllegalArgumentException invalid) {
+            throw new IllegalArgumentException("requestId non valido");
+        }
+    }
+
+    private String hashSubmitPayload(CustomerOrderRequest request) {
+        StringBuilder canonical = new StringBuilder();
+        appendHashValue(canonical, request.getRestaurantId());
+        appendHashValue(canonical, request.getTableId());
+        appendHashValue(canonical, request.getNoteCucina());
+        appendHashValue(canonical, request.getSessionId());
+        for (CustomerOrderItemRequest item : request.getItems()) {
+            appendHashValue(canonical, item == null ? null : item.getDishId());
+            appendHashValue(canonical, item == null ? null : item.getQuantity());
+            appendHashValue(canonical, item == null ? null : item.getPortionKey());
+            appendHashValue(canonical, item == null ? null : item.getSource());
+            appendHashValue(canonical, item == null ? null : item.getSourceDishId());
+        }
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(canonical.toString().getBytes(StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 non disponibile", impossible);
+        }
+    }
+
+    private void appendHashValue(StringBuilder target, Object value) {
+        String text = Objects.toString(value, "<null>");
+        target.append(text.length()).append(':').append(text).append(';');
+    }
 
     private void publishOrderUpdatedAfterCommit(Ordine saved) {
-        Runnable publish = () -> {
-            orderStreamService.publishOrderUpdate(saved.getRistoratore().getId(), "ORDER_UPDATED", saved.getId(), saved.getStatus().name());
-            orderStreamService.publishCustomerTableUpdate(saved.getRistoratore().getId(), saved.getTableId(), "ORDER_UPDATED");
-        };
-
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            publish.run();
-            return;
-        }
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                publish.run();
-            }
-        });
+        // Stream services own the after-commit boundary; nested registration
+        // from an afterCommit callback would miss Spring's callback snapshot.
+        orderStreamService.publishOrderUpdate(saved.getRistoratore().getId(), "ORDER_UPDATED", saved.getId(), saved.getStatus().name());
+        orderStreamService.publishCustomerTableUpdate(saved.getRistoratore().getId(), saved.getTableId(), "ORDER_UPDATED");
     }
 
 
@@ -778,11 +865,11 @@ public class OrdineService {
         }
 
         if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("Importo pagamento non valido");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Importo pagamento non valido");
         }
 
         if (request.getAmount().compareTo(remainingAmount) > 0) {
-            throw new RuntimeException("Importo superiore al residuo");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Importo superiore al residuo");
         }
 
         return normalizeCurrency(request.getAmount());
@@ -803,14 +890,19 @@ public class OrdineService {
     }
 
     private int calculateItemCount(Ordine ordine) {
-        return ordine.getItems().stream()
-                .mapToInt(OrdineItem::getQuantity)
-                .sum();
+        int count = 0;
+        for (OrdineItem item : ordine.getItems()) {
+            count = Math.addExact(count, item.getQuantity());
+        }
+        return count;
     }
 
     private OrderFinancialSnapshot refreshFinancials(Ordine ordine) {
         BigDecimal total = calculateTotalFromItems(ordine);
         ordine.setTotale(total);
+        if (total.compareTo(MAX_PERSISTABLE_ORDER_TOTAL) > 0) {
+            throw new IllegalArgumentException("Totale ordine oltre il limite tecnico supportato");
+        }
         ordine.setItemCount(calculateItemCount(ordine));
         BigDecimal paidAmount = calculatePaid(ordine);
         BigDecimal remainingAmount = total.subtract(paidAmount).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
@@ -851,21 +943,24 @@ public class OrdineService {
         }
 
         List<OrdinePagamentoAllocazione> result = new ArrayList<>();
+        Map<Long, Integer> selectedQuantities = new HashMap<>();
         for (PaymentAllocationRequest allocationRequest : request.getAllocations()) {
-            if (allocationRequest.getOrderItemId() == null || allocationRequest.getQuantity() == null || allocationRequest.getQuantity() <= 0) {
-                continue;
+            if (allocationRequest == null || allocationRequest.getOrderItemId() == null || allocationRequest.getQuantity() == null || allocationRequest.getQuantity() <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Allocazione pagamento non valida");
             }
 
             OrdineItem item = itemsById.get(allocationRequest.getOrderItemId());
             if (item == null) {
-                throw new RuntimeException("Riga ordine non trovata: " + allocationRequest.getOrderItemId());
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Riga ordine non trovata");
             }
 
             int alreadyPaid = paidQuantityByItem.getOrDefault(item.getId(), 0);
             int remaining = item.getQuantity() - alreadyPaid;
-            if (allocationRequest.getQuantity() > remaining) {
-                throw new RuntimeException("Quantita selezionata superiore al residuo per " + item.getNome());
+            long selected = (long) selectedQuantities.getOrDefault(item.getId(), 0) + allocationRequest.getQuantity();
+            if (selected > remaining) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantita selezionata superiore al residuo");
             }
+            selectedQuantities.put(item.getId(), (int) selected);
 
             result.add(OrdinePagamentoAllocazione.builder()
                     .orderItem(item)

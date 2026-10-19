@@ -11,7 +11,7 @@ services:
       POSTGRES_USER: waitero
       POSTGRES_PASSWORD: waitero
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -31,6 +31,8 @@ services:
       db:
         condition: service_healthy
     environment:
+      # Local development only. Do not deploy this demo-credential Compose in production.
+      SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/waitero
       SPRING_DATASOURCE_USERNAME: waitero
       SPRING_DATASOURCE_PASSWORD: waitero

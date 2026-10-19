@@ -5,6 +5,7 @@ import com.waitero.back.entity.*;
 import com.waitero.back.repository.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -21,10 +22,13 @@ class DemoOrderServiceTest {
     @Test
     void rejectsOrdersPastConfiguredLimit() {
         DemoSessionService sessions = mock(DemoSessionService.class);
-        DemoSession session = DemoSession.builder().id(UUID.randomUUID()).orderCount(10).build();
+        DemoSession session = DemoSession.builder().id(UUID.randomUUID()).orderCount(10)
+                .ristoratore(Ristoratore.builder().id(7L).build())
+                .tavolo(Tavolo.builder().numero(3).build()).build();
         when(sessions.require("token-a")).thenReturn(session);
         DemoOrderService service = new DemoOrderService(sessions, mock(DemoSessionRepository.class),
-                mock(OrdineRepository.class), mock(PiattoRepository.class), mock(DemoStreamService.class));
+                mock(OrdineRepository.class), mock(PiattoRepository.class), mock(DemoStreamService.class),
+                mock(CustomerOrderSubmissionRepository.class), mock(JdbcTemplate.class));
         ReflectionTestUtils.setField(service, "maxOrders", 10);
         ReflectionTestUtils.setField(service, "maxLines", 20);
         ReflectionTestUtils.setField(service, "maxQuantity", 10);
@@ -33,6 +37,7 @@ class DemoOrderServiceTest {
         item.setDishId(1L);
         item.setQuantity(1);
         com.waitero.back.dto.DemoOrderRequest request = new com.waitero.back.dto.DemoOrderRequest();
+        request.setRequestId(UUID.randomUUID().toString());
         request.setItems(java.util.List.of(item));
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
                 () -> service.submit("token-a", request));
@@ -47,7 +52,8 @@ class DemoOrderServiceTest {
         OrdineRepository orders = mock(OrdineRepository.class);
         when(orders.findAllByDemoSessionIdAndStatusInOrderByCreatedAtDesc(eq(sessionA), any())).thenReturn(java.util.List.of());
         DemoOrderService service = new DemoOrderService(sessions, mock(DemoSessionRepository.class),
-                orders, mock(PiattoRepository.class), mock(DemoStreamService.class));
+                orders, mock(PiattoRepository.class), mock(DemoStreamService.class),
+                mock(CustomerOrderSubmissionRepository.class), mock(JdbcTemplate.class));
 
         service.active("token-a");
 
@@ -68,7 +74,8 @@ class DemoOrderServiceTest {
         when(orders.findByIdAndDemoSessionId(11L, sessionId)).thenReturn(Optional.of(order));
         when(orders.saveAndFlush(order)).thenReturn(order);
         DemoOrderService service = new DemoOrderService(sessions, mock(DemoSessionRepository.class),
-                orders, mock(PiattoRepository.class), mock(DemoStreamService.class));
+                orders, mock(PiattoRepository.class), mock(DemoStreamService.class),
+                mock(CustomerOrderSubmissionRepository.class), mock(JdbcTemplate.class));
         PaymentRequest request = new PaymentRequest();
         request.setPaymentMode("PARTIAL");
         request.setAmount(new BigDecimal("12.50"));

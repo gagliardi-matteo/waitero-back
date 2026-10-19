@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PiattoRepository extends JpaRepository<Piatto, Long> {
+    @Query("select p.nome from Piatto p where p.ristoratore.id = :ristoratoreId")
+    List<String> findNamesByRistoratoreId(@Param("ristoratoreId") Long ristoratoreId);
     List<Piatto> findAllByRistoratoreId(Long ristoratoreId);
     Optional<Piatto> findByIdAndRistoratoreId(Long id, Long ristoratoreId);
     Optional<Piatto> findFirstByRistoratoreIdAndNomeIgnoreCase(Long ristoratoreId, String nome);

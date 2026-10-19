@@ -6,10 +6,13 @@ import com.waitero.back.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import java.math.*;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -22,6 +25,8 @@ public class DemoOrderService {
     private final OrdineRepository orders;
     private final PiattoRepository dishes;
     private final DemoStreamService streams;
+    private final CustomerOrderSubmissionRepository submissions;
+    private final JdbcTemplate jdbcTemplate;
     @Value("${app.demo.max-orders:10}") private int maxOrders;
     @Value("${app.demo.max-lines:20}") private int maxLines;
     @Value("${app.demo.max-quantity:10}") private int maxQuantity;
@@ -30,6 +35,18 @@ public class DemoOrderService {
     public OrdineDTO submit(String token, DemoOrderRequest request) {
         DemoSession session = sessionService.require(token);
         validate(request);
+        String requestId = normalizeRequestId(request.getRequestId());
+        String payloadHash = hashSubmitPayload(request);
+        lockActiveOrderMutation(session.getRistoratore().getId(), session.getTavolo().getNumero());
+        Optional<CustomerOrderSubmission> prior = submissions.findByRestaurantIdAndTableIdAndRequestId(
+                session.getRistoratore().getId(), session.getTavolo().getNumero(), requestId);
+        if (prior.isPresent()) {
+            if (!MessageDigest.isEqual(prior.get().getPayloadHash().getBytes(StandardCharsets.US_ASCII),
+                    payloadHash.getBytes(StandardCharsets.US_ASCII))) {
+                throw new IllegalArgumentException("requestId già usato con un payload differente");
+            }
+            return dto(prior.get().getOrder());
+        }
         if (session.getOrderCount() >= maxOrders) throw limit("Hai raggiunto il limite di ordini per questa demo");
         Ordine order = orders.findAllByDemoSessionIdAndStatusInOrderByCreatedAtDesc(session.getId(), ACTIVE).stream().findFirst()
                 .orElseGet(() -> newOrder(session));
@@ -51,6 +68,14 @@ public class DemoOrderService {
         order.setNoteCucina(normalizeNote(request.getNoteCucina()));
         order.setUpdatedAt(LocalDateTime.now()); recalculate(order);
         Ordine saved = orders.saveAndFlush(order);
+        submissions.saveAndFlush(CustomerOrderSubmission.builder()
+                .restaurantId(session.getRistoratore().getId())
+                .tableId(session.getTavolo().getNumero())
+                .requestId(requestId)
+                .payloadHash(payloadHash)
+                .order(saved)
+                .createdAt(LocalDateTime.now())
+                .build());
         session.setOrderCount(session.getOrderCount() + 1); sessions.save(session);
         streams.publish(session.getId(), saved.getId(), saved.getStatus().name());
         return dto(saved);
@@ -121,6 +146,37 @@ public class DemoOrderService {
         DemoSession s=sessionService.require(token); Ordine order=orders.findByIdAndDemoSessionId(id,s.getId()).orElseThrow(this::notFound);
         order.setStatus(OrderStatus.PAGATO); order.setPaidAt(LocalDateTime.now()); order.setUpdatedAt(LocalDateTime.now());
         Ordine saved=orders.save(order); streams.publish(s.getId(),saved.getId(),saved.getStatus().name()); return dto(saved);
+    }
+
+    private void lockActiveOrderMutation(Long restaurantId, Integer tableId) {
+        String resourceKey = "active-order:" + restaurantId + ":" + tableId;
+        jdbcTemplate.query("select pg_advisory_xact_lock(hashtextextended(?, 0))", rs -> null, resourceKey);
+    }
+    private String normalizeRequestId(String requestId) {
+        if (requestId == null || requestId.isBlank()) throw new IllegalArgumentException("requestId obbligatorio");
+        try { return UUID.fromString(requestId.trim()).toString(); }
+        catch (IllegalArgumentException invalid) { throw new IllegalArgumentException("requestId non valido"); }
+    }
+    private String hashSubmitPayload(DemoOrderRequest request) {
+        StringBuilder canonical = new StringBuilder();
+        appendHashValue(canonical, request.getNoteCucina());
+        for (CustomerOrderItemRequest item : request.getItems()) {
+            appendHashValue(canonical, item == null ? null : item.getDishId());
+            appendHashValue(canonical, item == null ? null : item.getQuantity());
+            appendHashValue(canonical, item == null ? null : item.getPortionKey());
+            appendHashValue(canonical, item == null ? null : item.getSource());
+            appendHashValue(canonical, item == null ? null : item.getSourceDishId());
+        }
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(canonical.toString().getBytes(StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 non disponibile", impossible);
+        }
+    }
+    private void appendHashValue(StringBuilder target, Object value) {
+        String normalized = value == null ? "" : value.toString().trim();
+        target.append(normalized.length()).append(':').append(normalized).append('|');
     }
 
     private Ordine newOrder(DemoSession s) { LocalDateTime now=LocalDateTime.now(); return Ordine.builder().ristoratore(s.getRistoratore())

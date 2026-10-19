@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Instant;
 import java.util.Locale;
@@ -36,6 +37,7 @@ public class ExperimentService {
     private final ExperimentAssignmentRepository experimentAssignmentRepository;
     private final ExperimentConfigRepository experimentConfigRepository;
     private final ExperimentModeRepository experimentModeRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Transactional
     public String getVariant(String sessionId, Long restaurantId) {
@@ -54,6 +56,7 @@ public class ExperimentService {
         }
 
         ExperimentAssignmentId id = new ExperimentAssignmentId(assignmentKey, restaurantId);
+        lockAssignment(restaurantId, assignmentKey);
         return experimentAssignmentRepository.findById(id)
                 .map(existing -> normalizeVariant(existing.getVariant()))
                 .orElseGet(() -> assignAndPersist(id, assignmentKey, restaurantId));
@@ -72,6 +75,7 @@ public class ExperimentService {
         }
 
         ExperimentAssignmentId id = new ExperimentAssignmentId(assignmentKey, restaurantId);
+        lockAssignment(restaurantId, assignmentKey);
         ExperimentAssignment assignment = experimentAssignmentRepository.findById(id)
                 .orElseGet(() -> ExperimentAssignment.builder()
                         .id(id)
@@ -161,6 +165,11 @@ public class ExperimentService {
                     .map(this::normalizeVariant)
                     .orElse(variant);
         }
+    }
+
+    private void lockAssignment(Long restaurantId, String assignmentKey) {
+        jdbcTemplate.query("select pg_advisory_xact_lock(hashtextextended(?, 0))", rs -> null,
+                "experiment-assignment:" + restaurantId + ":" + assignmentKey);
     }
 
     private String defaultVariantWithoutAssignment(Long restaurantId) {

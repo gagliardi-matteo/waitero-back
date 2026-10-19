@@ -39,6 +39,14 @@ public class TableAccessService {
         Tavolo tavolo = tavoloService.resolveActiveTableForAccess(request.getTablePublicId(), request.getRestaurantId(), request.getTableId());
         Long restaurantId = tavolo.getRistoratore().getId();
         Integer tableId = tavolo.getNumero();
+        if (!matchesResolvedContext(request, restaurantId, tableId)) {
+            return denied("CONTEXT_MISMATCH", "I riferimenti del tavolo non corrispondono", tavolo, 0);
+        }
+        if (privacyProtectionService.normalizeDeviceId(request.getDeviceId()) == null) {
+            return denied("MISSING_DEVICE", "Identificativo dispositivo obbligatorio", tavolo, 0);
+        }
+
+
 
         if (!tavoloService.validateQrAccess(request.getQrToken(), String.valueOf(restaurantId), tableId)) {
             return denied("INVALID_QR", "QR non valido", tavolo, 0);
@@ -185,13 +193,34 @@ public class TableAccessService {
                 .tableId(tavolo.getNumero())
                 .tablePublicId(tavolo.getTablePublicId())
                 .tableName(tavolo.getNome())
-                .qrToken(tavolo.getQrToken())
+                .qrToken(null)
                 .riskScore(riskScore)
                 .locationUnverified(false)
                 .build();
     }
 
+    private boolean matchesResolvedContext(SecureTableAccessRequest request, Long restaurantId, Integer tableId) {
+        if (request.getRestaurantId() != null && !request.getRestaurantId().isBlank()) {
+            try {
+                if (!restaurantId.equals(Long.valueOf(request.getRestaurantId().trim()))) {
+                    return false;
+                }
+            } catch (NumberFormatException ex) {
+                return false;
+            }
+        }
+        if (request.getTableId() != null && !tableId.equals(request.getTableId())) {
+            return false;
+        }
+        if (request.getTablePublicId() != null && !request.getTablePublicId().isBlank()
+                && !request.getTablePublicId().trim().equals(request.getTablePublicId())) {
+            return false;
+        }
+        return true;
+    }
+
     private String normalize(String value) {
+
         if (value == null || value.isBlank()) {
             return null;
         }

@@ -128,7 +128,7 @@ public class MenuController {
 
     @GetMapping("/piattiRistoratore/{id}")
     public List<PiattoDTO> getPiattiByRistoratore(@PathVariable Long id) {
-        return menuService.toDTOList(menuService.getPiattiByRistoratore(id));
+        return menuService.toDTOList(menuService.getPiattiForAuthenticatedRestaurant(id));
     }
 
     @PostMapping(value = "/piatti/import", consumes = MULTIPART_FORM_DATA_VALUE)

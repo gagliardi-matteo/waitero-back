@@ -136,13 +136,17 @@ class ExperimentIntelligenceIT {
                 createdAt
         );
         jdbcTemplate.update(
-                "insert into piatto (id, nome, descrizione, prezzo, disponibile, categoria, image_url, ingredienti, allergeni, consigliato, ristoratore_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "insert into menu_category (business_type, code, label, sort_order, active) select 'RISTORANTE', 'PRIMO', 'Primo', 1, true where not exists (select 1 from menu_category where business_type = 'RISTORANTE' and code = 'PRIMO')");
+        Long categoryId = jdbcTemplate.queryForObject(
+                "select id from menu_category where business_type = 'RISTORANTE' and code = 'PRIMO' order by id limit 1", Long.class);
+        jdbcTemplate.update(
+                "insert into piatto (id, nome, descrizione, prezzo, disponibile, categoria_id, image_url, ingredienti, allergeni, consigliato, ristoratore_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 DISH_ID,
                 "Experiment Dish",
                 "Dish for experiment intelligence tests",
                 new BigDecimal("10.00"),
                 true,
-                "PRIMO",
+                categoryId,
                 null,
                 null,
                 null,

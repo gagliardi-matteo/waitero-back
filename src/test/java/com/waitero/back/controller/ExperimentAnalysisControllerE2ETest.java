@@ -211,13 +211,22 @@ class ExperimentAnalysisControllerE2ETest {
                 createdAt
         );
         jdbcTemplate.update(
-                "insert into piatto (id, nome, descrizione, prezzo, disponibile, categoria, image_url, ingredienti, allergeni, consigliato, ristoratore_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "insert into menu_category (id, business_type, code, label, sort_order, active) values (?, ?, ?, ?, ?, ?)",
+                9300003L,
+                "RISTORANTE",
+                "PRIMO_E2E",
+                "Primi E2E",
+                10,
+                true
+        );
+        jdbcTemplate.update(
+                "insert into piatto (id, nome, descrizione, prezzo, disponibile, categoria_id, image_url, ingredienti, allergeni, consigliato, ristoratore_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 DISH_ID,
                 "Experiment Analysis Dish",
                 "Dish for experiment analysis controller e2e test",
                 new BigDecimal("10.00"),
                 true,
-                "PRIMO",
+                9300003L,
                 null,
                 null,
                 null,
@@ -318,6 +327,7 @@ class ExperimentAnalysisControllerE2ETest {
                 .ifPresent(backofficeUserRepository::delete);
         jdbcTemplate.update("delete from dish_cooccurrence where base_dish_id in (select id from piatto where ristoratore_id = ?) or suggested_dish_id in (select id from piatto where ristoratore_id = ?)", RESTAURANT_ID, RESTAURANT_ID);
         jdbcTemplate.update("delete from piatto where ristoratore_id = ?", RESTAURANT_ID);
+        jdbcTemplate.update("delete from menu_category where id = ?", 9300003L);
         jdbcTemplate.update("delete from tavoli where ristoratore_id = ?", RESTAURANT_ID);
         jdbcTemplate.update("delete from backoffice_user where restaurant_id = ?", RESTAURANT_ID);
         jdbcTemplate.update("delete from ristoratore where id = ?", RESTAURANT_ID);

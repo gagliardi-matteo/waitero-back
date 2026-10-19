@@ -12,8 +12,10 @@ import com.waitero.back.service.OrdineService;
 import com.waitero.back.service.TavoloService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
@@ -90,7 +92,7 @@ public class CustomerOrderController {
             @RequestParam(required = false) String fingerprint
     ) {
         if (!tavoloService.validateCustomerAccess(token, restaurantId, tableId, deviceId, fingerprint)) {
-            throw new RuntimeException("Accesso tavolo non autorizzato");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accesso tavolo non autorizzato");
         }
 
         return orderStreamService.subscribeCustomerTable(Long.parseLong(restaurantId), tableId);

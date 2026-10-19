@@ -136,13 +136,18 @@ class AnalyticsV2ExperimentResultsIT extends AnalyticsV2IntegrationTestSupport {
 
     private void insertDish(long dishId, long restaurantId, String name, String category, BigDecimal price) {
         jdbcTemplate.update(
-                "insert into piatto (id, nome, descrizione, prezzo, disponibile, categoria, image_url, ingredienti, allergeni, consigliato, ristoratore_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "insert into menu_category (business_type, code, label, sort_order, active) select 'RISTORANTE', ?, ?, 1, true where not exists (select 1 from menu_category where business_type = 'RISTORANTE' and code = ?)",
+                category, category, category);
+        Long categoryId = jdbcTemplate.queryForObject(
+                "select id from menu_category where business_type = 'RISTORANTE' and code = ? order by id limit 1", Long.class, category);
+        jdbcTemplate.update(
+                "insert into piatto (id, nome, descrizione, prezzo, disponibile, categoria_id, image_url, ingredienti, allergeni, consigliato, ristoratore_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 dishId,
                 name,
                 name + " description",
                 price,
                 true,
-                category,
+                categoryId,
                 null,
                 null,
                 null,

@@ -21,6 +21,11 @@ import java.util.*;
 @RequiredArgsConstructor
 public class DemoSessionService {
     private static final String DEMO_EMAIL = "demo@waitero.internal";
+    private static final List<String> EXPECTED_DISH_NAMES = List.of(
+            "Bruschette al pomodoro", "Tagliere della casa", "Fritto misto",
+            "Margherita", "Diavola", "Bufala", "WaiterO Special",
+            "Classic Burger", "Crispy Chicken", "Pils 0,4L", "IPA 0,4L", "Weiss 0,5L",
+            "Tiramisù", "Cheesecake");
     private static final SecureRandom RANDOM = new SecureRandom();
     private final DemoSessionRepository sessions;
     private final RistoratoreRepository restaurants;
@@ -35,9 +40,13 @@ public class DemoSessionService {
 
     @Transactional
     public DemoSessionDTO create() {
-        // Serialize lazy seeding across application instances.
-        jdbc.execute("select pg_advisory_xact_lock(741836021)");
-        Ristoratore restaurant = ensureRestaurant();
+        Ristoratore restaurant = restaurants.findByEmail(DEMO_EMAIL)
+                .filter(r -> Boolean.TRUE.equals(r.getDemo()) && hasSeededMenu(r))
+                .orElseGet(() -> {
+                    // Only lazy seeding/repair needs serialization across instances.
+                    jdbc.execute("select pg_advisory_xact_lock(741836021)");
+                    return ensureRestaurant();
+                });
         int tableNumber = 100_000 + RANDOM.nextInt(900_000_000);
         LocalDateTime now = LocalDateTime.now();
         Tavolo table = tables.save(Tavolo.builder()
@@ -72,6 +81,9 @@ public class DemoSessionService {
         for (DemoSession session : sessions.findAllByExpiresAtBefore(LocalDateTime.now())) {
             UUID id = session.getId(); Tavolo table = session.getTavolo();
             streams.close(id);
+            // Hibernate-created schemas may have a non-cascading ledger FK.
+            // The session is expired, so its submit tokens can no longer replay.
+            jdbc.update("delete from customer_order_submission where ordine_id in (select id from customer_orders where demo_session_id = ?)", id);
             orders.deleteAll(orders.findAllByDemoSessionIdOrderByCreatedAtDesc(id));
             orders.flush();
             sessions.delete(session);
@@ -87,6 +99,11 @@ public class DemoSessionService {
         if (!Boolean.TRUE.equals(restaurant.getDemo())) { restaurant.setDemo(true); restaurant = restaurants.save(restaurant); }
         seedMenu(restaurant);
         return restaurant;
+    }
+
+    private boolean hasSeededMenu(Ristoratore restaurant) {
+        List<String> names = dishes.findNamesByRistoratoreId(restaurant.getId());
+        return EXPECTED_DISH_NAMES.stream().allMatch(expected -> names.stream().anyMatch(expected::equalsIgnoreCase));
     }
 
     private void seedMenu(Ristoratore restaurant) {

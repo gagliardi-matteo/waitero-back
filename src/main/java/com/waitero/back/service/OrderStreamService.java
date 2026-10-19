@@ -19,7 +19,11 @@ public class OrderStreamService {
 
     public SseEmitter subscribe(Long restaurantId) {
         SseEmitter emitter = new SseEmitter(0L);
-        emittersByRestaurant.computeIfAbsent(restaurantId, id -> new CopyOnWriteArrayList<>()).add(emitter);
+        emittersByRestaurant.compute(restaurantId, (id, list) -> {
+            if (list == null) list = new CopyOnWriteArrayList<>();
+            list.add(emitter);
+            return list;
+        });
 
         emitter.onCompletion(() -> removeRestaurantEmitter(restaurantId, emitter));
         emitter.onTimeout(() -> removeRestaurantEmitter(restaurantId, emitter));
@@ -32,9 +36,9 @@ public class OrderStreamService {
                             .type("CONNECTED")
                             .restaurantId(restaurantId)
                             .build()));
-        } catch (IOException e) {
-            emitter.complete();
+        } catch (IOException | IllegalStateException e) {
             removeRestaurantEmitter(restaurantId, emitter);
+            completeSafely(emitter);
         }
 
         return emitter;
@@ -43,7 +47,11 @@ public class OrderStreamService {
     public SseEmitter subscribeCustomerTable(Long restaurantId, Integer tableId) {
         String key = customerTableKey(restaurantId, tableId);
         SseEmitter emitter = new SseEmitter(0L);
-        emittersByCustomerTable.computeIfAbsent(key, unused -> new CopyOnWriteArrayList<>()).add(emitter);
+        emittersByCustomerTable.compute(key, (unused, list) -> {
+            if (list == null) list = new CopyOnWriteArrayList<>();
+            list.add(emitter);
+            return list;
+        });
 
         emitter.onCompletion(() -> removeCustomerEmitter(key, emitter));
         emitter.onTimeout(() -> removeCustomerEmitter(key, emitter));
@@ -57,9 +65,9 @@ public class OrderStreamService {
                             .restaurantId(restaurantId)
                             .tableId(tableId)
                             .build()));
-        } catch (IOException e) {
-            emitter.complete();
+        } catch (IOException | IllegalStateException e) {
             removeCustomerEmitter(key, emitter);
+            completeSafely(emitter);
         }
 
         return emitter;
@@ -76,6 +84,10 @@ public class OrderStreamService {
     }
 
     public void publishCustomerTableUpdate(Long restaurantId, Integer tableId, String type) {
+        AfterCommitEvents.publish(() -> publishCommittedCustomerTableUpdate(restaurantId, tableId, type));
+    }
+
+    private void publishCommittedCustomerTableUpdate(Long restaurantId, Integer tableId, String type) {
         String key = customerTableKey(restaurantId, tableId);
         OrderEventDTO payload = OrderEventDTO.builder()
                 .type(type)
@@ -91,9 +103,9 @@ public class OrderStreamService {
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event().name("customer-order-updated").data(payload));
-            } catch (IOException e) {
-                emitter.complete();
+            } catch (IOException | IllegalStateException e) {
                 removeCustomerEmitter(key, emitter);
+                completeSafely(emitter);
             }
         }
     }
@@ -127,6 +139,10 @@ public class OrderStreamService {
     }
 
     private void broadcastRestaurantEvent(Long restaurantId, String eventName, OrderEventDTO payload) {
+        AfterCommitEvents.publish(() -> broadcastCommittedRestaurantEvent(restaurantId, eventName, payload));
+    }
+
+    private void broadcastCommittedRestaurantEvent(Long restaurantId, String eventName, OrderEventDTO payload) {
         List<SseEmitter> emitters = emittersByRestaurant.get(restaurantId);
         if (emitters == null) {
             return;
@@ -135,9 +151,9 @@ public class OrderStreamService {
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event().name(eventName).data(payload));
-            } catch (IOException e) {
-                emitter.complete();
+            } catch (IOException | IllegalStateException e) {
                 removeRestaurantEmitter(restaurantId, emitter);
+                completeSafely(emitter);
             }
         }
     }
@@ -147,25 +163,17 @@ public class OrderStreamService {
     }
 
     private void removeRestaurantEmitter(Long restaurantId, SseEmitter emitter) {
-        List<SseEmitter> emitters = emittersByRestaurant.get(restaurantId);
-        if (emitters == null) {
-            return;
-        }
-        emitters.remove(emitter);
-        if (emitters.isEmpty()) {
-            emittersByRestaurant.remove(restaurantId);
-        }
+        emittersByRestaurant.computeIfPresent(restaurantId, (key, emitters) -> {
+            emitters.remove(emitter);
+            return emitters.isEmpty() ? null : emitters;
+        });
     }
 
     private void removeCustomerEmitter(String key, SseEmitter emitter) {
-        List<SseEmitter> emitters = emittersByCustomerTable.get(key);
-        if (emitters == null) {
-            return;
-        }
-        emitters.remove(emitter);
-        if (emitters.isEmpty()) {
-            emittersByCustomerTable.remove(key);
-        }
+        emittersByCustomerTable.computeIfPresent(key, (unused, emitters) -> {
+            emitters.remove(emitter);
+            return emitters.isEmpty() ? null : emitters;
+        });
     }
 
     private <K> void broadcastHeartbeats(Map<K, CopyOnWriteArrayList<SseEmitter>> emittersByKey) {
@@ -174,15 +182,19 @@ public class OrderStreamService {
             for (SseEmitter emitter : entry.getValue()) {
                 try {
                     emitter.send(SseEmitter.event().name("heartbeat").data("keepalive"));
-                } catch (IOException e) {
-                    emitter.complete();
+                } catch (IOException | IllegalStateException e) {
                     if (key instanceof Long restaurantId) {
                         removeRestaurantEmitter(restaurantId, emitter);
                     } else if (key instanceof String customerKey) {
                         removeCustomerEmitter(customerKey, emitter);
                     }
+                    completeSafely(emitter);
                 }
             }
         }
+    }
+
+    private void completeSafely(SseEmitter emitter) {
+        try { emitter.complete(); } catch (IllegalStateException ignored) { }
     }
 }

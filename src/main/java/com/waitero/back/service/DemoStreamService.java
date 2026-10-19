@@ -14,7 +14,11 @@ public class DemoStreamService {
 
     public SseEmitter subscribe(UUID sessionId) {
         SseEmitter emitter = new SseEmitter(3_600_000L);
-        emitters.computeIfAbsent(sessionId, ignored -> new CopyOnWriteArrayList<>()).add(emitter);
+        emitters.compute(sessionId, (ignored, list) -> {
+            if (list == null) list = new CopyOnWriteArrayList<>();
+            list.add(emitter);
+            return list;
+        });
         Runnable remove = () -> remove(sessionId, emitter);
         emitter.onCompletion(remove); emitter.onTimeout(remove); emitter.onError(error -> remove.run());
         send(emitter, "connected", OrderEventDTO.builder().type("CONNECTED").build(), remove);
@@ -22,6 +26,10 @@ public class DemoStreamService {
     }
 
     public void publish(UUID sessionId, Long orderId, String status) {
+        AfterCommitEvents.publish(() -> publishCommitted(sessionId, orderId, status));
+    }
+
+    private void publishCommitted(UUID sessionId, Long orderId, String status) {
         OrderEventDTO event = OrderEventDTO.builder().type("ORDER_UPDATED").orderId(orderId).status(status).build();
         for (SseEmitter emitter : emitters.getOrDefault(sessionId, new CopyOnWriteArrayList<>())) {
             send(emitter, "orders-updated", event, () -> remove(sessionId, emitter));
@@ -30,8 +38,10 @@ public class DemoStreamService {
     }
 
     public void close(UUID sessionId) {
-        for (SseEmitter emitter : emitters.getOrDefault(sessionId, new CopyOnWriteArrayList<>())) emitter.complete();
-        emitters.remove(sessionId);
+        List<SseEmitter> closed = emitters.remove(sessionId);
+        if (closed != null) for (SseEmitter emitter : closed) {
+            try { emitter.complete(); } catch (IllegalStateException ignored) { }
+        }
     }
 
     @Scheduled(fixedDelay = 20_000)
@@ -41,10 +51,15 @@ public class DemoStreamService {
 
     private void send(SseEmitter emitter, String name, Object data, Runnable onError) {
         try { emitter.send(SseEmitter.event().name(name).data(data)); }
-        catch (IOException ex) { emitter.complete(); onError.run(); }
+        catch (IOException | IllegalStateException ex) {
+            onError.run();
+            try { emitter.complete(); } catch (IllegalStateException ignored) { }
+        }
     }
     private void remove(UUID id, SseEmitter emitter) {
-        List<SseEmitter> list = emitters.get(id); if (list == null) return;
-        list.remove(emitter); if (list.isEmpty()) emitters.remove(id);
+        emitters.computeIfPresent(id, (key, list) -> {
+            list.remove(emitter);
+            return list.isEmpty() ? null : list;
+        });
     }
 }

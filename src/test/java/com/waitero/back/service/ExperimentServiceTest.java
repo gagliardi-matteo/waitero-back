@@ -24,6 +24,9 @@ import static org.mockito.Mockito.when;
 class ExperimentServiceTest {
 
     @Mock
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Mock
     private ExperimentAssignmentRepository experimentAssignmentRepository;
 
     @Mock

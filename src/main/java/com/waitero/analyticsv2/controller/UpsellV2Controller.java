@@ -5,6 +5,10 @@ import com.waitero.analyticsv2.service.UpsellV2Service;
 import com.waitero.analyticsv2.support.AnalyticsV2TimeRange;
 import com.waitero.analyticsv2.support.AnalyticsV2TimeRangeResolver;
 import lombok.RequiredArgsConstructor;
+import com.waitero.back.security.AccessContextService;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,10 +22,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v2/upsell")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class UpsellV2Controller {
 
     private final UpsellV2Service upsellV2Service;
     private final AnalyticsV2TimeRangeResolver timeRangeResolver;
+    private final AccessContextService accessContextService;
 
     // Ritorna i suggerimenti upsell associati a un singolo piatto.
     @GetMapping("/dish/{dishId}")
@@ -33,7 +39,7 @@ public class UpsellV2Controller {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo
     ) {
         AnalyticsV2TimeRange timeRange = timeRangeResolver.resolve(dateFrom, dateTo);
-        return upsellV2Service.getDishSuggestions(restaurantId, dishId, limit, timeRange);
+        return upsellV2Service.getDishSuggestions(validateRestaurantScope(restaurantId), dishId, limit, timeRange);
     }
 
     // Ritorna i suggerimenti upsell del carrello corrente.
@@ -46,6 +52,12 @@ public class UpsellV2Controller {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo
     ) {
         AnalyticsV2TimeRange timeRange = timeRangeResolver.resolve(dateFrom, dateTo);
-        return upsellV2Service.getCartSuggestions(restaurantId, dishIds, limit, timeRange);
+        return upsellV2Service.getCartSuggestions(validateRestaurantScope(restaurantId), dishIds, limit, timeRange);
+    }
+    private Long validateRestaurantScope(Long restaurantId) {
+        if (!restaurantId.equals(accessContextService.getActingRestaurantIdOrThrow())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "restaurantId is outside the authenticated scope");
+        }
+        return restaurantId;
     }
 }

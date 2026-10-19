@@ -3,7 +3,9 @@ package com.waitero.back.service;
 import com.waitero.back.dto.CustomerDraftDTO;
 import com.waitero.back.dto.CustomerDraftItemDTO;
 import com.waitero.back.dto.CustomerDraftMutationRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -64,7 +66,7 @@ public class CustomerDraftService {
         }
 
         if (!tavoloService.validateCustomerAccess(token, restaurantId, tableId, deviceId, fingerprint)) {
-            throw new RuntimeException("Accesso tavolo non autorizzato");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accesso tavolo non autorizzato");
         }
     }
 

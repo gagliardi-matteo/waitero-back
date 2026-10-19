@@ -111,7 +111,7 @@ public class AuthService {
 
         String deviceId = normalize(request.getDeviceId());
         String trustToken = request.getDeviceTrustToken().trim();
-        if (!jwtService.validateToken(trustToken) || !jwtService.isDeviceTrustToken(trustToken)) {
+        if (!jwtService.isDeviceTrustToken(trustToken)) {
             throw new RuntimeException("Token dispositivo non valido");
         }
 
@@ -132,7 +132,7 @@ public class AuthService {
     }
 
     public AuthResponse refreshAccessToken(String refreshToken) {
-        if (!jwtService.validateToken(refreshToken)) {
+        if (!jwtService.validateRefreshToken(refreshToken)) {
             throw new RuntimeException("Refresh token non valido");
         }
 

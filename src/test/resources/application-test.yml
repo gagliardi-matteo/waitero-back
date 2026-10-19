@@ -1,9 +1,16 @@
+jwt:
+  active-secret: campaign-test-only-jwt-secret-at-least-32-characters
+  legacy-secret: ''
+qr:
+  token:
+    active-secret: campaign-test-only-qr-secret-at-least-32-characters
+    legacy-secret: ''
 spring:
   datasource:
-    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/waitero}
-    username: ${TEST_DB_USERNAME:waitero}
-    password: ${TEST_DB_PASSWORD:waitero}
-    driver-class-name: org.postgresql.Driver
+    url: ${TEST_DB_URL:jdbc:tc:postgresql:15-alpine:///waitero_test}
+    username: ${TEST_DB_USERNAME:test}
+    password: ${TEST_DB_PASSWORD:test}
+    driver-class-name: ${TEST_DB_DRIVER:org.testcontainers.jdbc.ContainerDatabaseDriver}
   jpa:
     hibernate:
       ddl-auto: update
