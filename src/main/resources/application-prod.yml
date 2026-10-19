@@ -27,7 +27,15 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+  # Apply the additive order-submission migration before Hibernate validates the schema.
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/migration/V20260915__customer_order_submit_idempotency.sql
+      continue-on-error: false
+
   jpa:
+    defer-datasource-initialization: false
     hibernate:
       ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
     show-sql: false

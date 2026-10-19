@@ -57,6 +57,10 @@ class ProductionSafetyEnvironmentPostProcessorTest {
             var env = context.getEnvironment();
             assertEquals("validate", env.getProperty("spring.jpa.hibernate.ddl-auto"));
             assertEquals("false", env.getProperty("spring.jpa.show-sql"));
+            assertEquals("always", env.getProperty("spring.sql.init.mode"));
+            assertEquals("classpath:db/migration/V20260915__customer_order_submit_idempotency.sql",
+                    env.getProperty("spring.sql.init.schema-locations"));
+            assertEquals("false", env.getProperty("spring.jpa.defer-datasource-initialization"));
             assertNull(env.getProperty("spring.datasource.hikari.connection-timeout"));
             assertNull(env.getProperty("spring.jpa.properties.hibernate.connection.handling_mode"));
             assertEquals("never", env.getProperty("server.error.include-stacktrace"));
