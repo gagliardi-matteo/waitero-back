@@ -22,7 +22,7 @@ public class ContactMailService {
     public ContactMailService(
             JavaMailSender mailSender,
             @Value("${app.contact.enabled:false}") boolean enabled,
-            @Value("${app.contact.recipient:info@cdevia.com}") String recipient,
+            @Value("${app.contact.recipient:info@waiter-o.com}") String recipient,
             @Value("${app.contact.from-address:}") String fromAddress) {
         this.mailSender = mailSender;
         this.enabled = enabled;

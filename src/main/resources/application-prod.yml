@@ -79,7 +79,7 @@ stripe:
 app:
   contact:
     enabled: ${CONTACT_MAIL_ENABLED:false}
-    recipient: ${CONTACT_MAIL_RECIPIENT:info@cdevia.com}
+    recipient: ${CONTACT_MAIL_RECIPIENT:info@waiter-o.com}
     from-address: ${CONTACT_MAIL_FROM:${SPRING_MAIL_USERNAME:}}
   privacy:
     hash-secret: ${PRIVACY_HASH_SECRET:${JWT_ACTIVE_SECRET}}
