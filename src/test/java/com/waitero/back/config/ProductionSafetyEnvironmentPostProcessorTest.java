@@ -77,6 +77,21 @@ class ProductionSafetyEnvironmentPostProcessorTest {
         assertTrue(error.getMessage().contains("ddl-auto"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"prod", "default"})
+    void mailUsesAuthenticatedSenderEvenWhenContactFromContainsRecipient(String profile) {
+        var application = new SpringApplication(EmptyApplication.class);
+        application.setWebApplicationType(WebApplicationType.NONE);
+        try (var context = application.run("--spring.profiles.active=" + profile,
+                "--spring.mail.username=sender@cdevia.com", "--CONTACT_MAIL_FROM=info@waiter-o.com",
+                "--CONTACT_MAIL_RECIPIENT=info@waiter-o.com")) {
+            var environment = context.getEnvironment();
+            assertEquals("sender@cdevia.com", environment.getProperty("app.contact.from-address"));
+            assertEquals("sender@cdevia.com", environment.getProperty("spring.mail.properties.mail.smtp.from"));
+            assertEquals("info@waiter-o.com", environment.getProperty("app.contact.recipient"));
+        }
+    }
+
     @Configuration(proxyBeanMethods = false)
     static class EmptyApplication { }
 }

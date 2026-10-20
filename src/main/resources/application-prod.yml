@@ -15,6 +15,7 @@ spring:
     properties:
       mail:
         smtp:
+          from: ${spring.mail.username:${CONTACT_MAIL_FROM:}}
           auth: ${SPRING_MAIL_SMTP_AUTH:true}
           ssl:
             enable: ${SPRING_MAIL_SSL_ENABLE:false}
@@ -80,7 +81,7 @@ app:
   contact:
     enabled: ${CONTACT_MAIL_ENABLED:false}
     recipient: ${CONTACT_MAIL_RECIPIENT:info@waiter-o.com}
-    from-address: ${CONTACT_MAIL_FROM:${SPRING_MAIL_USERNAME:}}
+    from-address: ${spring.mail.username:${CONTACT_MAIL_FROM:}}
   privacy:
     hash-secret: ${PRIVACY_HASH_SECRET:${JWT_ACTIVE_SECRET}}
   retention:
